@@ -23,6 +23,11 @@ enum OrderStatus {
   CANCELED
 }
 
+enum AddressType {
+  BILLING
+  SHIPPING
+}
+
 /// Usuario (cliente)
 model User {
   id        String   @id @default(uuid())
@@ -156,6 +161,7 @@ model Order {
   updatedAt DateTime    @updatedAt
 
   items OrderItem[]
+  addresses Address[]
 }
 
 /// Ítems de la orden
@@ -236,4 +242,27 @@ model CouponRedemption {
   @@index([couponId])
   @@index([userId])
   @@index([cartId])
+}
+
+model Address {
+  id           String      @id @default(uuid())
+  type         AddressType
+  firstName    String
+  lastName     String
+  email        String
+  phone        String
+  documentType String?
+  document     String?
+  street       String
+  city         String
+  state        String
+  postalCode   String?
+  country      String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  orderId String
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, type])
 }
