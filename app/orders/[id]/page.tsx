@@ -138,9 +138,11 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
           <Box mt={2}>
             {/* Placeholder para integrar Kushki/Datafast en el siguiente paso */}
-            <Button component={Link} href={`/`} variant="contained" fullWidth>
-              Pagar ahora (placeholder)
-            </Button>
+            <Link href="/" style={{ textDecoration: "none" }}>
+              <Button variant="contained" fullWidth>
+                Pagar ahora (placeholder)
+              </Button>
+            </Link>
           </Box>
         </Grid>
       </Grid>
