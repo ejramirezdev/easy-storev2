@@ -44,16 +44,27 @@ export default function AddToCartButton({
               onClick={onAdd}
               disabled={disabled || loading}
               sx={{
-                bgcolor: "secondary.main",
-                color: "white",
-                "&:hover": { bgcolor: "secondary.dark" },
-                width: 40,
-                height: 40,
+                bgcolor: "#050505",
+                color: "#fff",
+                border: "1px solid rgba(255,255,255,0.6)",
+                borderRadius: 2,
+                width: 44,
+                height: 44,
+                transition: "background-color 0.2s ease, border-color 0.2s ease",
+                "&:hover": {
+                  bgcolor: "#151515",
+                  borderColor: "#fff",
+                },
+                "&.Mui-disabled": {
+                  bgcolor: "rgba(255,255,255,0.08)",
+                  color: "rgba(255,255,255,0.5)",
+                  borderColor: "rgba(255,255,255,0.2)",
+                },
               }}
               aria-label="Agregar al carrito"
             >
               {loading ? (
-                <CircularProgress size={18} />
+                <CircularProgress size={18} sx={{ color: "inherit" }} />
               ) : (
                 <AddShoppingCartIcon fontSize="small" />
               )}

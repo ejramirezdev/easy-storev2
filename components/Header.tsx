@@ -32,7 +32,14 @@ export default function Header() {
       elevation={0}
       sx={{ bgcolor: "rgba(12,12,16,0.9)", backdropFilter: "blur(6px)" }}
     >
-      <Toolbar sx={{ maxWidth: 1200, mx: "auto", width: "100%" }}>
+      <Toolbar
+        sx={{
+          maxWidth: 1200,
+          mx: "auto",
+          width: "100%",
+          gap: { xs: 1, md: 2 },
+        }}
+      >
         {/* Logo / Marca */}
         <Box component={Link} href="/" sx={{ textDecoration: "none", mr: 3 }}>
           <Typography
@@ -45,7 +52,13 @@ export default function Header() {
         </Box>
 
         {/* Menú desktop */}
-        <Box sx={{ display: { xs: "none", md: "flex" }, gap: 2, flexGrow: 1 }}>
+        <Box
+          sx={{
+            display: { xs: "none", md: "flex" },
+            gap: 2,
+            flexGrow: 1,
+          }}
+        >
           {nav.map((i) => (
             <Button key={i.href} component={Link} href={i.href} color="inherit">
               {i.label}
@@ -53,23 +66,35 @@ export default function Header() {
           ))}
         </Box>
 
-        {/* Botón Login/Avatar (desktop) */}
-        <Box sx={{ display: { xs: "none", md: "flex" }, ml: "auto" }}>
+        <Box
+          sx={{
+            display: { xs: "none", md: "flex" },
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
           <AuthButtons mode="desktop" />
-        </Box>
-
-        <Box sx={{ display: { xs: "none", md: "flex" }, ml: "auto" }}>
           <HeaderCartButton />
         </Box>
 
-        {/* Menú móvil (hamburguesa) */}
-        <IconButton
-          color="inherit"
-          sx={{ ml: 1, display: { xs: "inline-flex", md: "none" } }}
-          onClick={(e) => setAnchorEl(e.currentTarget)}
+        {/* Acciones móviles */}
+        <Box
+          sx={{
+            display: { xs: "flex", md: "none" },
+            alignItems: "center",
+            gap: 0.75,
+            ml: "auto",
+          }}
         >
-          <MenuIcon />
-        </IconButton>
+          <HeaderCartButton />
+          <IconButton
+            color="inherit"
+            onClick={(e) => setAnchorEl(e.currentTarget)}
+            aria-label="Abrir menú"
+          >
+            <MenuIcon />
+          </IconButton>
+        </Box>
 
         <Menu
           anchorEl={anchorEl}

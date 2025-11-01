@@ -14,6 +14,7 @@ import Grid from "@mui/material/GridLegacy";
 import ProductGallery from "@/components/products/ProductGallery";
 import AddToCartButton from "@/components/products/AddToCartButton";
 import ProductPageUnlocker from "@/components/products/ProductPageUnlocker";
+import BackToProductsButton from "@/components/products/BackToProductsButton";
 
 export async function generateMetadata({
   params,
@@ -77,6 +78,9 @@ export default async function ProductDetailPage({
     <>
       <ProductPageUnlocker />
       <Container sx={{ py: 4 }}>
+        <Box sx={{ mb: 2 }}>
+          <BackToProductsButton />
+        </Box>
         <Grid container spacing={4}>
           <Grid item xs={12} md={6}>
             <ProductGallery

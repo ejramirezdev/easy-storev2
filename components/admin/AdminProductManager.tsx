@@ -24,6 +24,7 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import SaveIcon from "@mui/icons-material/Save";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
@@ -34,6 +35,10 @@ import {
   ProductInputSchema,
   type ProductInput,
 } from "@/lib/validation/products";
+import {
+  CategoryInputSchema,
+  type CategoryInput,
+} from "@/lib/validation/categories";
 
 const formDefaults = (): ProductInput => ({
   name: "",
@@ -47,6 +52,7 @@ const formDefaults = (): ProductInput => ({
 });
 
 type FormValues = ProductInput;
+type CategoryFormValues = CategoryInput;
 
 type StatusMessage = { type: "success" | "error"; text: string } | null;
 
@@ -55,6 +61,11 @@ type Props = {
   adminName: string;
   categories: AdminCategory[];
 };
+
+const categoryDefaults = (): CategoryFormValues => ({
+  name: "",
+  slug: "",
+});
 
 function formatDate(iso: string) {
   try {
@@ -115,6 +126,12 @@ export default function AdminProductManager({
   const [products, setProducts] = useState<AdminProduct[]>(initialProducts);
   const [createStatus, setCreateStatus] = useState<StatusMessage>(null);
   const [updateStatus, setUpdateStatus] = useState<StatusMessage>(null);
+  const [deleteStatus, setDeleteStatus] = useState<StatusMessage>(null);
+  const [categoryStatus, setCategoryStatus] = useState<StatusMessage>(null);
+  const [categoryList, setCategoryList] = useState<AdminCategory[]>(() => [
+    ...categories,
+  ]);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [selectedId, setSelectedId] = useState<string | null>(
     initialProducts[0]?.id ?? null
@@ -147,6 +164,12 @@ export default function AdminProductManager({
 
   const { reset: resetEditForm } = editForm;
 
+  const categoryForm = useForm<CategoryFormValues>({
+    resolver: zodResolver(CategoryInputSchema),
+    defaultValues: categoryDefaults(),
+    mode: "onBlur",
+  });
+
   useEffect(() => {
     if (selectedProduct) {
       resetEditForm(toFormValues(selectedProduct));
@@ -154,6 +177,7 @@ export default function AdminProductManager({
     } else {
       resetEditForm(formDefaults());
     }
+    setIsDeleting(false);
   }, [selectedProduct, resetEditForm]);
 
   const createSlugFromName = () => {
@@ -173,6 +197,20 @@ export default function AdminProductManager({
       shouldValidate: true,
     });
   };
+
+  const createCategorySlugFromName = () => {
+    const name = categoryForm.getValues("name");
+    if (!name) return;
+    categoryForm.setValue("slug", slugify(name), {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  };
+
+  const normalizeCategoryPayload = (values: CategoryFormValues) => ({
+    name: values.name.trim(),
+    slug: values.slug?.trim() ? values.slug.trim() : undefined,
+  });
 
   const onCreate = createForm.handleSubmit(async (values) => {
     setCreateStatus(null);
@@ -238,6 +276,86 @@ export default function AdminProductManager({
     }
   });
 
+  const onCreateCategory = categoryForm.handleSubmit(async (values) => {
+    setCategoryStatus(null);
+    const payload = normalizeCategoryPayload(values);
+
+    try {
+      const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json?.error ?? "No se pudo crear la categoría");
+      }
+
+      const created = json as AdminCategory;
+      setCategoryList((prev) =>
+        [...prev, created].sort((a, b) => a.name.localeCompare(b.name))
+      );
+      categoryForm.reset(categoryDefaults());
+      createForm.setValue("categoryId", created.id, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      setCategoryStatus({
+        type: "success",
+        text: "Categoría creada correctamente.",
+      });
+    } catch (error: any) {
+      setCategoryStatus({
+        type: "error",
+        text: error?.message ?? "Error desconocido al crear la categoría.",
+      });
+    }
+  });
+
+  const handleDeleteProduct = async () => {
+    if (!selectedProduct || isDeleting) return;
+    const confirmed = window.confirm(
+      `¿Eliminar el producto "${selectedProduct.name}" de forma permanente?`
+    );
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    setDeleteStatus(null);
+    setUpdateStatus(null);
+
+    try {
+      const res = await fetch(`/api/products/${selectedProduct.id}`, {
+        method: "DELETE",
+      });
+
+      const json = res.status !== 204 ? await res.json().catch(() => null) : null;
+      if (!res.ok) {
+        throw new Error(json?.error ?? "No se pudo eliminar el producto");
+      }
+
+      const deletedId = selectedProduct.id;
+      setProducts((prev) => {
+        const next = prev.filter((p) => p.id !== deletedId);
+        if (selectedId === deletedId) {
+          setSelectedId(next[0]?.id ?? null);
+        }
+        return next;
+      });
+      setDeleteStatus({
+        type: "success",
+        text: "Producto eliminado correctamente.",
+      });
+    } catch (error: any) {
+      setDeleteStatus({
+        type: "error",
+        text: error?.message ?? "Error desconocido al eliminar el producto.",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <Container sx={{ py: 6 }}>
       <Stack spacing={4}>
@@ -279,216 +397,284 @@ export default function AdminProductManager({
 
         <Grid container spacing={3} alignItems="stretch">
           <Grid item xs={12} lg={5}>
-            <Paper sx={{ p: 3, height: "100%" }} elevation={3}>
-              <Stack component="form" spacing={2.5} onSubmit={onCreate}>
-                <Box>
-                  <Typography variant="h6" fontWeight={800} gutterBottom>
-                    Crear nuevo producto
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Completa la información básica y agrega URLs de imágenes si
-                    ya las tienes disponibles.
-                  </Typography>
-                </Box>
-
-                {createStatus && (
-                  <Alert severity={createStatus.type}>{createStatus.text}</Alert>
-                )}
-
-                <TextField
-                  label="Título"
-                  {...createForm.register("name")}
-                  error={!!createForm.formState.errors.name}
-                  helperText={createForm.formState.errors.name?.message}
-                  fullWidth
-                />
-
-                <TextField
-                  label="Slug"
-                  {...createForm.register("slug")}
-                  error={!!createForm.formState.errors.slug}
-                  helperText={
-                    createForm.formState.errors.slug?.message ??
-                    "Se generará automáticamente si lo dejas vacío."
-                  }
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Button
-                          size="small"
-                          onClick={createSlugFromName}
-                          type="button"
-                        >
-                          Generar
-                        </Button>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <Controller
-                  control={createForm.control}
-                  name="categoryId"
-                  render={({ field, fieldState }) => (
-                    <TextField
-                      select
-                      label="Categoría"
-                      value={field.value ?? ""}
-                      onChange={(event) =>
-                        field.onChange(event.target.value || null)
-                      }
-                      onBlur={field.onBlur}
-                      error={!!fieldState.error}
-                      helperText={
-                        fieldState.error?.message ??
-                        (categories.length === 0
-                          ? "No hay categorías registradas"
-                          : "Selecciona una categoría o deja en blanco")
-                      }
-                    >
-                      <MenuItem value="">
-                        {categories.length === 0
-                          ? "Sin categorías disponibles"
-                          : "Sin categoría"}
-                      </MenuItem>
-                      {categories.map((category) => (
-                        <MenuItem key={category.id} value={category.id}>
-                          {category.name}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  )}
-                />
-
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      label="Precio"
-                      type="number"
-                      inputProps={{ step: "0.01" }}
-                      fullWidth
-                      {...createForm.register("price", { valueAsNumber: true })}
-                      error={!!createForm.formState.errors.price}
-                      helperText={createForm.formState.errors.price?.message}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      label="Stock"
-                      type="number"
-                      fullWidth
-                      {...createForm.register("stock", { valueAsNumber: true })}
-                      error={!!createForm.formState.errors.stock}
-                      helperText={createForm.formState.errors.stock?.message}
-                    />
-                  </Grid>
-                </Grid>
-
-                <TextField
-                  label="Descripción"
-                  multiline
-                  minRows={4}
-                  {...createForm.register("description")}
-                  error={!!createForm.formState.errors.description}
-                  helperText={createForm.formState.errors.description?.message}
-                />
-
-                <TextField
-                  label="Imagen principal (URL)"
-                  {...createForm.register("imageUrl")}
-                  error={!!createForm.formState.errors.imageUrl}
-                  helperText={createForm.formState.errors.imageUrl?.message}
-                />
-
-                <Stack spacing={1.5}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Typography variant="subtitle1" fontWeight={700}>
-                      Galería
+            <Stack spacing={3} sx={{ height: "100%" }}>
+              <Paper sx={{ p: 3 }} elevation={3}>
+                <Stack component="form" spacing={2.5} onSubmit={onCreate}>
+                  <Box>
+                    <Typography variant="h6" fontWeight={800} gutterBottom>
+                      Crear nuevo producto
                     </Typography>
-                    <Chip label="Opcional" size="small" color="default" />
+                    <Typography variant="body2" color="text.secondary">
+                      Completa la información básica y agrega URLs de imágenes si
+                      ya las tienes disponibles.
+                    </Typography>
                   </Box>
 
-                  {createImages.fields.length === 0 && (
-                    <Typography variant="body2" color="text.secondary">
-                      Puedes agregar varias imágenes adicionales. Usa URLs
-                      temporales y más adelante podrás migrarlas a S3.
-                    </Typography>
+                  {createStatus && (
+                    <Alert severity={createStatus.type}>{createStatus.text}</Alert>
                   )}
 
-                  <Stack spacing={1.5}>
-                    {createImages.fields.map((field, index) => {
-                      const urlError =
-                        createForm.formState.errors.images?.[index]?.url;
-                      const altError =
-                        createForm.formState.errors.images?.[index]?.alt;
-                      return (
-                        <Paper
-                          key={field.id}
-                          variant="outlined"
-                          sx={{ p: 2, bgcolor: "rgba(255,255,255,0.02)" }}
-                        >
-                          <Stack spacing={1.5}>
-                            <Stack direction="row" spacing={1} alignItems="center">
-                              <Typography fontWeight={600}>
-                                Imagen #{index + 1}
-                              </Typography>
-                              <IconButton
-                                edge="end"
-                                size="small"
-                                color="inherit"
-                                onClick={() => createImages.remove(index)}
-                                aria-label="Eliminar imagen"
-                              >
-                                <DeleteOutlineIcon fontSize="small" />
-                              </IconButton>
-                            </Stack>
+                  <TextField
+                    label="Título"
+                    {...createForm.register("name")}
+                    error={!!createForm.formState.errors.name}
+                    helperText={createForm.formState.errors.name?.message}
+                    fullWidth
+                  />
 
-                            <TextField
-                              label="URL"
-                              {...createForm.register(`images.${index}.url` as const)}
-                              error={!!urlError}
-                              helperText={urlError?.message}
-                            />
-                            <TextField
-                              label="Texto alternativo"
-                              {...createForm.register(`images.${index}.alt` as const)}
-                              error={!!altError}
-                              helperText={altError?.message}
-                            />
-                          </Stack>
-                        </Paper>
-                      );
-                    })}
+                  <TextField
+                    label="Slug"
+                    {...createForm.register("slug")}
+                    error={!!createForm.formState.errors.slug}
+                    helperText={
+                      createForm.formState.errors.slug?.message ??
+                      "Se generará automáticamente si lo dejas vacío."
+                    }
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <Button
+                            size="small"
+                            onClick={createSlugFromName}
+                            type="button"
+                          >
+                            Generar
+                          </Button>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+
+                  <Controller
+                    control={createForm.control}
+                    name="categoryId"
+                    render={({ field, fieldState }) => (
+                      <TextField
+                        select
+                        label="Categoría"
+                        value={field.value ?? ""}
+                        onChange={(event) =>
+                          field.onChange(event.target.value || null)
+                        }
+                        onBlur={field.onBlur}
+                        error={!!fieldState.error}
+                        helperText={
+                          fieldState.error?.message ??
+                          (categoryList.length === 0
+                            ? "No hay categorías registradas"
+                            : "Selecciona una categoría o deja en blanco")
+                        }
+                      >
+                        <MenuItem value="">
+                          {categoryList.length === 0
+                            ? "Sin categorías disponibles"
+                            : "Sin categoría"}
+                        </MenuItem>
+                        {categoryList.map((category) => (
+                          <MenuItem key={category.id} value={category.id}>
+                            {category.name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    )}
+                  />
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        label="Precio"
+                        type="number"
+                        inputProps={{ step: "0.01" }}
+                        fullWidth
+                        {...createForm.register("price", { valueAsNumber: true })}
+                        error={!!createForm.formState.errors.price}
+                        helperText={createForm.formState.errors.price?.message}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        label="Stock"
+                        type="number"
+                        fullWidth
+                        {...createForm.register("stock", { valueAsNumber: true })}
+                        error={!!createForm.formState.errors.stock}
+                        helperText={createForm.formState.errors.stock?.message}
+                      />
+                    </Grid>
+                  </Grid>
+
+                  <TextField
+                    label="Descripción"
+                    multiline
+                    minRows={4}
+                    {...createForm.register("description")}
+                    error={!!createForm.formState.errors.description}
+                    helperText={createForm.formState.errors.description?.message}
+                  />
+
+                  <TextField
+                    label="Imagen principal (URL)"
+                    {...createForm.register("imageUrl")}
+                    error={!!createForm.formState.errors.imageUrl}
+                    helperText={createForm.formState.errors.imageUrl?.message}
+                  />
+
+                  <Stack spacing={1.5}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Typography variant="subtitle1" fontWeight={700}>
+                        Galería
+                      </Typography>
+                      <Chip label="Opcional" size="small" color="default" />
+                    </Box>
+
+                    {createImages.fields.length === 0 && (
+                      <Typography variant="body2" color="text.secondary">
+                        Puedes agregar varias imágenes adicionales. Usa URLs
+                        temporales y más adelante podrás migrarlas a S3.
+                      </Typography>
+                    )}
+
+                    <Stack spacing={1.5}>
+                      {createImages.fields.map((field, index) => {
+                        const urlError =
+                          createForm.formState.errors.images?.[index]?.url;
+                        const altError =
+                          createForm.formState.errors.images?.[index]?.alt;
+                        return (
+                          <Paper
+                            key={field.id}
+                            variant="outlined"
+                            sx={{ p: 2, bgcolor: "rgba(255,255,255,0.02)" }}
+                          >
+                            <Stack spacing={1.5}>
+                              <Stack direction="row" spacing={1} alignItems="center">
+                                <Typography fontWeight={600}>
+                                  Imagen #{index + 1}
+                                </Typography>
+                                <IconButton
+                                  edge="end"
+                                  size="small"
+                                  color="inherit"
+                                  onClick={() => createImages.remove(index)}
+                                  aria-label="Eliminar imagen"
+                                >
+                                  <DeleteOutlineIcon fontSize="small" />
+                                </IconButton>
+                              </Stack>
+
+                              <TextField
+                                label="URL"
+                                {...createForm.register(`images.${index}.url` as const)}
+                                error={!!urlError}
+                                helperText={urlError?.message}
+                              />
+                              <TextField
+                                label="Texto alternativo"
+                                {...createForm.register(`images.${index}.alt` as const)}
+                                error={!!altError}
+                                helperText={altError?.message}
+                              />
+                            </Stack>
+                          </Paper>
+                        );
+                      })}
+                    </Stack>
+
+                    <Button
+                      type="button"
+                      startIcon={<AddIcon />}
+                      onClick={() => createImages.append({ url: "", alt: "" })}
+                      sx={{ alignSelf: "flex-start" }}
+                    >
+                      Agregar imagen
+                    </Button>
                   </Stack>
 
+                  <Divider />
+
                   <Button
-                    type="button"
-                    startIcon={<AddIcon />}
-                    onClick={() => createImages.append({ url: "", alt: "" })}
-                    sx={{ alignSelf: "flex-start" }}
+                    type="submit"
+                    variant="contained"
+                    startIcon={
+                      createForm.formState.isSubmitting ? (
+                        <CircularProgress size={18} color="inherit" />
+                      ) : (
+                        <SaveIcon />
+                      )
+                    }
+                    disabled={createForm.formState.isSubmitting}
                   >
-                    Agregar imagen
+                    Guardar producto
                   </Button>
                 </Stack>
+              </Paper>
 
-                <Divider />
+              <Paper sx={{ p: 3 }} elevation={3}>
+                <Stack component="form" spacing={2.5} onSubmit={onCreateCategory}>
+                  <Box>
+                    <Typography variant="h6" fontWeight={800} gutterBottom>
+                      Crear nueva categoría
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Las categorías permiten agrupar y filtrar productos en la
+                      tienda. Puedes crear las que necesites y se agregarán
+                      inmediatamente a los formularios.
+                    </Typography>
+                  </Box>
 
-                <Button
-                  type="submit"
-                  variant="contained"
-                  startIcon={
-                    createForm.formState.isSubmitting ? (
-                      <CircularProgress size={18} color="inherit" />
-                    ) : (
-                      <SaveIcon />
-                    )
-                  }
-                  disabled={createForm.formState.isSubmitting}
-                >
-                  Guardar producto
-                </Button>
-              </Stack>
-            </Paper>
+                  {categoryStatus && (
+                    <Alert severity={categoryStatus.type}>
+                      {categoryStatus.text}
+                    </Alert>
+                  )}
+
+                  <TextField
+                    label="Nombre"
+                    {...categoryForm.register("name")}
+                    error={!!categoryForm.formState.errors.name}
+                    helperText={categoryForm.formState.errors.name?.message}
+                  />
+
+                  <TextField
+                    label="Slug (opcional)"
+                    {...categoryForm.register("slug")}
+                    error={!!categoryForm.formState.errors.slug}
+                    helperText={
+                      categoryForm.formState.errors.slug?.message ??
+                      "Se generará automáticamente si lo dejas en blanco."
+                    }
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <Button
+                            size="small"
+                            type="button"
+                            onClick={createCategorySlugFromName}
+                          >
+                            Generar
+                          </Button>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+
+                  <Button
+                    type="submit"
+                    variant="outlined"
+                    startIcon={
+                      categoryForm.formState.isSubmitting ? (
+                        <CircularProgress size={18} color="inherit" />
+                      ) : (
+                        <AddIcon />
+                      )
+                    }
+                    disabled={categoryForm.formState.isSubmitting}
+                  >
+                    Guardar categoría
+                  </Button>
+                </Stack>
+              </Paper>
+            </Stack>
           </Grid>
 
           <Grid item xs={12} lg={7}>
@@ -509,7 +695,11 @@ export default function AdminProductManager({
                         <ListItemButton
                           key={product.id}
                           selected={selected}
-                          onClick={() => setSelectedId(product.id)}
+                          onClick={() => {
+                            setDeleteStatus(null);
+                            setUpdateStatus(null);
+                            setSelectedId(product.id);
+                          }}
                           alignItems="flex-start"
                         >
                           <ListItemText
@@ -538,23 +728,59 @@ export default function AdminProductManager({
 
               <Paper sx={{ p: 3, flex: 1 }} elevation={3}>
                 <Stack component="form" spacing={2.5} onSubmit={onUpdate}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Typography variant="h6" fontWeight={800}>
-                      Editar producto
-                    </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: { xs: "column", sm: "row" },
+                      alignItems: { xs: "flex-start", sm: "center" },
+                      justifyContent: "space-between",
+                      gap: 1.5,
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Typography variant="h6" fontWeight={800}>
+                        Editar producto
+                      </Typography>
+                      {selectedProduct && (
+                        <Button
+                          component={Link}
+                          href={`/products/${selectedProduct.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          size="small"
+                          endIcon={<OpenInNewIcon fontSize="small" />}
+                        >
+                          Ver en la tienda
+                        </Button>
+                      )}
+                    </Box>
+
                     {selectedProduct && (
                       <Button
-                        component={Link}
-                        href={`/products/${selectedProduct.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        size="small"
-                        endIcon={<OpenInNewIcon fontSize="small" />}
+                        type="button"
+                        variant="outlined"
+                        color="error"
+                        onClick={handleDeleteProduct}
+                        startIcon={
+                          isDeleting ? (
+                            <CircularProgress size={16} color="inherit" />
+                          ) : (
+                            <DeleteForeverIcon fontSize="small" />
+                          )
+                        }
+                        disabled={isDeleting}
+                        sx={{ width: { xs: "100%", sm: "auto" } }}
                       >
-                        Ver en la tienda
+                        Eliminar producto
                       </Button>
                     )}
                   </Box>
+
+                  {deleteStatus && (
+                    <Alert severity={deleteStatus.type}>
+                      {deleteStatus.text}
+                    </Alert>
+                  )}
 
                   {!selectedProduct ? (
                     <Typography color="text.secondary">
@@ -613,17 +839,17 @@ export default function AdminProductManager({
                             error={!!fieldState.error}
                             helperText={
                               fieldState.error?.message ??
-                              (categories.length === 0
+                              (categoryList.length === 0
                                 ? "No hay categorías registradas"
                                 : "Selecciona una categoría o deja en blanco")
                             }
                           >
                             <MenuItem value="">
-                              {categories.length === 0
+                              {categoryList.length === 0
                                 ? "Sin categorías disponibles"
                                 : "Sin categoría"}
                             </MenuItem>
-                            {categories.map((category) => (
+                            {categoryList.map((category) => (
                               <MenuItem key={category.id} value={category.id}>
                                 {category.name}
                               </MenuItem>

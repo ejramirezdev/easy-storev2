@@ -153,3 +153,39 @@ export async function PUT(
     );
   }
 }
+
+export async function DELETE(
+  _req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id: rawId } = await context.params;
+  const productId = rawId?.trim();
+  if (!productId) {
+    return NextResponse.json({ error: "ID de producto inválido" }, { status: 400 });
+  }
+
+  const session = await getServerSession(authOptions);
+  if (!session || !isAdminEmail(session.user?.email ?? null)) {
+    return unauthorized();
+  }
+
+  try {
+    await prisma.product.delete({ where: { id: productId } });
+    return NextResponse.json({ success: true, id: productId });
+  } catch (error: any) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2025") {
+        return NextResponse.json(
+          { error: "Producto no encontrado" },
+          { status: 404 }
+        );
+      }
+    }
+
+    console.error(`DELETE /api/products/${productId} error`, error);
+    return NextResponse.json(
+      { error: error?.message ?? "No se pudo eliminar el producto" },
+      { status: 500 }
+    );
+  }
+}

@@ -26,16 +26,52 @@ export default function HeaderCartButton() {
         onClick={() => setOpen(true)}
         aria-label="Carrito"
         disabled={locked}
+        color="inherit"
+        sx={{
+          border: "1px solid rgba(255,255,255,0.18)",
+          borderRadius: 999,
+          p: 0.75,
+          transition: "border-color 0.2s ease, background-color 0.2s ease",
+          "&:hover": {
+            borderColor: "rgba(255,255,255,0.45)",
+            backgroundColor: "rgba(255,255,255,0.06)",
+          },
+          "&.Mui-disabled": {
+            opacity: 0.5,
+            borderColor: "rgba(255,255,255,0.1)",
+          },
+        }}
       >
-        <Badge badgeContent={count} color="secondary">
+        <Badge
+          badgeContent={count}
+          color="secondary"
+          showZero={false}
+          sx={{
+            "& .MuiBadge-badge": {
+              fontSize: 12,
+              minWidth: 20,
+              height: 20,
+            },
+          }}
+        >
           <ShoppingCartIcon />
         </Badge>
       </IconButton>
 
-      <Drawer anchor="right" open={open} onClose={() => setOpen(false)}>
+      <Drawer
+        anchor="right"
+        open={open}
+        onClose={() => setOpen(false)}
+        PaperProps={{
+          sx: {
+            width: { xs: "100%", sm: 380 },
+          },
+        }}
+      >
         <Box
           sx={{
-            width: 360,
+            width: { xs: "100%", sm: 360 },
+            maxWidth: "100vw",
             p: 2,
             display: "flex",
             flexDirection: "column",
