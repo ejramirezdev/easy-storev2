@@ -23,6 +23,11 @@ enum OrderStatus {
   CANCELED
 }
 
+enum AddressType {
+  BILLING
+  SHIPPING
+}
+
 /// Usuario (cliente)
 model User {
   id        String   @id @default(uuid())
@@ -155,21 +160,8 @@ model Order {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
-  // NUEVO: direcciones
-  shippingAddressId String
-  shippingAddress   Address @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
-  billingAddressId  String
-  billingAddress    Address @relation("BillingAddress", fields: [billingAddressId], references: [id])
-
-  // NUEVO: snapshot de totales (opcional, muy útil)
-  subtotal      Decimal? @db.Decimal(10, 2)
-  discountTotal Decimal? @db.Decimal(10, 2)
-  shippingTotal Decimal? @db.Decimal(10, 2)
-  taxTotal      Decimal? @db.Decimal(10, 2)
-  couponCode    String?
-  couponAmount  Decimal? @db.Decimal(10, 2)
-
   items OrderItem[]
+  addresses Address[]
 }
 
 /// Ítems de la orden
@@ -253,21 +245,24 @@ model CouponRedemption {
 }
 
 model Address {
-  id         String   @id @default(uuid())
-  firstName  String
-  lastName   String
-  email      String
-  phone      String?
-  documentId String?
-  line1      String
-  line2      String?
-  city       String
-  state      String?
-  postalCode String?
-  country    String // "EC"
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String      @id @default(uuid())
+  type         AddressType
+  firstName    String
+  lastName     String
+  email        String
+  phone        String
+  documentType String?
+  document     String?
+  street       String
+  city         String
+  state        String
+  postalCode   String?
+  country      String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
-  shippingOrders Order[] @relation("ShippingAddress")
-  billingOrders  Order[] @relation("BillingAddress")
+  orderId String
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, type])
 }
