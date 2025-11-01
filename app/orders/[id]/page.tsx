@@ -22,12 +22,14 @@ export default async function OrderDetailPage({ params }: PageProps) {
           product: { select: { name: true, slug: true, imageUrl: true } },
         },
       },
-      shippingAddress: true,
-      billingAddress: true,
+      addresses: true,
     },
   });
 
   if (!order) return notFound();
+
+  const shippingAddress = order.addresses.find((it: any) => it.type === "SHIPPING");
+  const billingAddress = order.addresses.find((it: any) => it.type === "BILLING");
 
   // Totales (soporta snapshot si lo agregaste; si no, usa total)
   const subtotal = order.subtotal
@@ -95,14 +97,14 @@ export default async function OrderDetailPage({ params }: PageProps) {
             <Typography variant="h6" gutterBottom>
               Envío
             </Typography>
-            <AddressBlock {...order.shippingAddress} />
+            <AddressBlock address={shippingAddress} />
           </Paper>
 
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               Facturación
             </Typography>
-            <AddressBlock {...order.billingAddress} />
+            <AddressBlock address={billingAddress} />
           </Paper>
 
           <Box mt={2}>
@@ -117,23 +119,37 @@ export default async function OrderDetailPage({ params }: PageProps) {
   );
 }
 
-function AddressBlock(addr: any) {
-  if (!addr) return <Typography variant="body2">-</Typography>;
+type AddressProps = {
+  address: any;
+};
+
+function AddressBlock({ address }: AddressProps) {
+  if (!address) return <Typography variant="body2">-</Typography>;
+
+  const streetLines = Array.isArray(address.street)
+    ? address.street
+    : typeof address.street === "string"
+    ? address.street.split("\n")
+    : [];
+  const line1 = address.line1 ?? streetLines[0];
+  const remainingStreet = streetLines.slice(1).join(" ").trim();
+  const line2 = address.line2 ?? (remainingStreet.length > 0 ? remainingStreet : undefined);
+
   return (
     <Stack spacing={0.5}>
       <Typography variant="body2">
-        {addr.firstName} {addr.lastName}
+        {address.firstName} {address.lastName}
       </Typography>
-      <Typography variant="body2">{addr.email}</Typography>
-      {addr.phone && <Typography variant="body2">{addr.phone}</Typography>}
-      <Typography variant="body2">{addr.line1}</Typography>
-      {addr.line2 && <Typography variant="body2">{addr.line2}</Typography>}
+      <Typography variant="body2">{address.email}</Typography>
+      {address.phone && <Typography variant="body2">{address.phone}</Typography>}
+      {line1 && <Typography variant="body2">{line1}</Typography>}
+      {line2 && <Typography variant="body2">{line2}</Typography>}
       <Typography variant="body2">
-        {addr.city}
-        {addr.state ? `, ${addr.state}` : ""}
-        {addr.postalCode ? `, ${addr.postalCode}` : ""}
+        {address.city}
+        {address.state ? `, ${address.state}` : ""}
+        {address.postalCode ? `, ${address.postalCode}` : ""}
       </Typography>
-      <Typography variant="body2">{addr.country}</Typography>
+      <Typography variant="body2">{address.country}</Typography>
     </Stack>
   );
 }
