@@ -26,7 +26,7 @@ export default function AddToCartButton({
   variant = "full",
   tooltip = "Agregar al carrito",
 }: Props) {
-  const { add, isPending } = useCart();
+  const { add, isPending } = useCart({ fetchOnMount: false });
   const [open, setOpen] = useState(false);
   const loading = isPending(productId, "add");
 

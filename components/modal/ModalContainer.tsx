@@ -18,6 +18,12 @@ export default function ModalContainer({
   const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    router.prefetch(onClosePath).catch(() => {
+      // prefetch es best-effort; ignoramos errores silenciosamente
+    });
+  }, [router, onClosePath]);
+
+  useEffect(() => {
     if (!pathname || pathname === onClosePath) {
       setOpen(false);
       return;
