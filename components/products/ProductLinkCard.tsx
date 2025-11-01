@@ -17,7 +17,7 @@ export default function ProductLinkCard({
   const router = useRouter();
   const pathname = usePathname();
   const prefetchedRef = useRef(false);
-  const { lock, unlock } = useUiLock();
+  const { lock, unlock, locked } = useUiLock();
 
   const basePath = useMemo(() => {
     try {
@@ -41,6 +41,7 @@ export default function ProductLinkCard({
 
   const onClick = (e: MouseEvent) => {
     e.preventDefault();
+    if (locked) return;
     prefetch();
     const lockId = lock(PRODUCT_MODAL_LOCK_ID); // 👈 MISMO id
 
@@ -65,7 +66,16 @@ export default function ProductLinkCard({
       onClick={onClick}
       onPointerEnter={prefetch}
       onFocus={prefetch}
-      style={{ textDecoration: "none", display: "block", height: "100%" }}
+      aria-disabled={locked ? "true" : undefined}
+      tabIndex={locked ? -1 : undefined}
+      style={{
+        textDecoration: "none",
+        display: "block",
+        height: "100%",
+        pointerEvents: locked ? "none" : undefined,
+        opacity: locked ? 0.6 : 1,
+        transition: "opacity 0.2s ease",
+      }}
     >
       {children}
     </a>

@@ -19,6 +19,7 @@ export default function ModalContainer({
   const [open, setOpen] = useState(false);
   const openTimerRef = useRef<NodeJS.Timeout | null>(null);
   const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const releaseFailsafeRef = useRef<NodeJS.Timeout | null>(null);
   const { unlock: unlockLock } = useUiLock();
 
   const releaseProductLock = useCallback(() => {
@@ -47,6 +48,10 @@ export default function ModalContainer({
   useEffect(() => {
     if (!pathname || pathname === onClosePath) {
       setOpen(false);
+      if (releaseFailsafeRef.current) {
+        clearTimeout(releaseFailsafeRef.current);
+        releaseFailsafeRef.current = null;
+      }
       releaseProductLock();
       return;
     }
@@ -80,14 +85,21 @@ export default function ModalContainer({
       clearTimeout(closeTimerRef.current);
     }
 
-    releaseProductLock();
-
     navigateToClosePath();
 
     closeTimerRef.current = setTimeout(() => {
       closeTimerRef.current = null;
       navigateToClosePath();
     }, 200); // volver a /products sin recargar
+
+    if (releaseFailsafeRef.current) {
+      clearTimeout(releaseFailsafeRef.current);
+    }
+
+    releaseFailsafeRef.current = setTimeout(() => {
+      releaseFailsafeRef.current = null;
+      releaseProductLock();
+    }, 6000);
   };
 
   useEffect(() => {
@@ -97,6 +109,9 @@ export default function ModalContainer({
       }
       if (closeTimerRef.current) {
         clearTimeout(closeTimerRef.current);
+      }
+      if (releaseFailsafeRef.current) {
+        clearTimeout(releaseFailsafeRef.current);
       }
       releaseProductLock();
     };
