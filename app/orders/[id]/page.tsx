@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getServerSession } from "next-auth";
+import { unstable_noStore as noStore } from "next/cache";
+import { notFound, redirect } from "next/navigation";
 import {
   Box,
   Button,
@@ -14,9 +17,20 @@ import Grid from "@mui/material/GridLegacy";
 type PageProps = { params: { id: string } };
 
 export default async function OrderDetailPage({ params }: PageProps) {
+  noStore();
+
   const orderId = params?.id?.trim();
 
   if (!orderId) return notFound();
+
+  const session = await getServerSession(authOptions);
+  const sessionUserId = session?.user?.id as string | undefined;
+  const sessionRole = session?.user?.role as ("CUSTOMER" | "ADMIN") | undefined;
+
+  if (!sessionUserId) {
+    const callbackUrl = encodeURIComponent(`/orders/${orderId}`);
+    redirect(`/api/auth/signin?callbackUrl=${callbackUrl}`);
+  }
 
   const order = await prisma.order.findUnique({
     where: { id: orderId },
@@ -24,6 +38,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
       items: {
         include: {
           product: { select: { name: true, slug: true, imageUrl: true } },
+          service: { select: { name: true } },
         },
       },
       addresses: true,
@@ -31,6 +46,10 @@ export default async function OrderDetailPage({ params }: PageProps) {
   });
 
   if (!order) return notFound();
+
+  if (order.userId !== sessionUserId && sessionRole !== "ADMIN") {
+    return notFound();
+  }
 
   const shippingAddress = order.addresses.find((it: any) => it.type === "SHIPPING");
   const billingAddress = order.addresses.find((it: any) => it.type === "BILLING");
@@ -68,20 +87,25 @@ export default async function OrderDetailPage({ params }: PageProps) {
               Artículos
             </Typography>
             <Stack spacing={1}>
-              {order.items.map((it) => (
-                <Stack
-                  key={it.id}
-                  direction="row"
-                  justifyContent="space-between"
-                >
+              {order.items.map((it) => {
+                const itemName =
+                  it.product?.name ?? it.service?.name ?? "Producto";
+
+                return (
+                  <Stack
+                    key={it.id}
+                    direction="row"
+                    justifyContent="space-between"
+                  >
                   <Typography>
-                    {it.product?.name ?? "Producto"} × {it.quantity}
+                    {itemName} × {it.quantity}
                   </Typography>
                   <Typography>
                     ${(Number(it.unitPrice) * it.quantity).toFixed(2)}
                   </Typography>
                 </Stack>
-              ))}
+                );
+              })}
             </Stack>
 
             <Divider sx={{ my: 2 }} />
