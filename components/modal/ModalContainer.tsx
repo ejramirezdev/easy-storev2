@@ -54,7 +54,16 @@ export default function ModalContainer({
 
     closeTimerRef.current = setTimeout(() => {
       closeTimerRef.current = null;
-      router.push(onClosePath);
+      if (typeof window !== "undefined") {
+        const historyState = window.history.state as
+          | { idx?: number }
+          | undefined;
+        if (historyState?.idx && historyState.idx > 0) {
+          router.back();
+          return;
+        }
+      }
+      router.replace(onClosePath);
     }, 200); // volver a /products sin recargar
   };
 
