@@ -21,22 +21,41 @@ export default function ProductGallery({
     const ordered: Img[] = [];
     const seen = new Set<string>();
 
-    const pushUnique = (img: Img) => {
-      if (!img.url) return;
-      if (seen.has(img.url)) return;
-      seen.add(img.url);
-      ordered.push(img);
-    };
+    const pushUnique = (img: Img, scope: "main" | "gallery") => {
+      if (!img?.url) return;
 
-    if (imageUrl) {
-      pushUnique({ id: "main", url: imageUrl, alt: name });
-    }
+      const key = `${scope}:${img.id ?? img.url}`;
+      if (seen.has(key)) return;
+
+      seen.add(key);
+      if (scope === "main") {
+        ordered.unshift(img);
+      } else {
+        ordered.push(img);
+      }
+    };
 
     (images ?? []).forEach((img, index) => {
       if (!img || typeof img.url !== "string") return;
       const id = img.id ?? `gallery-${index}`;
-      pushUnique({ id, url: img.url, alt: img.alt ?? name });
+      pushUnique({ id, url: img.url, alt: img.alt ?? name }, "gallery");
     });
+
+    if (imageUrl) {
+      const existsInGallery = ordered.some((img) => img.url === imageUrl);
+
+      if (existsInGallery) {
+        const idx = ordered.findIndex((img) => img.url === imageUrl);
+        if (idx > 0) {
+          const [match] = ordered.splice(idx, 1);
+          ordered.unshift({ ...match, alt: match.alt ?? name });
+        } else if (idx === 0) {
+          ordered[0] = { ...ordered[0], alt: ordered[0].alt ?? name };
+        }
+      } else {
+        pushUnique({ id: "main", url: imageUrl, alt: name }, "main");
+      }
+    }
 
     if (ordered.length === 0) {
       ordered.push({ id: "ph", url: "/placeholder.png", alt: name });
