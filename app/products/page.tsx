@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Box, Chip, Container, Typography } from "@mui/material";
+import { Box, Chip, Container, Typography, Pagination, PaginationItem } from "@mui/material";
 import Grid from "@mui/material/GridLegacy";
 import ProductCard, { UiProduct } from "@/components/products/ProductCard";
 
-type SearchParams = { cat?: string };
+type SearchParams = { cat?: string; page?: string };
 
 export default async function ProductsPage({
   searchParams,
@@ -13,6 +13,9 @@ export default async function ProductsPage({
 }) {
   const sp = await searchParams;
   const activeCat = (sp?.cat ?? "").trim();
+  const rawPage = Number.parseInt((sp?.page ?? "").toString(), 10);
+  const requestedPage = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+  const pageSize = 24;
 
   const categories = await prisma.category.findMany({
     orderBy: { name: "asc" },
@@ -24,9 +27,16 @@ export default async function ProductsPage({
       ? { category: { slug: activeCat } }
       : undefined;
 
+  const totalProducts = await prisma.product.count({ where });
+  const totalPages = Math.max(1, Math.ceil(totalProducts / pageSize));
+  const page = Math.min(requestedPage, totalPages);
+  const skip = (page - 1) * pageSize;
+
   const products = await prisma.product.findMany({
     where,
     orderBy: { createdAt: "desc" },
+    take: pageSize,
+    skip,
     select: {
       id: true,
       name: true,
@@ -50,6 +60,18 @@ export default async function ProductsPage({
     imageUrl: p.imageUrl ?? p.images[0]?.url ?? null,
     price: Number(p.price),
   }));
+
+  const createPageHref = (targetPage: number) => {
+    const params = new URLSearchParams();
+    if (activeCat && activeCat !== "all") {
+      params.set("cat", activeCat);
+    }
+    if (targetPage > 1) {
+      params.set("page", String(targetPage));
+    }
+    const query = params.toString();
+    return query ? `/products?${query}` : "/products";
+  };
 
   return (
     <Container sx={{ py: 4 }}>
@@ -120,11 +142,30 @@ export default async function ProductsPage({
       ) : (
         <Grid container spacing={2}>
           {uiProducts.map((p) => (
-            <Grid key={p.id} item xs={12} sm={6} md={4} lg={3}>
+            <Grid key={p.id} item xs={12} sm={6} md={4} lg={2} xl={2}>
               <ProductCard product={p} />
             </Grid>
           ))}
         </Grid>
+      )}
+
+      {totalPages > 1 && (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+          <Pagination
+            count={totalPages}
+            page={page}
+            color="secondary"
+            siblingCount={0}
+            boundaryCount={1}
+            renderItem={(item) => (
+              <PaginationItem
+                component={Link}
+                href={createPageHref(item.page ?? 1)}
+                {...item}
+              />
+            )}
+          />
+        </Box>
       )}
     </Container>
   );

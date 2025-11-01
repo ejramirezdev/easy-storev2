@@ -1,6 +1,7 @@
 "use client";
 
 import { useSession, signIn, signOut } from "next-auth/react";
+import Link from "next/link";
 import {
   Button,
   Avatar,
@@ -9,10 +10,13 @@ import {
   Typography,
   Box,
   CircularProgress,
+  Divider,
 } from "@mui/material";
 import LoginIcon from "@mui/icons-material/Login";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useState } from "react";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import { isAdminEmail } from "@/lib/admin";
 
 type Props = {
   mode?: "desktop" | "mobile";
@@ -24,6 +28,7 @@ export default function AuthButtons({ mode = "desktop", onClickAfter }: Props) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const isDesktop = mode === "desktop";
+  const isAdmin = isAdminEmail(session?.user?.email ?? null);
 
   if (status === "loading") {
     return (
@@ -134,6 +139,17 @@ export default function AuthButtons({ mode = "desktop", onClickAfter }: Props) {
           <MenuItem disabled>
             <Typography variant="body2">{session.user?.name}</Typography>
           </MenuItem>
+          {isAdmin && (
+            <MenuItem
+              component={Link}
+              href="/admin"
+              onClick={() => setAnchorEl(null)}
+            >
+              <AdminPanelSettingsIcon sx={{ fontSize: 18, mr: 1 }} /> Panel
+              admin
+            </MenuItem>
+          )}
+          <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
           <MenuItem
             onClick={() => {
               setAnchorEl(null);
@@ -162,6 +178,28 @@ export default function AuthButtons({ mode = "desktop", onClickAfter }: Props) {
         />
         <Typography variant="body2">{session.user?.name}</Typography>
       </Box>
+
+      {isAdmin && (
+        <Button
+          fullWidth
+          variant="contained"
+          color="secondary"
+          component={Link}
+          href="/admin"
+          onClick={() => {
+            onClickAfter?.();
+            setAnchorEl(null);
+          }}
+          startIcon={<AdminPanelSettingsIcon />}
+          sx={{
+            mb: 1,
+            textTransform: "none",
+            fontWeight: 700,
+          }}
+        >
+          Panel admin
+        </Button>
+      )}
 
       <Button
         fullWidth

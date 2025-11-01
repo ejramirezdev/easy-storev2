@@ -1,10 +1,11 @@
 "use client";
 
-import { Dialog, DialogContent } from "@mui/material";
+import { Dialog, DialogContent, DialogTitle, Button, Box } from "@mui/material";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useUiLock } from "@/lib/ui-lock";
 import { PRODUCT_MODAL_LOCK_ID } from "@/lib/locks";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 export default function ModalContainer({
   onClosePath,
@@ -120,7 +121,37 @@ export default function ModalContainer({
         },
       }}
     >
-      <DialogContent sx={{ p: 0 }}>{children}</DialogContent>
+      <DialogTitle
+        sx={{
+          display: "flex",
+          justifyContent: "flex-start",
+          alignItems: "center",
+          gap: 1,
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          px: { xs: 2, sm: 3 },
+          py: 1.5,
+        }}
+      >
+        <Button
+          onClick={handleClose}
+          startIcon={<ArrowBackIcon />}
+          color="inherit"
+          sx={{
+            textTransform: "none",
+            fontWeight: 600,
+            borderRadius: 2,
+            px: 1,
+            "&:hover": {
+              backgroundColor: "rgba(255,255,255,0.08)",
+            },
+          }}
+        >
+          Volver
+        </Button>
+      </DialogTitle>
+      <DialogContent sx={{ p: 0 }}>
+        <Box>{children}</Box>
+      </DialogContent>
     </Dialog>
   );
 }
