@@ -14,12 +14,13 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import Grid from "@mui/material/GridLegacy";
-type PageProps = { params: { id: string } };
+type PageProps = { params: Promise<{ id: string }> };
 
 export default async function OrderDetailPage({ params }: PageProps) {
   noStore();
 
-  const orderId = params?.id?.trim();
+  const { id } = await params;
+  const orderId = id?.trim();
 
   if (!orderId) return notFound();
 
