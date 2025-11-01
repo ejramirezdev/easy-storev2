@@ -4,6 +4,7 @@ import { Card, CardContent, Box, Typography } from "@mui/material";
 import AddToCartButton from "@/components/products/AddToCartButton";
 import ProductLinkCard from "@/components/products/ProductLinkCard";
 import Image from "next/image";
+import FavoriteToggleButton from "@/components/products/FavoriteToggleButton";
 
 export type UiProduct = {
   id: string;
@@ -51,6 +52,26 @@ export default function ProductCard({ product }: { product: UiProduct }) {
             overflow: "hidden",
           }}
         >
+          <Box
+            sx={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              zIndex: 2,
+            }}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                event.stopPropagation();
+              }
+            }}
+          >
+            <FavoriteToggleButton productId={product.id} size="small" />
+          </Box>
           {product.imageUrl ? (
             <Image
               src={product.imageUrl}

@@ -13,6 +13,7 @@ import {
 import Grid from "@mui/material/GridLegacy";
 import ProductGallery from "@/components/products/ProductGallery";
 import AddToCartButton from "@/components/products/AddToCartButton";
+import FavoriteToggleButton from "@/components/products/FavoriteToggleButton";
 import ProductPageUnlocker from "@/components/products/ProductPageUnlocker";
 import BackToProductsButton from "@/components/products/BackToProductsButton";
 
@@ -140,13 +141,14 @@ export default async function ProductDetailPage({
               </Typography>
             )}
 
-            <Box>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "stretch", sm: "center" }}>
               <AddToCartButton
                 productId={product.id}
                 disabled={product.stock <= 0}
                 variant="full"
               />
-            </Box>
+              <FavoriteToggleButton productId={product.id} />
+            </Stack>
 
             <Paper
               variant="outlined"

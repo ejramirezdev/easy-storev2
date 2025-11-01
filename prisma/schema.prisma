@@ -42,6 +42,8 @@ model User {
   accounts    Account[]
   sessions    Session[]
   redemptions CouponRedemption[]
+  favorites   Favorite[]
+  profile     UserProfile?
 
   emailVerified DateTime?
   image         String?
@@ -113,6 +115,7 @@ model Product {
   orderItems OrderItem[]
   images     ProductImage[]
   cartItems  CartItem[]
+  favorites  Favorite[]
 
   @@index([createdAt])
   @@index([name])
@@ -265,4 +268,52 @@ model Address {
   order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId, type])
+}
+
+model UserProfile {
+  userId String @id
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  firstName    String?
+  lastName     String?
+  email        String?
+  phone        String?
+  documentType String?
+  documentId   String?
+  shippingLine1      String?
+  shippingLine2      String?
+  shippingCity       String?
+  shippingState      String?
+  shippingPostalCode String?
+  shippingCountry    String? @default("EC")
+
+  billingFirstName  String?
+  billingLastName   String?
+  billingEmail      String?
+  billingPhone      String?
+  billingDocumentType String?
+  billingDocumentId   String?
+  billingLine1        String?
+  billingLine2        String?
+  billingCity         String?
+  billingState        String?
+  billingPostalCode   String?
+  billingCountry      String? @default("EC")
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
 }

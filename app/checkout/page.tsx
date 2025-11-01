@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { Controller, useForm } from "react-hook-form";
@@ -166,6 +166,81 @@ export default function CheckoutPage() {
   });
 
   const billingSameAsShipping = watch("billingSameAsShipping");
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/profile", { cache: "no-store" });
+        if (!res.ok) return;
+        const json = (await res.json()) as {
+          ok: boolean;
+          profile?: {
+            firstName?: string;
+            lastName?: string;
+            email?: string;
+            phone?: string;
+            documentType?: string;
+            documentId?: string;
+            shippingLine1?: string;
+            shippingLine2?: string;
+            shippingCity?: string;
+            shippingState?: string;
+            shippingPostalCode?: string;
+            shippingCountry?: string;
+            billingFirstName?: string;
+            billingLastName?: string;
+            billingEmail?: string;
+            billingPhone?: string;
+            billingDocumentType?: string;
+            billingDocumentId?: string;
+            billingLine1?: string;
+            billingLine2?: string;
+            billingCity?: string;
+            billingState?: string;
+            billingPostalCode?: string;
+            billingCountry?: string;
+          };
+        };
+        if (!json.ok || !json.profile || !active) return;
+        const profile = json.profile;
+        const entries: [any, any][] = [
+          ["shipping.firstName", profile.firstName ?? ""],
+          ["shipping.lastName", profile.lastName ?? ""],
+          ["shipping.email", profile.email ?? ""],
+          ["shipping.phone", profile.phone ?? ""],
+          ["shipping.documentType", profile.documentType ?? "CEDULA"],
+          ["shipping.documentId", profile.documentId ?? ""],
+          ["shipping.line1", profile.shippingLine1 ?? ""],
+          ["shipping.line2", profile.shippingLine2 ?? ""],
+          ["shipping.city", profile.shippingCity ?? ""],
+          ["shipping.state", profile.shippingState ?? ""],
+          ["shipping.postalCode", profile.shippingPostalCode ?? ""],
+          ["shipping.country", profile.shippingCountry ?? "EC"],
+          ["billing.firstName", profile.billingFirstName ?? ""],
+          ["billing.lastName", profile.billingLastName ?? ""],
+          ["billing.email", profile.billingEmail ?? profile.email ?? ""],
+          ["billing.phone", profile.billingPhone ?? ""],
+          ["billing.documentType", profile.billingDocumentType ?? "CEDULA"],
+          ["billing.documentId", profile.billingDocumentId ?? ""],
+          ["billing.line1", profile.billingLine1 ?? ""],
+          ["billing.line2", profile.billingLine2 ?? ""],
+          ["billing.city", profile.billingCity ?? ""],
+          ["billing.state", profile.billingState ?? ""],
+          ["billing.postalCode", profile.billingPostalCode ?? ""],
+          ["billing.country", profile.billingCountry ?? "EC"],
+        ];
+        for (const [key, value] of entries) {
+          setValue(key, value, { shouldValidate: false, shouldDirty: false });
+        }
+      } catch (err) {
+        console.error("No se pudo precargar el perfil", err);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [setValue]);
 
   const goToSummary = () => {
     startTransition(async () => {

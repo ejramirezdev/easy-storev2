@@ -16,6 +16,9 @@ import LoginIcon from "@mui/icons-material/Login";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useState } from "react";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import PersonIcon from "@mui/icons-material/Person";
+import HistoryIcon from "@mui/icons-material/History";
+import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import { isAdminEmail } from "@/lib/admin";
 
 type Props = {
@@ -139,6 +142,27 @@ export default function AuthButtons({ mode = "desktop", onClickAfter }: Props) {
           <MenuItem disabled>
             <Typography variant="body2">{session.user?.name}</Typography>
           </MenuItem>
+          <MenuItem
+            component={Link}
+            href="/account/profile"
+            onClick={() => setAnchorEl(null)}
+          >
+            <PersonIcon sx={{ fontSize: 18, mr: 1 }} /> Mi perfil
+          </MenuItem>
+          <MenuItem
+            component={Link}
+            href="/account/orders"
+            onClick={() => setAnchorEl(null)}
+          >
+            <HistoryIcon sx={{ fontSize: 18, mr: 1 }} /> Historial de compras
+          </MenuItem>
+          <MenuItem
+            component={Link}
+            href="/account/favorites"
+            onClick={() => setAnchorEl(null)}
+          >
+            <FavoriteBorderIcon sx={{ fontSize: 18, mr: 1 }} /> Favoritos
+          </MenuItem>
           {isAdmin && (
             <MenuItem
               component={Link}
@@ -166,18 +190,79 @@ export default function AuthButtons({ mode = "desktop", onClickAfter }: Props) {
   // Móvil: avatar + nombre + botón Cerrar sesión (full width)
   return (
     <Box sx={{ display: { xs: "block", md: "none" }, px: 1.5, py: 1 }}>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
-        <Avatar
-          src={session.user?.image || ""}
-          alt={session.user?.name || ""}
-          sx={{
-            width: 36,
-            height: 36,
-            border: "2px solid rgba(255,255,255,0.3)",
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
+          <Avatar
+            src={session.user?.image || ""}
+            alt={session.user?.name || ""}
+            sx={{
+              width: 36,
+              height: 36,
+              border: "2px solid rgba(255,255,255,0.3)",
+            }}
+          />
+          <Typography variant="body2">{session.user?.name}</Typography>
+        </Box>
+
+        <Button
+          fullWidth
+          variant="outlined"
+          color="inherit"
+          component={Link}
+          href="/account/profile"
+          onClick={() => {
+            onClickAfter?.();
+            setAnchorEl(null);
           }}
-        />
-        <Typography variant="body2">{session.user?.name}</Typography>
-      </Box>
+          startIcon={<PersonIcon />}
+          sx={{
+            mb: 1,
+            textTransform: "none",
+            fontWeight: 600,
+            borderColor: "rgba(255,255,255,0.3)",
+          }}
+        >
+          Mi perfil
+        </Button>
+        <Button
+          fullWidth
+          variant="outlined"
+          color="inherit"
+          component={Link}
+          href="/account/orders"
+          onClick={() => {
+            onClickAfter?.();
+            setAnchorEl(null);
+          }}
+          startIcon={<HistoryIcon />}
+          sx={{
+            mb: 1,
+            textTransform: "none",
+            fontWeight: 600,
+            borderColor: "rgba(255,255,255,0.3)",
+          }}
+        >
+          Historial de compras
+        </Button>
+        <Button
+          fullWidth
+          variant="outlined"
+          color="inherit"
+          component={Link}
+          href="/account/favorites"
+          onClick={() => {
+            onClickAfter?.();
+            setAnchorEl(null);
+          }}
+          startIcon={<FavoriteBorderIcon />}
+          sx={{
+            mb: 1,
+            textTransform: "none",
+            fontWeight: 600,
+            borderColor: "rgba(255,255,255,0.3)",
+          }}
+        >
+          Favoritos
+        </Button>
 
       {isAdmin && (
         <Button
