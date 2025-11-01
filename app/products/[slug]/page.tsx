@@ -13,6 +13,7 @@ import {
 import Grid from "@mui/material/GridLegacy";
 import ProductGallery from "@/components/products/ProductGallery";
 import AddToCartButton from "@/components/products/AddToCartButton";
+import ProductPageUnlocker from "@/components/products/ProductPageUnlocker";
 
 export async function generateMetadata({
   params,
@@ -73,10 +74,12 @@ export default async function ProductDetailPage({
   const price = Number(product.price);
 
   return (
-    <Container sx={{ py: 4 }}>
-      <Grid container spacing={4}>
-        <Grid item xs={12} md={6}>
-          <ProductGallery
+    <>
+      <ProductPageUnlocker />
+      <Container sx={{ py: 4 }}>
+        <Grid container spacing={4}>
+          <Grid item xs={12} md={6}>
+            <ProductGallery
             images={
               product.images?.map((img) => ({
                 id: img.id,
@@ -155,6 +158,7 @@ export default async function ProductDetailPage({
           </Stack>
         </Grid>
       </Grid>
-    </Container>
+      </Container>
+    </>
   );
 }
