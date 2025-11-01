@@ -8,11 +8,11 @@ export default function ProductPageUnlocker() {
   const { unlock } = useUiLock();
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      unlock(PRODUCT_MODAL_LOCK_ID);
-    }, 0);
+    unlock(PRODUCT_MODAL_LOCK_ID);
 
-    return () => clearTimeout(t);
+    return () => {
+      unlock(PRODUCT_MODAL_LOCK_ID);
+    };
   }, [unlock]);
 
   return null;
