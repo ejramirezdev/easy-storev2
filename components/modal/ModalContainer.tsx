@@ -2,7 +2,9 @@
 
 import { Dialog, DialogContent } from "@mui/material";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useUiLock } from "@/lib/ui-lock";
+import { PRODUCT_MODAL_LOCK_ID } from "@/lib/locks";
 
 export default function ModalContainer({
   onClosePath,
@@ -16,6 +18,11 @@ export default function ModalContainer({
   const [open, setOpen] = useState(false);
   const openTimerRef = useRef<NodeJS.Timeout | null>(null);
   const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const { unlock: unlockLock } = useUiLock();
+
+  const releaseProductLock = useCallback(() => {
+    unlockLock(PRODUCT_MODAL_LOCK_ID);
+  }, [unlockLock]);
 
   useEffect(() => {
     const prefetchResult = router.prefetch(onClosePath) as unknown;
@@ -35,6 +42,7 @@ export default function ModalContainer({
   useEffect(() => {
     if (!pathname || pathname === onClosePath) {
       setOpen(false);
+      releaseProductLock();
       return;
     }
 
@@ -54,7 +62,7 @@ export default function ModalContainer({
         openTimerRef.current = null;
       }
     };
-  }, [pathname, onClosePath]);
+  }, [pathname, onClosePath, releaseProductLock]);
 
   const handleClose = () => {
     if (openTimerRef.current) {
@@ -66,6 +74,8 @@ export default function ModalContainer({
     if (closeTimerRef.current) {
       clearTimeout(closeTimerRef.current);
     }
+
+    releaseProductLock();
 
     closeTimerRef.current = setTimeout(() => {
       closeTimerRef.current = null;
@@ -90,8 +100,9 @@ export default function ModalContainer({
       if (closeTimerRef.current) {
         clearTimeout(closeTimerRef.current);
       }
+      releaseProductLock();
     };
-  }, []);
+  }, [releaseProductLock]);
 
   return (
     <Dialog
