@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog, DialogContent } from "@mui/material";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function ModalContainer({
@@ -12,12 +12,15 @@ export default function ModalContainer({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    if (!pathname || pathname === onClosePath) return;
+
     const t = setTimeout(() => setOpen(true), 10);
     return () => clearTimeout(t);
-  }, []);
+  }, [pathname, onClosePath]);
 
   const handleClose = () => {
     setOpen(false);
