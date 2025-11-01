@@ -23,8 +23,16 @@ export default function AddToCartButton({
   const { add, isPending } = useCart({ fetchOnMount: false });
   const [open, setOpen] = useState(false);
   const loading = isPending(productId, "add");
+  const isDisabled = disabled || loading;
+  const tooltipTitle = disabled ? "Producto sin stock disponible" : tooltip;
+  const buttonLabel = loading
+    ? "Agregando..."
+    : disabled
+    ? "Sin stock disponible"
+    : "Agregar al carrito";
 
   const onAdd = async () => {
+    if (isDisabled) return;
     await add(productId, quantity);
     setOpen(true);
   };
@@ -32,11 +40,11 @@ export default function AddToCartButton({
   if (variant === "icon") {
     return (
       <>
-        <Tooltip title={tooltip}>
+        <Tooltip title={tooltipTitle}>
           <span>
             <Button
               onClick={onAdd}
-              disabled={disabled || loading}
+              disabled={isDisabled}
               aria-label="Agregar al carrito"
               sx={{
                 bgcolor: "#000",
@@ -89,10 +97,10 @@ export default function AddToCartButton({
         }
         variant="contained"
         color="secondary"
-        disabled={disabled || loading}
+        disabled={isDisabled}
         fullWidth
       >
-        {loading ? "Agregando..." : "Agregar al carrito"}
+        {buttonLabel}
       </Button>
       <Snackbar
         open={open}

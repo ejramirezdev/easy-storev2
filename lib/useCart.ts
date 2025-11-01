@@ -7,6 +7,7 @@ type CartProduct = {
   name: string;
   price: number; // ya numérico desde la API
   imageUrl?: string | null; // clave correcta
+  stock: number;
 };
 
 type CartItem = {

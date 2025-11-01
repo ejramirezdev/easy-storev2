@@ -59,6 +59,7 @@ export default async function ProductsPage({
     description: p.description ?? null,
     imageUrl: p.imageUrl ?? p.images[0]?.url ?? null,
     price: Number(p.price),
+    stock: p.stock,
   }));
 
   const createPageHref = (targetPage: number) => {

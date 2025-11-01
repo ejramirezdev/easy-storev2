@@ -20,6 +20,7 @@ async function getFeaturedProducts(): Promise<UiProduct[]> {
         orderBy: { sortOrder: "asc" },
         select: { url: true },
       },
+      stock: true,
     },
   });
 
@@ -30,6 +31,7 @@ async function getFeaturedProducts(): Promise<UiProduct[]> {
     description: product.description ?? null,
     imageUrl: product.imageUrl ?? product.images[0]?.url ?? null,
     price: Number(product.price),
+    stock: product.stock,
   }));
 }
 

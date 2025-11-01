@@ -123,6 +123,8 @@ export default function CartPage() {
               const loadDec = isPending(it.productId, "dec");
               const loadRemove = isPending(it.productId, "remove");
               const disabledAll = loadInc || loadDec || loadRemove;
+              const maxReached =
+                it.product.stock <= 0 || it.quantity >= it.product.stock;
 
               const unit = Number(it.product.price ?? 0);
               const line = unit * it.quantity;
@@ -179,6 +181,15 @@ export default function CartPage() {
                         <Typography variant="body2" color="text.secondary">
                           ${unit.toFixed(2)}
                         </Typography>
+                        {it.product.stock <= 0 ? (
+                          <Typography variant="caption" color="error">
+                            Sin stock disponible
+                          </Typography>
+                        ) : it.quantity >= it.product.stock ? (
+                          <Typography variant="caption" color="text.secondary">
+                            Stock disponible: {it.product.stock}
+                          </Typography>
+                        ) : null}
                       </Box>
 
                       <Typography fontWeight={800}>
@@ -210,7 +221,7 @@ export default function CartPage() {
                         size="small"
                         variant="outlined"
                         onClick={() => inc(it.productId, it.quantity)}
-                        disabled={disabledAll}
+                        disabled={disabledAll || maxReached}
                       >
                         {loadInc ? <CircularProgress size={14} /> : "+"}
                       </Button>

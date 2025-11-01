@@ -12,10 +12,12 @@ export type UiProduct = {
   description?: string | null;
   imageUrl?: string | null;
   price: number;
+  stock: number;
 };
 
 export default function ProductCard({ product }: { product: UiProduct }) {
   const href = `/products/${encodeURIComponent(product.slug)}`;
+  const isOutOfStock = product.stock <= 0;
 
   return (
     <ProductLinkCard href={href}>
@@ -125,7 +127,14 @@ export default function ProductCard({ product }: { product: UiProduct }) {
               }}
               sx={{ display: "flex" }}
             >
-              <AddToCartButton productId={product.id} variant="icon" />
+              <AddToCartButton
+                productId={product.id}
+                variant="icon"
+                disabled={isOutOfStock}
+                tooltip={
+                  isOutOfStock ? "Producto sin stock disponible" : undefined
+                }
+              />
             </Box>
           </Box>
         </CardContent>
