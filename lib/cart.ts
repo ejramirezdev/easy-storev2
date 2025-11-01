@@ -5,14 +5,16 @@ const COOKIE_NAME = "cart_id";
 const isProd = process.env.NODE_ENV === "production";
 
 export async function getOrCreateCart(userId?: string) {
-  const store = await cookies();
+  const store = cookies();
   const cookieCartId = store.get(COOKIE_NAME)?.value ?? null;
+
+  const baseSelect = { id: true, userId: true } as const;
 
   // Si hay usuario, priorizamos su carrito
   if (userId) {
     const userCart = await prisma.cart.findFirst({
       where: { userId },
-      include: { items: { include: { product: true } } },
+      select: baseSelect,
     });
     if (userCart) {
       // si existía carrito anónimo, opcionalmente podrías fusionarlo aquí
@@ -24,7 +26,7 @@ export async function getOrCreateCart(userId?: string) {
   if (cookieCartId) {
     const anon = await prisma.cart.findUnique({
       where: { id: cookieCartId },
-      include: { items: { include: { product: true } } },
+      select: baseSelect,
     });
     if (anon) return { cart: anon, setCookieId: null };
   }
@@ -32,7 +34,7 @@ export async function getOrCreateCart(userId?: string) {
   // Crear nuevo carrito
   const created = await prisma.cart.create({
     data: { userId: userId ?? null },
-    include: { items: { include: { product: true } } },
+    select: baseSelect,
   });
 
   return {

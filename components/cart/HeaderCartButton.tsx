@@ -10,6 +10,7 @@ import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
 import CircularProgress from "@mui/material/CircularProgress";
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { useCart } from "@/lib/useCart";
 import { useUiLock } from "@/lib/ui-lock";
@@ -85,20 +86,29 @@ export default function HeaderCartButton() {
                     >
                       {/* Miniatura */}
                       <Box
-                        component="img"
-                        src={it.product.imageUrl ?? "/placeholder.png"}
-                        alt={it.product.name}
                         sx={{
+                          position: "relative",
                           width: 56,
                           height: 56,
-                          objectFit: "cover",
                           flexShrink: 0,
                           borderRadius: 1.5,
                           border: "1px solid",
                           borderColor: "divider",
                           bgcolor: "background.paper",
+                          overflow: "hidden",
                         }}
-                      />
+                      >
+                        <Image
+                          src={
+                            it.product.imageUrl ??
+                            "/window.svg"
+                          }
+                          alt={it.product.name}
+                          fill
+                          sizes="56px"
+                          style={{ objectFit: "cover" }}
+                        />
+                      </Box>
 
                       {/* Info + controles */}
                       <Box sx={{ flex: 1, minWidth: 0 }}>
