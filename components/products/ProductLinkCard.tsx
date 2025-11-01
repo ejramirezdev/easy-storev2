@@ -8,6 +8,7 @@ import {
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useUiLock } from "@/lib/ui-lock";
+import { PRODUCT_MODAL_LOCK_ID } from "@/lib/locks";
 
 export default function ProductLinkCard({
   href,
@@ -41,7 +42,7 @@ export default function ProductLinkCard({
   const onClick = (e: MouseEvent) => {
     e.preventDefault();
     prefetch();
-    const lockId = lock("open-product"); // 👈 MISMO id
+    const lockId = lock(PRODUCT_MODAL_LOCK_ID); // 👈 MISMO id
 
     const pushProduct = () => {
       router.push(href, { scroll: false });
