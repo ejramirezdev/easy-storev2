@@ -1,9 +1,9 @@
-import LinkButton from "@/components/common/LinkButton";
 import HeroCarousel from "@/components/home/Carousel";
 import WhatsAppFab from "@/components/home/WhatsAppFab";
 import ProductCard, { UiProduct } from "@/components/products/ProductCard";
 import Grid from "@mui/material/GridLegacy";
-import { Box, Container, Typography } from "@mui/material";
+import { Box, Button, Container, Typography } from "@mui/material";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -53,14 +53,15 @@ export default async function Page() {
           maxWidth="lg"
           sx={{ mt: 4, display: "flex", justifyContent: "flex-end" }}
         >
-          <LinkButton
+          <Button
+            component={Link}
             href="/admin"
             variant="contained"
             color="secondary"
             sx={{ fontWeight: 700 }}
           >
             Panel Admin
-          </LinkButton>
+          </Button>
         </Container>
       )}
 
