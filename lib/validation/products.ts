@@ -1,14 +1,18 @@
 import { z } from "zod";
 
-const priceSchema = z
-  .preprocess((val) => {
+const priceSchema = z.preprocess(
+  (val) => {
     if (typeof val === "string") {
       const parsed = Number(val.replace(/,/g, "."));
       return Number.isFinite(parsed) ? parsed : val;
     }
     return val;
-  }, z.number({ invalid_type_error: "Precio inválido" }).refine((n) => !Number.isNaN(n), "Precio inválido"))
-  .nonnegative("El precio no puede ser negativo");
+  },
+  z
+    .number({ invalid_type_error: "Precio inválido" })
+    .refine((n) => !Number.isNaN(n), "Precio inválido")
+    .nonnegative("El precio no puede ser negativo")
+);
 
 const stockSchema = z
   .preprocess((val) => {
