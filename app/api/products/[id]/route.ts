@@ -18,9 +18,10 @@ function unauthorized() {
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const productId = params.id;
+  const { id: rawId } = await context.params;
+  const productId = rawId?.trim();
   if (!productId) {
     return NextResponse.json({ error: "ID de producto inválido" }, { status: 400 });
   }
@@ -76,6 +77,7 @@ export async function PUT(
           price: new Prisma.Decimal(input.price),
           stock: input.stock,
           imageUrl: input.imageUrl ?? null,
+          categoryId: input.categoryId ?? null,
         },
       });
 

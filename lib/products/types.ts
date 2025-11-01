@@ -14,6 +14,9 @@ export type AdminProduct = {
   stock: number;
   imageUrl: string | null;
   images: AdminProductImage[];
+  category: { id: string; name: string; slug: string } | null;
   createdAt: string;
   updatedAt: string;
 };
+
+export type AdminCategory = { id: string; name: string; slug: string };

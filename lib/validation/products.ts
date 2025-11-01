@@ -67,6 +67,11 @@ export const ProductInputSchema = z.object({
   price: priceSchema,
   stock: stockSchema,
   imageUrl: nullableUrlSchema.optional(),
+  categoryId: z
+    .string({ invalid_type_error: "Categoría inválida" })
+    .uuid("Selecciona una categoría válida")
+    .optional()
+    .nullable(),
   images: z.array(ProductImageInputSchema).optional(),
 });
 

@@ -11,10 +11,20 @@ export const adminProductInclude = {
       sortOrder: true,
     },
   },
+  category: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+    },
+  },
 } as const;
 
 export function toAdminProduct(
-  product: Product & { images: Pick<ProductImage, "id" | "url" | "alt" | "sortOrder">[] }
+  product: Product & {
+    images: Pick<ProductImage, "id" | "url" | "alt" | "sortOrder">[];
+    category?: { id: string; name: string; slug: string } | null;
+  }
 ): AdminProduct {
   return {
     id: product.id,
@@ -30,6 +40,13 @@ export function toAdminProduct(
       alt: img.alt ?? null,
       sortOrder: img.sortOrder ?? 0,
     })),
+    category: product.category
+      ? {
+          id: product.category.id,
+          name: product.category.name,
+          slug: product.category.slug,
+        }
+      : null,
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
   };

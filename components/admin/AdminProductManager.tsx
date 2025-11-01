@@ -20,15 +20,16 @@ import {
   Stack,
   TextField,
   Typography,
+  MenuItem,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import SaveIcon from "@mui/icons-material/Save";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import { useFieldArray, useForm } from "react-hook-form";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { slugify } from "@/lib/slug";
-import type { AdminProduct } from "@/lib/products/types";
+import type { AdminCategory, AdminProduct } from "@/lib/products/types";
 import {
   ProductInputSchema,
   type ProductInput,
@@ -42,6 +43,7 @@ const formDefaults = (): ProductInput => ({
   stock: 0,
   imageUrl: "",
   images: [],
+  categoryId: null,
 });
 
 type FormValues = ProductInput;
@@ -51,6 +53,7 @@ type StatusMessage = { type: "success" | "error"; text: string } | null;
 type Props = {
   initialProducts: AdminProduct[];
   adminName: string;
+  categories: AdminCategory[];
 };
 
 function formatDate(iso: string) {
@@ -72,6 +75,7 @@ function toFormValues(product: AdminProduct): FormValues {
     price: product.price,
     stock: product.stock,
     imageUrl: product.imageUrl ?? "",
+    categoryId: product.category?.id ?? null,
     images: product.images.map((img, index) => ({
       id: img.id,
       url: img.url,
@@ -82,12 +86,18 @@ function toFormValues(product: AdminProduct): FormValues {
 }
 
 function normalizePayload(values: FormValues): FormValues {
+  const categoryId =
+    typeof values.categoryId === "string"
+      ? values.categoryId.trim() || null
+      : null;
+
   return {
     ...values,
     name: values.name.trim(),
     slug: values.slug?.trim() ?? "",
     description: values.description?.trim() ?? "",
     imageUrl: typeof values.imageUrl === "string" ? values.imageUrl.trim() : values.imageUrl,
+    categoryId,
     images: (values.images ?? []).map((img, index) => ({
       id: img.id,
       url: img.url.trim(),
@@ -100,6 +110,7 @@ function normalizePayload(values: FormValues): FormValues {
 export default function AdminProductManager({
   initialProducts,
   adminName,
+  categories,
 }: Props) {
   const [products, setProducts] = useState<AdminProduct[]>(initialProducts);
   const [createStatus, setCreateStatus] = useState<StatusMessage>(null);
@@ -313,6 +324,40 @@ export default function AdminProductManager({
                       </InputAdornment>
                     ),
                   }}
+                />
+
+                <Controller
+                  control={createForm.control}
+                  name="categoryId"
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      select
+                      label="Categoría"
+                      value={field.value ?? ""}
+                      onChange={(event) =>
+                        field.onChange(event.target.value || null)
+                      }
+                      onBlur={field.onBlur}
+                      error={!!fieldState.error}
+                      helperText={
+                        fieldState.error?.message ??
+                        (categories.length === 0
+                          ? "No hay categorías registradas"
+                          : "Selecciona una categoría o deja en blanco")
+                      }
+                    >
+                      <MenuItem value="">
+                        {categories.length === 0
+                          ? "Sin categorías disponibles"
+                          : "Sin categoría"}
+                      </MenuItem>
+                      {categories.map((category) => (
+                        <MenuItem key={category.id} value={category.id}>
+                          {category.name}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
                 />
 
                 <Grid container spacing={2}>
@@ -551,6 +596,40 @@ export default function AdminProductManager({
                             </InputAdornment>
                           ),
                         }}
+                      />
+
+                      <Controller
+                        control={editForm.control}
+                        name="categoryId"
+                        render={({ field, fieldState }) => (
+                          <TextField
+                            select
+                            label="Categoría"
+                            value={field.value ?? ""}
+                            onChange={(event) =>
+                              field.onChange(event.target.value || null)
+                            }
+                            onBlur={field.onBlur}
+                            error={!!fieldState.error}
+                            helperText={
+                              fieldState.error?.message ??
+                              (categories.length === 0
+                                ? "No hay categorías registradas"
+                                : "Selecciona una categoría o deja en blanco")
+                            }
+                          >
+                            <MenuItem value="">
+                              {categories.length === 0
+                                ? "Sin categorías disponibles"
+                                : "Sin categoría"}
+                            </MenuItem>
+                            {categories.map((category) => (
+                              <MenuItem key={category.id} value={category.id}>
+                                {category.name}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        )}
                       />
 
                       <Grid container spacing={2}>
