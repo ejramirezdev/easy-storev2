@@ -134,23 +134,16 @@ export default function AdminProductManager({
     name: "images",
   });
 
+  const { reset: resetEditForm } = editForm;
+
   useEffect(() => {
     if (selectedProduct) {
-      editForm.reset(toFormValues(selectedProduct));
-      editImages.replace(
-        selectedProduct.images.map((img, index) => ({
-          id: img.id,
-          url: img.url,
-          alt: img.alt ?? "",
-          sortOrder: index,
-        }))
-      );
+      resetEditForm(toFormValues(selectedProduct));
       setUpdateStatus(null);
     } else {
-      editForm.reset(formDefaults());
-      editImages.replace([]);
+      resetEditForm(formDefaults());
     }
-  }, [selectedProduct, editForm, editImages]);
+  }, [selectedProduct, resetEditForm]);
 
   const createSlugFromName = () => {
     const name = createForm.getValues("name");
@@ -238,15 +231,33 @@ export default function AdminProductManager({
     <Container sx={{ py: 6 }}>
       <Stack spacing={4}>
         <Box>
-          <Typography variant="h3" fontWeight={900} gutterBottom>
-            Panel de administración
-          </Typography>
-          <Typography color="text.secondary">
-            Hola {adminName}, aquí puedes crear y mantener los productos de la
-            tienda. Por ahora las imágenes se gestionan mediante URLs externas;
-            la estructura ya contempla una galería para futuras cargas directas a
-            S3 u otros orígenes.
-          </Typography>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            alignItems={{ xs: "flex-start", sm: "center" }}
+            justifyContent="space-between"
+          >
+            <Box>
+              <Typography variant="h3" fontWeight={900} gutterBottom>
+                Panel de administración
+              </Typography>
+              <Typography color="text.secondary">
+                Hola {adminName}, aquí puedes crear y mantener los productos de
+                la tienda. Por ahora las imágenes se gestionan mediante URLs
+                externas; la estructura ya contempla una galería para futuras
+                cargas directas a S3 u otros orígenes.
+              </Typography>
+            </Box>
+
+            <Button
+              component={Link}
+              href="/"
+              variant="outlined"
+              color="secondary"
+            >
+              Volver a la tienda
+            </Button>
+          </Stack>
         </Box>
 
         <Alert severity="info">
