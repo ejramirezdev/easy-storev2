@@ -2,7 +2,7 @@
 
 import { Dialog, DialogContent } from "@mui/material";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function ModalContainer({
   onClosePath,
@@ -14,18 +14,60 @@ export default function ModalContainer({
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const openTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!pathname || pathname === onClosePath) return;
+    if (!pathname || pathname === onClosePath) {
+      setOpen(false);
+      return;
+    }
 
-    const t = setTimeout(() => setOpen(true), 10);
-    return () => clearTimeout(t);
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+
+    openTimerRef.current = setTimeout(() => {
+      openTimerRef.current = null;
+      setOpen(true);
+    }, 10);
+
+    return () => {
+      if (openTimerRef.current) {
+        clearTimeout(openTimerRef.current);
+        openTimerRef.current = null;
+      }
+    };
   }, [pathname, onClosePath]);
 
   const handleClose = () => {
+    if (openTimerRef.current) {
+      clearTimeout(openTimerRef.current);
+      openTimerRef.current = null;
+    }
+
     setOpen(false);
-    setTimeout(() => router.push(onClosePath), 200); // volver a /products sin recargar
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+    }
+
+    closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null;
+      router.push(onClosePath);
+    }, 200); // volver a /products sin recargar
   };
+
+  useEffect(() => {
+    return () => {
+      if (openTimerRef.current) {
+        clearTimeout(openTimerRef.current);
+      }
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <Dialog
