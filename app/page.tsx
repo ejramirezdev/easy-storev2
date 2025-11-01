@@ -53,15 +53,15 @@ export default async function Page() {
           maxWidth="lg"
           sx={{ mt: 4, display: "flex", justifyContent: "flex-end" }}
         >
-          <Button
-            component={Link}
-            href="/admin"
-            variant="contained"
-            color="secondary"
-            sx={{ fontWeight: 700 }}
-          >
-            Panel Admin
-          </Button>
+          <Link href="/admin" style={{ textDecoration: "none" }}>
+            <Button
+              variant="contained"
+              color="secondary"
+              sx={{ fontWeight: 700 }}
+            >
+              Panel Admin
+            </Button>
+          </Link>
         </Container>
       )}
 
