@@ -5,6 +5,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateCart } from "@/lib/cart";
 import { calcTotals } from "@/lib/totals";
+import { resolveProductImageUrl } from "@/lib/products/images";
 
 type AddressInput = {
   firstName: string;
@@ -47,7 +48,22 @@ export async function POST(req: Request) {
     // items del carrito (con precios actuales)
     const rawItems = await prisma.cartItem.findMany({
       where: { cartId: cart.id },
-      include: { product: true },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            imageUrl: true,
+            price: true,
+            images: {
+              orderBy: { sortOrder: "asc" },
+              take: 1,
+              select: { url: true },
+            },
+          },
+        },
+      },
     });
     if (rawItems.length === 0) {
       return NextResponse.json(
@@ -63,7 +79,7 @@ export async function POST(req: Request) {
       snapshot: {
         name: it.product!.name,
         slug: it.product!.slug,
-        imageUrl: it.product!.imageUrl,
+        imageUrl: resolveProductImageUrl(it.product!),
       },
     }));
 

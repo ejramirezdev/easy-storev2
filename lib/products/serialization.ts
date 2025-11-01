@@ -1,5 +1,6 @@
 import { Product, ProductImage } from "@prisma/client";
 import { AdminProduct } from "./types";
+import { resolveProductImageUrl } from "./images";
 
 export const adminProductInclude = {
   images: {
@@ -33,7 +34,7 @@ export function toAdminProduct(
     description: product.description ?? null,
     price: Number(product.price),
     stock: product.stock,
-    imageUrl: product.imageUrl ?? null,
+    imageUrl: resolveProductImageUrl(product),
     images: (product.images ?? []).map((img) => ({
       id: img.id,
       url: img.url,
