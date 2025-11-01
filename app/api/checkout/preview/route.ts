@@ -5,6 +5,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateCart } from "@/lib/cart";
 import { calcTotals } from "@/lib/totals";
+import { resolveProductImageUrl } from "@/lib/products/images";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -28,6 +29,11 @@ export async function GET() {
           slug: true,
           imageUrl: true,
           price: true,
+          images: {
+            orderBy: { sortOrder: "asc" },
+            take: 1,
+            select: { url: true },
+          },
         },
       },
     },
@@ -40,7 +46,7 @@ export async function GET() {
       id: it.product!.id,
       name: it.product!.name,
       slug: it.product!.slug,
-      imageUrl: it.product!.imageUrl,
+      imageUrl: resolveProductImageUrl(it.product!),
       price: Number(it.product!.price),
     },
     lineTotal: Number(it.product!.price) * it.quantity,

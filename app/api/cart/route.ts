@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateCart } from "@/lib/cart";
 import { calcTotals } from "@/lib/totals"; // 👈 usa tu totals actual
+import { resolveProductImageUrl } from "@/lib/products/images";
 
 // Utilidad: formatea el carrito a un payload plano (Decimal -> number)
 async function buildCartPayload(cartId: string) {
@@ -16,6 +17,11 @@ async function buildCartPayload(cartId: string) {
           name: true,
           price: true, // Decimal
           imageUrl: true,
+          images: {
+            orderBy: { sortOrder: "asc" },
+            take: 1,
+            select: { url: true },
+          },
         },
       },
     },
@@ -29,7 +35,7 @@ async function buildCartPayload(cartId: string) {
     product: {
       id: it.product.id,
       name: it.product.name,
-      imageUrl: it.product.imageUrl,
+      imageUrl: resolveProductImageUrl(it.product),
       price: Number(it.product.price), // <- normalizado a number
     },
   }));
