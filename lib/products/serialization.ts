@@ -1,0 +1,36 @@
+import { Product, ProductImage } from "@prisma/client";
+import { AdminProduct } from "./types";
+
+export const adminProductInclude = {
+  images: {
+    orderBy: { sortOrder: "asc" as const },
+    select: {
+      id: true,
+      url: true,
+      alt: true,
+      sortOrder: true,
+    },
+  },
+} as const;
+
+export function toAdminProduct(
+  product: Product & { images: Pick<ProductImage, "id" | "url" | "alt" | "sortOrder">[] }
+): AdminProduct {
+  return {
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    description: product.description ?? null,
+    price: Number(product.price),
+    stock: product.stock,
+    imageUrl: product.imageUrl ?? null,
+    images: (product.images ?? []).map((img) => ({
+      id: img.id,
+      url: img.url,
+      alt: img.alt ?? null,
+      sortOrder: img.sortOrder ?? 0,
+    })),
+    createdAt: product.createdAt.toISOString(),
+    updatedAt: product.updatedAt.toISOString(),
+  };
+}
