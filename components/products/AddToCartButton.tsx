@@ -44,21 +44,21 @@ export default function AddToCartButton({
               onClick={onAdd}
               disabled={disabled || loading}
               sx={{
-                bgcolor: "#050505",
+                bgcolor: "#000",
                 color: "#fff",
-                border: "1px solid rgba(255,255,255,0.6)",
-                borderRadius: 2,
+                borderRadius: 1.5,
                 width: 44,
                 height: 44,
-                transition: "background-color 0.2s ease, border-color 0.2s ease",
+                boxShadow: "0 6px 20px rgba(0,0,0,0.25)",
+                transition: "transform 0.2s ease, background-color 0.2s ease",
                 "&:hover": {
-                  bgcolor: "#151515",
-                  borderColor: "#fff",
+                  bgcolor: "#111",
+                  transform: "translateY(-2px)",
                 },
                 "&.Mui-disabled": {
                   bgcolor: "rgba(255,255,255,0.08)",
                   color: "rgba(255,255,255,0.5)",
-                  borderColor: "rgba(255,255,255,0.2)",
+                  boxShadow: "none",
                 },
               }}
               aria-label="Agregar al carrito"

@@ -14,7 +14,10 @@ export default async function ProductModal({
     <ModalContainer onClosePath="/products">
       <UnlockOnMount id={PRODUCT_MODAL_LOCK_ID} /> {/* ✅ ahora acepta string */}
       {/* Reutilizamos PDP pasándole un Promise resuelto */}
-      <ProductDetailPage params={Promise.resolve({ slug })} />
+      <ProductDetailPage
+        params={Promise.resolve({ slug })}
+        showBackButton={false}
+      />
     </ModalContainer>
   );
 }

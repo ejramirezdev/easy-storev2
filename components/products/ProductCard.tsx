@@ -18,18 +18,28 @@ export default function ProductCard({ product }: { product: UiProduct }) {
   const href = `/products/${encodeURIComponent(product.slug)}`;
 
   return (
-    <Card
-      sx={{
-        bgcolor: "background.paper",
-        borderRadius: 3,
-        overflow: "hidden",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      {/* Zona clickeable protegida por el guard */}
-      <ProductLinkCard href={`/products/${product.slug}`}>
+    <ProductLinkCard href={href}>
+      <Card
+        sx={{
+          bgcolor: "background.paper",
+          borderRadius: 3,
+          overflow: "hidden",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          transition: "transform 0.2s ease, box-shadow 0.2s ease",
+          boxShadow: "0 18px 45px rgba(0,0,0,0.4)",
+          transform: "translate3d(0,0,0)",
+          "&:hover": {
+            transform: "scale(1.02)",
+            boxShadow: "0 25px 60px rgba(0,0,0,0.45)",
+          },
+          "&:focus-within": {
+            transform: "scale(1.02)",
+            boxShadow: "0 25px 60px rgba(0,0,0,0.45)",
+          },
+        }}
+      >
         <Box
           sx={{
             position: "relative",
@@ -63,10 +73,8 @@ export default function ProductCard({ product }: { product: UiProduct }) {
             </Box>
           )}
         </Box>
-      </ProductLinkCard>
 
-      <CardContent sx={{ flex: 1, pb: 1.5 }}>
-        <ProductLinkCard href={`/products/${product.slug}`}>
+        <CardContent sx={{ flex: 1, pb: 1.5 }}>
           <Typography
             variant="subtitle1"
             fontWeight={700}
@@ -76,38 +84,52 @@ export default function ProductCard({ product }: { product: UiProduct }) {
           >
             {product.name}
           </Typography>
-        </ProductLinkCard>
 
-        {product.description && (
-          <Typography
-            variant="body2"
-            color="text.secondary"
+          {product.description && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                minHeight: 36,
+              }}
+            >
+              {product.description}
+            </Typography>
+          )}
+
+          <Box
             sx={{
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-              minHeight: 36,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              mt: 1,
             }}
           >
-            {product.description}
-          </Typography>
-        )}
-
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            mt: 1,
-          }}
-        >
-          <Typography variant="h6" fontWeight={800} color="secondary">
-            ${Number(product.price).toFixed(2)}
-          </Typography>
-          <AddToCartButton productId={product.id} variant="icon" />
-        </Box>
-      </CardContent>
-    </Card>
+            <Typography variant="h6" fontWeight={800} color="secondary">
+              ${Number(product.price).toFixed(2)}
+            </Typography>
+            <Box
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }
+              }}
+              sx={{ display: "flex" }}
+            >
+              <AddToCartButton productId={product.id} variant="icon" />
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+    </ProductLinkCard>
   );
 }
