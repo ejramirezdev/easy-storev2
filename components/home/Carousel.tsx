@@ -61,6 +61,10 @@ export default function HeroCarousel() {
     const onSelect = () => setIndex(emblaApi.selectedScrollSnap());
     emblaApi.on("select", onSelect);
     onSelect();
+
+    return () => {
+      emblaApi.off("select", onSelect);
+    };
   }, [emblaApi]);
 
   const next = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);

@@ -1,8 +1,9 @@
 "use client";
 
-import { Card, CardContent, CardMedia, Box, Typography } from "@mui/material";
+import { Card, CardContent, Box, Typography } from "@mui/material";
 import AddToCartButton from "@/components/products/AddToCartButton";
 import ProductLinkCard from "@/components/products/ProductLinkCard";
+import Image from "next/image";
 
 export type UiProduct = {
   id: string;
@@ -29,14 +30,39 @@ export default function ProductCard({ product }: { product: UiProduct }) {
     >
       {/* Zona clickeable protegida por el guard */}
       <ProductLinkCard href={`/products/${product.slug}`}>
-        {product.imageUrl && (
-          <CardMedia
-            component="img"
-            image={product.imageUrl}
-            alt={product.name}
-            sx={{ height: 172, objectFit: "cover" }}
-          />
-        )}
+        <Box
+          sx={{
+            position: "relative",
+            width: "100%",
+            pt: "66.66%",
+            bgcolor: "rgba(255,255,255,0.04)",
+            overflow: "hidden",
+          }}
+        >
+          {product.imageUrl ? (
+            <Image
+              src={product.imageUrl}
+              alt={product.name}
+              fill
+              sizes="(max-width: 600px) 90vw, (max-width: 900px) 45vw, 30vw"
+              style={{ objectFit: "cover" }}
+            />
+          ) : (
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "text.secondary",
+                fontSize: 14,
+              }}
+            >
+              Sin imagen
+            </Box>
+          )}
+        </Box>
       </ProductLinkCard>
 
       <CardContent sx={{ flex: 1, pb: 1.5 }}>
