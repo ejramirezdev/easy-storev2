@@ -65,6 +65,7 @@ export async function POST(req: Request) {
         price: new Prisma.Decimal(input.price),
         stock: input.stock,
         imageUrl: input.imageUrl ?? null,
+        categoryId: input.categoryId ?? null,
         images: gallery.length
           ? {
               create: gallery.map((img) => ({

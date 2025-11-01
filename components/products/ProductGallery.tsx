@@ -18,16 +18,31 @@ export default function ProductGallery({
 }) {
   // Normaliza: primero relacionales, luego imageUrl, luego placeholder
   const normalized: Img[] = useMemo(() => {
-    const rel = (images ?? []).filter(
-      (i): i is Img => !!i && typeof i.url === "string"
-    );
-    if (rel.length > 0) return rel;
+    const ordered: Img[] = [];
+    const seen = new Set<string>();
+
+    const pushUnique = (img: Img) => {
+      if (!img.url) return;
+      if (seen.has(img.url)) return;
+      seen.add(img.url);
+      ordered.push(img);
+    };
 
     if (imageUrl) {
-      return [{ id: "main", url: imageUrl, alt: name }];
+      pushUnique({ id: "main", url: imageUrl, alt: name });
     }
 
-    return [{ id: "ph", url: "/placeholder.png", alt: name }];
+    (images ?? []).forEach((img, index) => {
+      if (!img || typeof img.url !== "string") return;
+      const id = img.id ?? `gallery-${index}`;
+      pushUnique({ id, url: img.url, alt: img.alt ?? name });
+    });
+
+    if (ordered.length === 0) {
+      ordered.push({ id: "ph", url: "/placeholder.png", alt: name });
+    }
+
+    return ordered;
   }, [images, imageUrl, name]);
 
   const [index, setIndex] = useState(0);
