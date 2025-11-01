@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Box, IconButton } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -18,39 +18,53 @@ export default function ProductGallery({
 }) {
   // Normaliza: imagen principal primero, luego galería, luego placeholder
   const normalized: Img[] = useMemo(() => {
-    const ordered: Img[] = [];
-    const seen = new Set<string>();
+    const gallery = (images ?? [])
+      .map((img, index) => {
+        if (!img || typeof img.url !== "string") return null;
 
-    const pushUnique = (img: Img) => {
-      const url = (img?.url ?? "").trim();
-      if (!url) return;
+        const url = img.url.trim();
+        if (!url) return null;
 
-      const key = url.toLowerCase();
-      if (seen.has(key)) return;
+        return {
+          id: img.id ?? `gallery-${index}`,
+          url,
+          alt: img.alt && img.alt.trim().length > 0 ? img.alt : name,
+        } satisfies Img;
+      })
+      .filter((img): img is Img => img !== null);
 
-      seen.add(key);
-      ordered.push({ ...img, url, alt: img.alt ?? name });
-    };
+    const mainUrl =
+      typeof imageUrl === "string" && imageUrl.trim().length > 0
+        ? imageUrl.trim()
+        : null;
 
-    if (typeof imageUrl === "string" && imageUrl.trim().length > 0) {
-      pushUnique({ id: "main", url: imageUrl.trim(), alt: name });
+    if (mainUrl) {
+      const existingIndex = gallery.findIndex((img) => img.url === mainUrl);
+      if (existingIndex >= 0) {
+        const [existing] = gallery.splice(existingIndex, 1);
+        gallery.unshift({ ...existing, alt: existing.alt ?? name });
+      } else {
+        gallery.unshift({ id: "main", url: mainUrl, alt: name });
+      }
     }
 
-    (images ?? []).forEach((img, index) => {
-      if (!img || typeof img.url !== "string") return;
-      const id = img.id ?? `gallery-${index}`;
-      pushUnique({ id, url: img.url, alt: img.alt ?? name });
-    });
-
-    if (ordered.length === 0) {
-      ordered.push({ id: "ph", url: "/placeholder.png", alt: name });
+    if (gallery.length === 0) {
+      gallery.push({ id: "ph", url: "/placeholder.png", alt: name });
     }
 
-    return ordered;
+    return gallery;
   }, [images, imageUrl, name]);
 
   const [index, setIndex] = useState(0);
   const total = normalized.length;
+  useEffect(() => {
+    setIndex((prev) => {
+      if (total === 0) return 0;
+      if (prev >= total) return total - 1;
+      if (prev < 0) return 0;
+      return prev;
+    });
+  }, [total]);
   const current = normalized[index] ?? normalized[0]; // 👈 siempre definido
 
   const next = () => setIndex((i) => (((i + 1) % total) + total) % total);
