@@ -1,13 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Button,
-  IconButton,
-  CircularProgress,
-  Snackbar,
-  Tooltip,
-} from "@mui/material";
+import { Button, CircularProgress, Snackbar, Tooltip } from "@mui/material";
 import AddShoppingCartIcon from "@mui/icons-material/AddShoppingCart";
 import { useCart } from "@/lib/useCart";
 
@@ -40,17 +34,22 @@ export default function AddToCartButton({
       <>
         <Tooltip title={tooltip}>
           <span>
-            <IconButton
+            <Button
               onClick={onAdd}
               disabled={disabled || loading}
+              aria-label="Agregar al carrito"
               sx={{
                 bgcolor: "#000",
                 color: "#fff",
-                borderRadius: 1.5,
-                width: 44,
-                height: 44,
+                borderRadius: 2.5,
+                px: 1.75,
+                minWidth: 56,
+                minHeight: 44,
                 boxShadow: "0 6px 20px rgba(0,0,0,0.25)",
                 transition: "transform 0.2s ease, background-color 0.2s ease",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 "&:hover": {
                   bgcolor: "#111",
                   transform: "translateY(-2px)",
@@ -61,14 +60,13 @@ export default function AddToCartButton({
                   boxShadow: "none",
                 },
               }}
-              aria-label="Agregar al carrito"
             >
               {loading ? (
                 <CircularProgress size={18} sx={{ color: "inherit" }} />
               ) : (
                 <AddShoppingCartIcon fontSize="small" />
               )}
-            </IconButton>
+            </Button>
           </span>
         </Tooltip>
         <Snackbar
