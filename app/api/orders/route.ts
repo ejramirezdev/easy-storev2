@@ -11,6 +11,7 @@ type AddressInput = {
   lastName: string;
   email: string;
   phone?: string;
+  documentType?: string;
   documentId?: string;
   line1: string;
   line2?: string;
@@ -80,32 +81,12 @@ export async function POST(req: Request) {
     );
 
     // direcciones
-    const shippingAddress = await prisma.address.create({ data: shipping });
-    const billingAddress =
-      billing && "useShipping" in billing
-        ? shippingAddress
-        : await prisma.address.create({
-            data: (billing as AddressInput) ?? shipping,
-          });
-
     // crear orden + items
     const order = await prisma.order.create({
       data: {
         userId: session.user.id,
         status: "PENDING",
         total: String(totals.total), // Decimal(10,2)
-        shippingAddressId: shippingAddress.id,
-        billingAddressId: billingAddress.id,
-        // snapshot de totales/cupón (si agregaste los campos)
-        subtotal: String(totals.subtotal),
-        discountTotal: String(totals.discount),
-        shippingTotal: String(totals.shipping),
-        taxTotal: "0.00",
-        couponCode: redemption?.coupon?.code ?? null,
-        couponAmount: redemption?.coupon
-          ? String(Number(redemption.coupon.value))
-          : null,
-
         items: {
           create: items.map((it) => ({
             productId: it.productId,
@@ -113,6 +94,17 @@ export async function POST(req: Request) {
             unitPrice: it.unitPrice, // Decimal as string
             // si luego agregas campos snapshot en OrderItem, puedes guardarlos aquí
           })),
+        },
+        addresses: {
+          create: [
+            normalizeAddress(shipping, "SHIPPING"),
+            normalizeAddress(
+              billing && "useShipping" in billing
+                ? shipping
+                : ((billing as AddressInput) ?? shipping),
+              "BILLING"
+            ),
+          ],
         },
       },
     });
@@ -124,4 +116,23 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
+}
+
+function normalizeAddress(address: AddressInput, type: "SHIPPING" | "BILLING") {
+  return {
+    type,
+    firstName: address.firstName,
+    lastName: address.lastName,
+    email: address.email,
+    phone: address.phone ?? "",
+    documentType: address.documentType ?? null,
+    document: address.documentId ?? null,
+    street: address.line2
+      ? `${address.line1}\n${address.line2}`
+      : address.line1,
+    city: address.city,
+    state: address.state ?? "",
+    postalCode: address.postalCode ?? null,
+    country: address.country,
+  };
 }
