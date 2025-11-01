@@ -10,8 +10,8 @@ const priceSchema = z.preprocess(
   },
   z
     .number({ invalid_type_error: "Precio inválido" })
+    .min(0, { message: "El precio no puede ser negativo" })
     .refine((n) => !Number.isNaN(n), "Precio inválido")
-    .nonnegative("El precio no puede ser negativo")
 );
 
 const stockSchema = z
