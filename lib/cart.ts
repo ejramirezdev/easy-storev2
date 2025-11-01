@@ -5,7 +5,7 @@ const COOKIE_NAME = "cart_id";
 const isProd = process.env.NODE_ENV === "production";
 
 export async function getOrCreateCart(userId?: string) {
-  const store = cookies();
+  const store = await cookies();
   const cookieCartId = store.get(COOKIE_NAME)?.value ?? null;
 
   const baseSelect = { id: true, userId: true } as const;
