@@ -2,12 +2,8 @@ import HeroCarousel from "@/components/home/Carousel";
 import WhatsAppFab from "@/components/home/WhatsAppFab";
 import ProductCard, { UiProduct } from "@/components/products/ProductCard";
 import Grid from "@mui/material/GridLegacy";
-import { Box, Button, Container, Typography } from "@mui/material";
-import Link from "next/link";
+import { Box, Container, Typography } from "@mui/material";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { isAdminEmail } from "@/lib/admin";
 
 async function getFeaturedProducts(): Promise<UiProduct[]> {
   const products = await prisma.product.findMany({
@@ -38,33 +34,10 @@ async function getFeaturedProducts(): Promise<UiProduct[]> {
 }
 
 export default async function Page() {
-  const [session, featured] = await Promise.all([
-    getServerSession(authOptions),
-    getFeaturedProducts(),
-  ]);
-  const isAdmin = isAdminEmail(session?.user?.email ?? null);
-
+  const featured = await getFeaturedProducts();
   return (
     <>
       <HeroCarousel />
-
-      {isAdmin && (
-        <Container
-          maxWidth="lg"
-          sx={{ mt: 4, display: "flex", justifyContent: "flex-end" }}
-        >
-          <Link href="/admin" passHref legacyBehavior>
-            <Button
-              component="a"
-              variant="contained"
-              color="secondary"
-              sx={{ fontWeight: 700 }}
-            >
-              Panel Admin
-            </Button>
-          </Link>
-        </Container>
-      )}
 
       {/* Sección de destacados (opcional por ahora) */}
       <Box component="section" sx={{ py: 8, bgcolor: "#0A0A0B" }}>

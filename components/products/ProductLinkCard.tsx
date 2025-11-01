@@ -65,7 +65,7 @@ export default function ProductLinkCard({
       onClick={onClick}
       onPointerEnter={prefetch}
       onFocus={prefetch}
-      style={{ textDecoration: "none", display: "block" }}
+      style={{ textDecoration: "none", display: "block", height: "100%" }}
     >
       {children}
     </a>

@@ -42,11 +42,15 @@ export async function generateMetadata({
   };
 }
 
+type ProductDetailPageProps = {
+  params: Promise<{ slug: string }>;
+  showBackButton?: boolean;
+};
+
 export default async function ProductDetailPage({
   params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+  showBackButton = true,
+}: ProductDetailPageProps) {
   const { slug: raw } = await params;
   const slug = decodeURIComponent(raw ?? "").trim();
   if (!slug) notFound();
@@ -78,9 +82,11 @@ export default async function ProductDetailPage({
     <>
       <ProductPageUnlocker />
       <Container sx={{ py: 4 }}>
-        <Box sx={{ mb: 2 }}>
-          <BackToProductsButton />
-        </Box>
+        {showBackButton && (
+          <Box sx={{ mb: 2 }}>
+            <BackToProductsButton />
+          </Box>
+        )}
         <Grid container spacing={4}>
           <Grid item xs={12} md={6}>
             <ProductGallery
