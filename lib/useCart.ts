@@ -1,6 +1,6 @@
 "use client";
-import useSWR from "swr";
-import { useState } from "react";
+import useSWR, { MutatorCallback, MutatorOptions, useSWRConfig } from "swr";
+import { useCallback, useState } from "react";
 
 type CartProduct = {
   id: string;
@@ -27,15 +27,38 @@ type CartResponse = {
   coupon: { code: string; type: string; value: number } | null;
 };
 
+const CART_KEY = "/api/cart";
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 type Action = "inc" | "dec" | "remove" | "add";
 
-export function useCart() {
-  const { data, error, isLoading, mutate } = useSWR<CartResponse>(
-    "/api/cart",
-    fetcher,
-    { revalidateOnFocus: false }
+type UseCartOptions = {
+  /**
+   * Permite omitir la carga inicial del carrito.
+   * Útil en botones como "Agregar al carrito" donde solo necesitamos las acciones.
+   */
+  fetchOnMount?: boolean;
+};
+
+export function useCart(options?: UseCartOptions) {
+  const fetchOnMount = options?.fetchOnMount ?? true;
+  const swr = useSWR<CartResponse>(fetchOnMount ? CART_KEY : null, fetcher, {
+    revalidateOnFocus: false,
+  });
+  const { mutate: swrMutate, data, error, isLoading } = swr;
+  const { mutate: globalMutate } = useSWRConfig();
+
+  const mutateCart = useCallback(
+    async (
+      data?: CartResponse | Promise<CartResponse> | MutatorCallback<CartResponse>,
+      opts?: MutatorOptions<CartResponse>
+    ) => {
+      if (fetchOnMount) {
+        return swrMutate(data, opts);
+      }
+      return globalMutate(CART_KEY, data, opts);
+    },
+    [fetchOnMount, swrMutate, globalMutate]
   );
 
   // ---- loaders por botón ----
@@ -54,14 +77,14 @@ export function useCart() {
   // ---- acciones ----
   async function add(productId: string, quantity = 1) {
     setP(productId, "add", true);
-    await mutate(
+    await mutateCart(
       async () => {
-        await fetch("/api/cart", {
+        await fetch(CART_KEY, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ productId, quantity }),
         });
-        return await fetcher("/api/cart");
+        return await fetcher(CART_KEY);
       },
       { revalidate: false }
     );
@@ -69,14 +92,14 @@ export function useCart() {
   }
 
   async function setQty(productId: string, quantity: number) {
-    await mutate(
+    await mutateCart(
       async () => {
-        await fetch("/api/cart", {
+        await fetch(CART_KEY, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ productId, quantity }),
         });
-        return await fetcher("/api/cart");
+        return await fetcher(CART_KEY);
       },
       { revalidate: false }
     );
@@ -84,14 +107,14 @@ export function useCart() {
 
   async function remove(productId: string) {
     setP(productId, "remove", true);
-    await mutate(
+    await mutateCart(
       async () => {
-        await fetch("/api/cart", {
+        await fetch(CART_KEY, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ productId }),
         });
-        return await fetcher("/api/cart");
+        return await fetcher(CART_KEY);
       },
       { revalidate: false }
     );
@@ -100,14 +123,14 @@ export function useCart() {
 
   // eliminar sin activar el loader de "Quitar"
   async function removeSilently(productId: string) {
-    await mutate(
+    await mutateCart(
       async () => {
-        await fetch("/api/cart", {
+        await fetch(CART_KEY, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ productId }),
         });
-        return await fetcher("/api/cart");
+        return await fetcher(CART_KEY);
       },
       { revalidate: false }
     );
@@ -132,7 +155,11 @@ export function useCart() {
   // ---- NUEVO: refrescar desde fuera (p. ej., al aplicar/quitar cupón) ----
   async function refresh() {
     // sin argumentos => SWR revalida contra el fetcher
-    await mutate();
+    if (fetchOnMount) {
+      await swr.mutate();
+      return;
+    }
+    await globalMutate(CART_KEY);
   }
 
   return {
