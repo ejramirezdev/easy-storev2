@@ -55,7 +55,8 @@ export default function ProductLinkCard({
       pushProduct();
     }
 
-    setTimeout(() => unlock(lockId), 1200);
+    // Failsafe por si la navegación falla.
+    setTimeout(() => unlock(lockId), 8000);
   };
 
   return (
