@@ -18,7 +18,7 @@ export const authOptions: AuthOptions = {
       },
     }),
   ],
-  session: { strategy: "database" }, // usa la tabla Session de Prisma
+  session: { strategy: "jwt" },
   pages: {}, // si luego quieres custom login page
   callbacks: {
     async jwt({ token, user }) {
