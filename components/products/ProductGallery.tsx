@@ -16,46 +16,31 @@ export default function ProductGallery({
   imageUrl?: string | null;
   name: string;
 }) {
-  // Normaliza: primero relacionales, luego imageUrl, luego placeholder
+  // Normaliza: imagen principal primero, luego galería, luego placeholder
   const normalized: Img[] = useMemo(() => {
     const ordered: Img[] = [];
     const seen = new Set<string>();
 
-    const pushUnique = (img: Img, scope: "main" | "gallery") => {
-      if (!img?.url) return;
+    const pushUnique = (img: Img) => {
+      const url = (img?.url ?? "").trim();
+      if (!url) return;
 
-      const key = `${scope}:${img.id ?? img.url}`;
+      const key = url.toLowerCase();
       if (seen.has(key)) return;
 
       seen.add(key);
-      if (scope === "main") {
-        ordered.unshift(img);
-      } else {
-        ordered.push(img);
-      }
+      ordered.push({ ...img, url, alt: img.alt ?? name });
     };
+
+    if (typeof imageUrl === "string" && imageUrl.trim().length > 0) {
+      pushUnique({ id: "main", url: imageUrl.trim(), alt: name });
+    }
 
     (images ?? []).forEach((img, index) => {
       if (!img || typeof img.url !== "string") return;
       const id = img.id ?? `gallery-${index}`;
-      pushUnique({ id, url: img.url, alt: img.alt ?? name }, "gallery");
+      pushUnique({ id, url: img.url, alt: img.alt ?? name });
     });
-
-    if (imageUrl) {
-      const existsInGallery = ordered.some((img) => img.url === imageUrl);
-
-      if (existsInGallery) {
-        const idx = ordered.findIndex((img) => img.url === imageUrl);
-        if (idx > 0) {
-          const [match] = ordered.splice(idx, 1);
-          ordered.unshift({ ...match, alt: match.alt ?? name });
-        } else if (idx === 0) {
-          ordered[0] = { ...ordered[0], alt: ordered[0].alt ?? name };
-        }
-      } else {
-        pushUnique({ id: "main", url: imageUrl, alt: name }, "main");
-      }
-    }
 
     if (ordered.length === 0) {
       ordered.push({ id: "ph", url: "/placeholder.png", alt: name });
