@@ -24,6 +24,10 @@ export default function ModalContainer({
     unlockLock(PRODUCT_MODAL_LOCK_ID);
   }, [unlockLock]);
 
+  const navigateToClosePath = useCallback(() => {
+    router.replace(onClosePath, { scroll: false });
+  }, [router, onClosePath]);
+
   useEffect(() => {
     const prefetchResult = router.prefetch(onClosePath) as unknown;
 
@@ -77,18 +81,11 @@ export default function ModalContainer({
 
     releaseProductLock();
 
+    navigateToClosePath();
+
     closeTimerRef.current = setTimeout(() => {
       closeTimerRef.current = null;
-      if (typeof window !== "undefined") {
-        const historyState = window.history.state as
-          | { idx?: number }
-          | undefined;
-        if (historyState?.idx && historyState.idx > 0) {
-          router.back();
-          return;
-        }
-      }
-      router.replace(onClosePath);
+      navigateToClosePath();
     }, 200); // volver a /products sin recargar
   };
 
