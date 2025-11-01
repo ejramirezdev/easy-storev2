@@ -1,11 +1,18 @@
 import { withAuth } from "next-auth/middleware";
+import { isAdminEmail } from "@/lib/admin";
 
 export default withAuth({
   pages: {
-    signIn: "/", // si no está logueado, envía a inicio (o /login si lo creas)
+    signIn: "/",
+  },
+  callbacks: {
+    authorized: ({ token }) => {
+      if (!token?.email) return false;
+      return isAdminEmail(token.email as string);
+    },
   },
 });
 
 export const config = {
-  matcher: ["/admin/:path*"], // protege todo /admin
+  matcher: ["/admin/:path*"],
 };

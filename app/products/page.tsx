@@ -34,6 +34,10 @@ export default async function ProductsPage({
       description: true,
       price: true, // Decimal
       imageUrl: true, // string | null
+      images: {
+        orderBy: { sortOrder: "asc" },
+        select: { url: true },
+      },
       stock: true,
     },
   });
@@ -43,7 +47,7 @@ export default async function ProductsPage({
     slug: p.slug,
     name: p.name,
     description: p.description ?? null,
-    imageUrl: p.imageUrl ?? null,
+    imageUrl: p.imageUrl ?? p.images[0]?.url ?? null,
     price: Number(p.price),
   }));
 
