@@ -202,8 +202,12 @@ export default function CheckoutPage() {
           },
           body: JSON.stringify(payload),
         });
-        const json = await res.json();
-        if (!res.ok || !json?.ok)
+        const json = (await res.json()) as {
+          ok: boolean;
+          orderId?: string;
+          error?: string;
+        };
+        if (!res.ok || !json?.ok || !json.orderId)
           throw new Error(json?.error || "No se pudo crear la orden");
         router.push(`/orders/${json.orderId}`);
       } catch (e: any) {

@@ -14,8 +14,12 @@ import Grid from "@mui/material/GridLegacy";
 type PageProps = { params: { id: string } };
 
 export default async function OrderDetailPage({ params }: PageProps) {
+  const orderId = params?.id?.trim();
+
+  if (!orderId) return notFound();
+
   const order = await prisma.order.findUnique({
-    where: { id: params.id },
+    where: { id: orderId },
     include: {
       items: {
         include: {
