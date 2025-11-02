@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx prisma/seed.ts",
-    "fix:images": "tsx scripts/refresh-product-images.ts"
+    "fix:images": "tsx scripts/refresh-product-images.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -30,6 +31,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "prisma": "^6.18.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6"
   },
