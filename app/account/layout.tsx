@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
-import { Container, Stack, Paper } from "@mui/material";
-import AccountNavigation from "@/components/account/AccountNavigation";
+import { Container, Stack, Box } from "@mui/material";
 import AccountHeader from "@/components/account/AccountHeader";
 
 export default function AccountLayout({
@@ -12,12 +11,7 @@ export default function AccountLayout({
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Stack spacing={3}>
         <AccountHeader />
-        <Paper sx={{ p: 2 }}>
-          <AccountNavigation />
-        </Paper>
-        <Paper sx={{ p: 3 }}>
-          {children}
-        </Paper>
+        <Box>{children}</Box>
       </Stack>
     </Container>
   );

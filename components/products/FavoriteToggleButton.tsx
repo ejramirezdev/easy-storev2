@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { IconButton, Tooltip } from "@mui/material";
+import { IconButton, Tooltip, useTheme } from "@mui/material";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import { signIn, useSession } from "next-auth/react";
@@ -16,6 +16,7 @@ export default function FavoriteToggleButton({ productId, size = "medium" }: Pro
   const { status } = useSession();
   const { isFavorite, add, remove } = useFavorites();
   const [loading, setLoading] = useState(false);
+  const theme = useTheme();
 
   const favorited = isFavorite(productId);
 
@@ -46,13 +47,25 @@ export default function FavoriteToggleButton({ productId, size = "medium" }: Pro
             event.stopPropagation();
             void handleClick();
           }}
-          color={favorited ? "error" : "default"}
           size={size}
           disabled={loading}
-          sx={{ color: favorited ? "#ff5c8d" : "rgba(255,255,255,0.7)" }}
+          sx={{
+            color: favorited ? theme.palette.error.main : "rgba(255,255,255,0.7)",
+            bgcolor: favorited ? "rgba(255, 82, 82, 0.16)" : "rgba(255,255,255,0.08)",
+            transition: "background-color 0.2s ease, color 0.2s ease",
+            "&:hover": {
+              bgcolor: favorited
+                ? "rgba(255, 82, 82, 0.28)"
+                : "rgba(255,255,255,0.16)",
+            },
+          }}
           aria-label={favorited ? "Quitar de favoritos" : "Agregar a favoritos"}
         >
-          {favorited ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+          {favorited ? (
+            <FavoriteIcon sx={{ color: theme.palette.error.main }} />
+          ) : (
+            <FavoriteBorderIcon sx={{ color: "rgba(255,255,255,0.9)" }} />
+          )}
         </IconButton>
       </span>
     </Tooltip>

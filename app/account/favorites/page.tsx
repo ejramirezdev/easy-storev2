@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import FavoritesContent from "@/components/account/FavoritesContent";
 import { resolveProductImageUrl } from "@/lib/products/images";
+import { Paper, Stack, Typography } from "@mui/material";
 
 export default async function AccountFavoritesPage() {
   const session = await getServerSession(authOptions);
@@ -49,5 +50,26 @@ export default async function AccountFavoritesPage() {
       },
     }));
 
-  return <FavoritesContent initialItems={items} />;
+  return (
+    <Paper
+      sx={{
+        p: { xs: 2, md: 3 },
+        borderRadius: 3,
+        border: "1px solid rgba(255,255,255,0.08)",
+        bgcolor: "rgba(255,255,255,0.02)",
+      }}
+    >
+      <Stack spacing={2}>
+        <Stack spacing={0.5}>
+          <Typography variant="h5" fontWeight={700}>
+            Favoritos
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Aquí verás los productos que guardaste para revisar más tarde.
+          </Typography>
+        </Stack>
+        <FavoritesContent initialItems={items} />
+      </Stack>
+    </Paper>
+  );
 }

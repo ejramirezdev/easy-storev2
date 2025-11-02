@@ -8,7 +8,7 @@ import {
   Alert,
   Box,
   Button,
-  Grid,
+  Paper,
   Stack,
   TextField,
   Typography,
@@ -154,191 +154,323 @@ export default function ProfileForm() {
     });
   };
 
+  const sectionSx = {
+    p: { xs: 2, md: 3 },
+    borderRadius: 3,
+    border: "1px solid rgba(255,255,255,0.08)",
+    bgcolor: "rgba(255,255,255,0.02)",
+  };
+
+  const inputSx = {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 2,
+      bgcolor: "rgba(255,255,255,0.03)",
+      "& fieldset": {
+        borderColor: "rgba(255,255,255,0.12)",
+      },
+      "&:hover fieldset": {
+        borderColor: "rgba(255,255,255,0.2)",
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: "secondary.main",
+      },
+    },
+    "& .MuiInputLabel-root": {
+      color: "rgba(255,255,255,0.7)",
+    },
+  };
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
-      <Stack spacing={4}>
+      <Stack spacing={3}>
         {status === "success" && (
           <Alert severity="success">Perfil actualizado correctamente.</Alert>
         )}
         {status === "error" && error && <Alert severity="error">{error}</Alert>}
 
-        <Box>
-          <Typography variant="h6" fontWeight={700} gutterBottom>
-            Datos personales y de envío
-          </Typography>
-          <GridLegacy container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="Nombre"
-                fullWidth
-                {...register("firstName")}
-                error={!!errors.firstName}
-                helperText={errors.firstName?.message}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="Apellido"
-                fullWidth
-                {...register("lastName")}
-                error={!!errors.lastName}
-                helperText={errors.lastName?.message}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="Email"
-                fullWidth
-                {...register("email")}
-                error={!!errors.email}
-                helperText={errors.email?.message}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField label="Teléfono" fullWidth {...register("phone")} />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                select
-                SelectProps={{ native: true }}
-                label="Tipo identificación"
-                fullWidth
-                {...register("documentType")}
-              >
-                <option value="CEDULA">Cédula</option>
-                <option value="RUC">RUC</option>
-              </TextField>
-            </Grid>
-            <Grid item xs={12} md={8}>
-              <TextField label="Nº identificación" fullWidth {...register("documentId")} />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Dirección principal"
-                fullWidth
-                {...register("shippingLine1")}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField label="Referencia" fullWidth {...register("shippingLine2")} />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField label="Ciudad" fullWidth {...register("shippingCity")} />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField label="Provincia/Estado" fullWidth {...register("shippingState")} />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                label="Código postal"
-                fullWidth
-                {...register("shippingPostalCode")}
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                label="País"
-                fullWidth
-                {...register("shippingCountry")}
-                defaultValue="EC"
-              />
-            </Grid>
-          </GridLegacy>
-        </Box>
+        <Paper sx={sectionSx}>
+          <Stack spacing={3}>
+            <Box>
+              <Typography variant="h6" fontWeight={700}>
+                Datos personales y de envío
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Completa esta información para agilizar tus futuras compras y envíos.
+              </Typography>
+            </Box>
+            <GridLegacy container spacing={2}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Nombre"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("firstName")}
+                  error={!!errors.firstName}
+                  helperText={errors.firstName?.message}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Apellido"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("lastName")}
+                  error={!!errors.lastName}
+                  helperText={errors.lastName?.message}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Email"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("email")}
+                  error={!!errors.email}
+                  helperText={errors.email?.message}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Teléfono"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("phone")}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  select
+                  size="small"
+                  SelectProps={{ native: true }}
+                  label="Tipo identificación"
+                  fullWidth
+                  sx={inputSx}
+                  {...register("documentType")}
+                >
+                  <option value="CEDULA">Cédula</option>
+                  <option value="RUC">RUC</option>
+                </TextField>
+              </Grid>
+              <Grid item xs={12} md={8}>
+                <TextField
+                  label="Nº identificación"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("documentId")}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Dirección principal"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("shippingLine1")}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Referencia"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("shippingLine2")}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  label="Ciudad"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("shippingCity")}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  label="Provincia/Estado"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("shippingState")}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  label="Código postal"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("shippingPostalCode")}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  label="País"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("shippingCountry")}
+                  defaultValue="EC"
+                />
+              </Grid>
+            </GridLegacy>
+          </Stack>
+        </Paper>
 
-        <Box>
-          <Typography variant="h6" fontWeight={700} gutterBottom>
-            Datos de facturación
-          </Typography>
-          <GridLegacy container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="Nombre"
-                fullWidth
-                {...register("billingFirstName")}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="Apellido"
-                fullWidth
-                {...register("billingLastName")}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="Email"
-                fullWidth
-                {...register("billingEmail")}
-                error={!!errors.billingEmail}
-                helperText={errors.billingEmail?.message}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="Teléfono"
-                fullWidth
-                {...register("billingPhone")}
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                select
-                SelectProps={{ native: true }}
-                label="Tipo identificación"
-                fullWidth
-                {...register("billingDocumentType")}
-              >
-                <option value="CEDULA">Cédula</option>
-                <option value="RUC">RUC</option>
-              </TextField>
-            </Grid>
-            <Grid item xs={12} md={8}>
-              <TextField
-                label="Nº identificación"
-                fullWidth
-                {...register("billingDocumentId")}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField label="Dirección" fullWidth {...register("billingLine1")} />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField label="Referencia" fullWidth {...register("billingLine2")} />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField label="Ciudad" fullWidth {...register("billingCity")} />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField label="Provincia/Estado" fullWidth {...register("billingState")} />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                label="Código postal"
-                fullWidth
-                {...register("billingPostalCode")}
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                label="País"
-                fullWidth
-                {...register("billingCountry")}
-                defaultValue="EC"
-              />
-            </Grid>
-          </GridLegacy>
-        </Box>
+        <Paper sx={sectionSx}>
+          <Stack spacing={3}>
+            <Box>
+              <Typography variant="h6" fontWeight={700}>
+                Datos de facturación
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Usa estos datos si requieres factura con información específica.
+              </Typography>
+            </Box>
+            <GridLegacy container spacing={2}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Nombre"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("billingFirstName")}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Apellido"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("billingLastName")}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Email"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("billingEmail")}
+                  error={!!errors.billingEmail}
+                  helperText={errors.billingEmail?.message}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Teléfono"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("billingPhone")}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  select
+                  size="small"
+                  SelectProps={{ native: true }}
+                  label="Tipo identificación"
+                  fullWidth
+                  sx={inputSx}
+                  {...register("billingDocumentType")}
+                >
+                  <option value="CEDULA">Cédula</option>
+                  <option value="RUC">RUC</option>
+                </TextField>
+              </Grid>
+              <Grid item xs={12} md={8}>
+                <TextField
+                  label="Nº identificación"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("billingDocumentId")}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Dirección"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("billingLine1")}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Referencia"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("billingLine2")}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  label="Ciudad"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("billingCity")}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  label="Provincia/Estado"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("billingState")}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  label="Código postal"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("billingPostalCode")}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  label="País"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  {...register("billingCountry")}
+                  defaultValue="EC"
+                />
+              </Grid>
+            </GridLegacy>
+          </Stack>
+        </Paper>
 
-        <Box display="flex" justifyContent="flex-end">
+        <Paper
+          sx={{
+            ...sectionSx,
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
+          }}
+        >
           <Button
             type="submit"
             variant="contained"
+            size="large"
             disabled={isSubmitting || isPending}
           >
             {isSubmitting || isPending ? "Guardando..." : "Guardar cambios"}
           </Button>
-        </Box>
+        </Paper>
       </Stack>
     </form>
   );
