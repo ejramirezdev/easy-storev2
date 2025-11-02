@@ -4,16 +4,18 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import FavoritesContent from "@/components/account/FavoritesContent";
 import { resolveProductImageUrl } from "@/lib/products/images";
+import { ensureSessionUser } from "@/lib/session-user";
 import { Paper, Stack, Typography } from "@mui/material";
 
 export default async function AccountFavoritesPage() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const sessionUser = await ensureSessionUser(session);
+  if (!sessionUser) {
     redirect("/api/auth/signin?callbackUrl=/account/favorites");
   }
 
   const favorites = await prisma.favorite.findMany({
-    where: { userId: session.user.id },
+    where: { userId: sessionUser.id },
     orderBy: { createdAt: "desc" },
     include: {
       product: {
