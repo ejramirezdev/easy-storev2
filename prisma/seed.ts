@@ -1,7 +1,14 @@
 // prisma/seed.ts
 import { PrismaClient, Prisma } from "@prisma/client";
+import { resolvePrismaDatabaseUrl } from "../lib/prisma-url";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: resolvePrismaDatabaseUrl(),
+    },
+  },
+});
 
 async function main() {
   // Categorías base
