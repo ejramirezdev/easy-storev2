@@ -4,6 +4,7 @@ import { z } from "zod";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { resolveProductImageUrl } from "@/lib/products/images";
+import { ensureSessionUser } from "@/lib/session-user";
 
 const payloadSchema = z.object({
   productId: z.string().uuid(),
@@ -11,12 +12,13 @@ const payloadSchema = z.object({
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const sessionUser = await ensureSessionUser(session);
+  if (!sessionUser) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
   const favorites = await prisma.favorite.findMany({
-    where: { userId: session.user.id },
+    where: { userId: sessionUser.id },
     orderBy: { createdAt: "desc" },
     include: {
       product: {
@@ -62,7 +64,8 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const sessionUser = await ensureSessionUser(session);
+  if (!sessionUser) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
@@ -83,12 +86,12 @@ export async function POST(req: Request) {
   await prisma.favorite.upsert({
     where: {
       userId_productId: {
-        userId: session.user.id,
+        userId: sessionUser.id,
         productId: result.data.productId,
       },
     },
     create: {
-      userId: session.user.id,
+      userId: sessionUser.id,
       productId: result.data.productId,
     },
     update: {},
@@ -99,7 +102,8 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const sessionUser = await ensureSessionUser(session);
+  if (!sessionUser) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
@@ -110,7 +114,7 @@ export async function DELETE(req: Request) {
   }
 
   await prisma.favorite.deleteMany({
-    where: { userId: session.user.id, productId },
+    where: { userId: sessionUser.id, productId },
   });
 
   return NextResponse.json({ ok: true });

@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { resolvePrismaDatabaseUrl } from "./prisma-url";
 
 declare global {
   // evita múltiples instancias en dev (HMR)
@@ -9,6 +10,11 @@ declare global {
 function createPrismaClient() {
   try {
     const client = new PrismaClient({
+      datasources: {
+        db: {
+          url: resolvePrismaDatabaseUrl(),
+        },
+      },
       log:
         process.env.NODE_ENV === "development"
           ? ["query", "error", "warn"]

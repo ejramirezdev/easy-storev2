@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getOrCreateCart } from "@/lib/cart";
 import { calcTotals } from "@/lib/totals"; // 👈 usa tu totals actual
 import { resolveProductImageUrl } from "@/lib/products/images";
+import { ensureSessionUser } from "@/lib/session-user";
 
 // Utilidad: formatea el carrito a un payload plano (Decimal -> number)
 async function buildCartPayload(cartId: string) {
@@ -78,7 +79,8 @@ async function buildCartPayload(cartId: string) {
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  const userId = session?.user?.id;
+  const sessionUser = await ensureSessionUser(session);
+  const userId = sessionUser?.id;
   const { cart, setCookieId } = await getOrCreateCart(userId);
 
   const payload = await buildCartPayload(cart.id);
@@ -93,7 +95,8 @@ export async function GET() {
 // body: { productId: string, quantity?: number } -> incrementa (default 1)
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  const userId = session?.user?.id;
+  const sessionUser = await ensureSessionUser(session);
+  const userId = sessionUser?.id;
   const { productId, quantity = 1 } = (await req.json()) as {
     productId: string;
     quantity?: number;
@@ -153,7 +156,8 @@ export async function POST(req: Request) {
 // body: { productId: string, quantity: number } -> setea cantidad exacta (0 elimina)
 export async function PATCH(req: Request) {
   const session = await getServerSession(authOptions);
-  const userId = session?.user?.id;
+  const sessionUser = await ensureSessionUser(session);
+  const userId = sessionUser?.id;
   const { productId, quantity } = (await req.json()) as {
     productId: string;
     quantity: number;
@@ -200,7 +204,8 @@ export async function PATCH(req: Request) {
 // body: { productId: string } -> elimina ítem
 export async function DELETE(req: Request) {
   const session = await getServerSession(authOptions);
-  const userId = session?.user?.id;
+  const sessionUser = await ensureSessionUser(session);
+  const userId = sessionUser?.id;
   const { productId } = (await req.json()) as { productId: string };
 
   if (!productId) {

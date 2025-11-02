@@ -1,5 +1,12 @@
 import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+import { resolvePrismaDatabaseUrl } from "../lib/prisma-url";
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: resolvePrismaDatabaseUrl(),
+    },
+  },
+});
 
 type Img = { url: string; alt?: string | null };
 
