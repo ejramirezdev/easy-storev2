@@ -1,7 +1,24 @@
+-- Drop existing order address relations so we can rebuild them with the new structure
+ALTER TABLE "Order" DROP CONSTRAINT IF EXISTS "Order_shippingAddressId_fkey";
+ALTER TABLE "Order" DROP CONSTRAINT IF EXISTS "Order_billingAddressId_fkey";
+
+ALTER TABLE "Order"
+    DROP COLUMN IF EXISTS "billingAddressId",
+    DROP COLUMN IF EXISTS "couponAmount",
+    DROP COLUMN IF EXISTS "couponCode",
+    DROP COLUMN IF EXISTS "discountTotal",
+    DROP COLUMN IF EXISTS "shippingAddressId",
+    DROP COLUMN IF EXISTS "shippingTotal",
+    DROP COLUMN IF EXISTS "subtotal",
+    DROP COLUMN IF EXISTS "taxTotal";
+
+DROP TABLE IF EXISTS "Address";
+
+DROP TYPE IF EXISTS "AddressType";
+
 -- CreateEnum
 CREATE TYPE "AddressType" AS ENUM ('BILLING', 'SHIPPING');
 
--- CreateTable
 CREATE TABLE "Address" (
     "id" TEXT NOT NULL,
     "type" "AddressType" NOT NULL,
