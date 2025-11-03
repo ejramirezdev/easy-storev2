@@ -3,17 +3,12 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getServerSession } from "next-auth";
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound, redirect } from "next/navigation";
-import {
-  Box,
-  Button,
-  Container,
-  Divider,
-  Paper,
-  Stack,
-  Typography,
-} from "@mui/material";
-import Link from "next/link";
+import { Box, Container, Divider, Paper, Stack, Typography } from "@mui/material";
 import Grid from "@mui/material/GridLegacy";
+import PayboxButton, {
+  PayboxAddress,
+  PayboxConfig,
+} from "@/components/orders/PayboxButton";
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function OrderDetailPage({ params }: PageProps) {
@@ -67,6 +62,15 @@ export default async function OrderDetailPage({ params }: PageProps) {
   const total = order.total
     ? Number(order.total)
     : subtotal - discount + shipping;
+
+  const payboxBillingAddress = billingAddress
+    ? mapAddressToPaybox(billingAddress)
+    : null;
+  const payboxShippingAddress = shippingAddress
+    ? mapAddressToPaybox(shippingAddress)
+    : null;
+
+  const payboxConfig = resolvePayboxConfig();
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -137,12 +141,19 @@ export default async function OrderDetailPage({ params }: PageProps) {
           </Paper>
 
           <Box mt={2}>
-            {/* Placeholder para integrar Kushki/Datafast en el siguiente paso */}
-            <Link href="/" style={{ textDecoration: "none" }}>
-              <Button variant="contained" fullWidth>
-                Pagar ahora (placeholder)
-              </Button>
-            </Link>
+            <PayboxButton
+              orderId={order.id}
+              totals={{
+                subtotal,
+                discount,
+                shipping,
+                total,
+                currency: payboxConfig.currency,
+              }}
+              billingAddress={payboxBillingAddress}
+              shippingAddress={payboxShippingAddress}
+              payboxConfig={payboxConfig}
+            />
           </Box>
         </Grid>
       </Grid>
@@ -210,4 +221,92 @@ function Row({
       </Typography>
     </Stack>
   );
+}
+
+function resolvePayboxConfig(): PayboxConfig {
+  const rawEnv =
+    process.env.PAYBOX_ENVIRONMENT ??
+    process.env.NEXT_PUBLIC_PAYBOX_ENV ??
+    "sandbox";
+  const normalizedEnv = rawEnv.toLowerCase() === "production" ? "production" : "sandbox";
+
+  const scriptUrls: Partial<Record<"sandbox" | "production", string>> = {};
+  if (process.env.PAYBOX_SANDBOX_SCRIPT_URL) {
+    scriptUrls.sandbox = process.env.PAYBOX_SANDBOX_SCRIPT_URL;
+  }
+  if (process.env.PAYBOX_PRODUCTION_SCRIPT_URL) {
+    scriptUrls.production = process.env.PAYBOX_PRODUCTION_SCRIPT_URL;
+  }
+
+  const extras: Record<string, unknown> = {
+    channel: "order-detail",
+  };
+  if (process.env.PAYBOX_BUTTON_ID) {
+    extras.buttonId = process.env.PAYBOX_BUTTON_ID;
+  }
+  if (process.env.PAYBOX_RESPONSE_URL) {
+    extras.responseUrl = process.env.PAYBOX_RESPONSE_URL;
+  }
+  if (process.env.PAYBOX_CONFIRMATION_URL) {
+    extras.confirmationUrl = process.env.PAYBOX_CONFIRMATION_URL;
+  }
+
+  return {
+    environment: normalizedEnv,
+    publicKey: process.env.PAYBOX_PUBLIC_KEY ?? null,
+    merchantId: process.env.PAYBOX_MERCHANT_ID ?? null,
+    merchantName: process.env.PAYBOX_MERCHANT_NAME ?? null,
+    merchantEmail: process.env.PAYBOX_MERCHANT_EMAIL ?? "",
+    scriptUrls: Object.keys(scriptUrls).length > 0 ? scriptUrls : undefined,
+    currency: process.env.PAYBOX_CURRENCY ?? "USD",
+    extras,
+    flags: {
+      autoReturn: (process.env.PAYBOX_AUTO_RETURN ?? "true") !== "false",
+      generateInvoice: process.env.PAYBOX_GENERATE_INVOICE === "true",
+      sendMail: (process.env.PAYBOX_SEND_MAIL ?? "true") !== "false",
+      showReceipt: process.env.PAYBOX_SHOW_RECEIPT === "true",
+    },
+  };
+}
+
+function mapAddressToPaybox(address: any): PayboxAddress {
+  const streetLines = Array.isArray(address.street)
+    ? address.street
+    : typeof address.street === "string"
+    ? address.street.split("\n")
+    : [];
+  const [firstLine = "", ...rest] = streetLines;
+  const line2 = rest.join(" ").trim();
+  const normalizedPhone =
+    typeof address.phone === "string" && address.phone.trim().length === 0
+      ? null
+      : address.phone ?? null;
+
+  const normalizedState =
+    typeof address.state === "string" && address.state.trim().length === 0
+      ? null
+      : address.state ?? null;
+
+  const normalizedLine1 =
+    typeof address.line1 === "string" && address.line1.trim().length > 0
+      ? address.line1
+      : firstLine || (typeof address.street === "string" ? address.street : "");
+
+  return {
+    firstName: address.firstName ?? "",
+    lastName: address.lastName ?? "",
+    email: address.email ?? "",
+    phone: normalizedPhone,
+    documentType: address.documentType ?? null,
+    document:
+      typeof address.document === "string" && address.document.trim().length > 0
+        ? address.document
+        : null,
+    line1: normalizedLine1,
+    line2: (address.line2 as string | undefined) ?? (line2.length > 0 ? line2 : null),
+    city: address.city ?? "",
+    state: normalizedState,
+    postalCode: address.postalCode ?? null,
+    country: address.country ?? "EC",
+  };
 }
