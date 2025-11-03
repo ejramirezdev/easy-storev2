@@ -19,10 +19,14 @@ export default function HardwareServicesPage() {
       <Box
         component="main"
         sx={{
-          bgcolor: "#050506",
+          position: "relative",
           color: "text.primary",
           minHeight: "100vh",
           pb: { xs: 10, md: 14 },
+          background:
+            "radial-gradient(circle at 12% 18%, rgba(120,0,190,0.35), transparent 45%), " +
+            "radial-gradient(circle at 88% 12%, rgba(102,0,255,0.25), transparent 55%), " +
+            "radial-gradient(circle at 50% 85%, rgba(120,0,140,0.2), transparent 60%), #040308",
         }}
       >
         <Box
@@ -43,9 +47,19 @@ export default function HardwareServicesPage() {
               gap: { xs: 5, md: 8 },
               alignItems: "center",
               background:
-                "linear-gradient(135deg, rgba(113,0,150,0.6) 0%, rgba(5,5,6,0.9) 55%, rgba(5,5,6,1) 100%)",
+                "linear-gradient(135deg, rgba(113,0,150,0.68) 0%, rgba(16,0,50,0.9) 55%, rgba(5,5,6,0.95) 100%)",
               px: { xs: 4, md: 6 },
               py: { xs: 6, md: 8 },
+              borderRadius: 4,
+              overflow: "hidden",
+              boxShadow: "0 22px 45px rgba(0,0,0,0.35)",
+              transition: "transform 0.45s ease, box-shadow 0.45s ease",
+              transformOrigin: "center",
+              willChange: "transform",
+              "&:hover": {
+                transform: "scale(1.02)",
+                boxShadow: "0 28px 55px rgba(0,0,0,0.45)",
+              },
             }}
           >
             <Stack spacing={2.5}>
@@ -134,7 +148,16 @@ export default function HardwareServicesPage() {
                 minHeight: { xs: 320, md: 420 },
                 overflow: "hidden",
                 background:
-                  "linear-gradient(140deg, rgba(5,5,6,0.85) 10%, rgba(5,5,6,0.55) 45%, rgba(5,5,6,0.85) 95%)",
+                  "linear-gradient(140deg, rgba(12,0,40,0.9) 10%, rgba(5,5,6,0.65) 45%, rgba(5,5,6,0.92) 95%)",
+                borderRadius: 4,
+                boxShadow: "0 22px 45px rgba(0,0,0,0.35)",
+                transition: "transform 0.45s ease, box-shadow 0.45s ease",
+                transformOrigin: "center",
+                willChange: "transform",
+                "&:hover": {
+                  transform: "scale(1.02)",
+                  boxShadow: "0 28px 55px rgba(0,0,0,0.45)",
+                },
               }}
             >
               <Image
@@ -168,7 +191,7 @@ export default function HardwareServicesPage() {
             <Box
               sx={{
                 background:
-                  "linear-gradient(135deg, rgba(37,0,76,0.8) 0%, rgba(5,5,6,0.95) 60%)",
+                  "linear-gradient(135deg, rgba(37,0,76,0.88) 0%, rgba(12,0,60,0.9) 45%, rgba(5,5,6,0.95) 90%)",
                 minHeight: { xs: 320, md: 420 },
                 display: "flex",
                 flexDirection: { xs: "column", md: "row" },
@@ -177,6 +200,15 @@ export default function HardwareServicesPage() {
                 px: { xs: 4, md: 6 },
                 py: { xs: 6, md: 0 },
                 gap: { xs: 4, md: 6 },
+                borderRadius: 4,
+                boxShadow: "0 22px 45px rgba(0,0,0,0.35)",
+                transition: "transform 0.45s ease, box-shadow 0.45s ease",
+                transformOrigin: "center",
+                willChange: "transform",
+                "&:hover": {
+                  transform: "scale(1.02)",
+                  boxShadow: "0 28px 55px rgba(0,0,0,0.45)",
+                },
               }}
             >
               <Stack spacing={2.5} sx={{ maxWidth: 420 }}>
@@ -198,7 +230,7 @@ export default function HardwareServicesPage() {
                 </Link>
               </Stack>
 
-              <Box sx={{ position: "relative", width: 180, height: 180 }}>
+              <Box sx={{ position: "relative", width: { xs: 200, md: 240 }, height: { xs: 200, md: 240 } }}>
                 <Image
                   src="/services/hardware/certified.png"
                   alt="Sello de certificación profesional"
