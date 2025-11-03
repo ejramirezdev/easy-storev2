@@ -27,8 +27,8 @@ const slides: Slide[] = [
     title: "Innovación al alcance de tus manos.",
     subtitle:
       "Productos tecnológicos y servicios profesionales en software y hardware.",
-    cta1: { label: "Ver productos", href: "/productos" },
-    cta2: { label: "Solicitar servicio", href: "/servicios" },
+    cta1: { label: "Ver productos", href: "/products" },
+    cta2: { label: "Solicitar servicio", href: "/services/hardware" },
     bg: "/hero/hero-products.png",
     tag: "Destacados",
   },
@@ -36,7 +36,7 @@ const slides: Slide[] = [
     title: "Reparación profesional de laptops",
     subtitle:
       "Diagnóstico, mantenimiento y optimización con repuestos de calidad.",
-    cta1: { label: "Servicio de hardware", href: "/servicios#hardware" },
+    cta1: { label: "Servicio de hardware", href: "/services/hardware" },
     cta2: { label: "Agenda tu cita", href: "/contacto" },
     bg: "/hero/hero-hardware.png",
     tag: "Hardware",
@@ -44,7 +44,7 @@ const slides: Slide[] = [
   {
     title: "Desarrollo de software a medida",
     subtitle: "Web apps modernas, seguras y escalables para tu negocio.",
-    cta1: { label: "Servicios de software", href: "/servicios#software" },
+    cta1: { label: "Servicios de software", href: "/services/software" },
     cta2: { label: "Cotizar proyecto", href: "/contacto" },
     bg: "/hero/hero-software.png",
     tag: "Software",
