@@ -21,6 +21,53 @@ export const authOptions: AuthOptions = {
   session: { strategy: "jwt" },
   pages: {}, // si luego quieres custom login page
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // Vincular cuenta Google a usuario existente si el email coincide
+      // Esto se ejecuta ANTES de que el adapter intente vincular, evitando OAuthAccountNotLinked
+      if (account?.provider === "google" && user?.email && account.providerAccountId) {
+        try {
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email },
+          });
+          
+          if (existingUser) {
+            // Verificar si ya tiene cuenta Google vinculada
+            const existingAccount = await prisma.account.findFirst({
+              where: {
+                userId: existingUser.id,
+                provider: "google",
+              },
+            });
+            
+            // Si no tiene cuenta Google vinculada, la vinculamos ANTES de que el adapter falle
+            if (!existingAccount) {
+              await prisma.account.create({
+                data: {
+                  userId: existingUser.id,
+                  type: account.type,
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                  access_token: account.access_token ?? null,
+                  refresh_token: account.refresh_token ?? null,
+                  expires_at: account.expires_at ?? null,
+                  token_type: account.token_type ?? null,
+                  scope: account.scope ?? null,
+                  id_token: account.id_token ?? null,
+                  session_state: account.session_state ?? null,
+                },
+              });
+              // Actualizar el user.id para que el adapter use el usuario existente
+              user.id = existingUser.id;
+            }
+          }
+        } catch (error) {
+          console.error("Error vinculando cuenta Google:", error);
+          // Si hay error, permitir que continúe el flujo normal
+        }
+      }
+      // Siempre permitir el signIn (el adapter ahora encontrará la cuenta vinculada)
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id as string;

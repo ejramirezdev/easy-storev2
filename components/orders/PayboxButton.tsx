@@ -204,6 +204,51 @@ export default function PayboxButton({
     payboxConfig.merchantName,
   ]);
 
+  // Construye el payload esperado por el SDK legado de PLUX (initializePpx)
+  const legacyPayload = useMemo(() => {
+    const total = Number.isFinite(totals.total) ? totals.total : 0;
+    const direction = customerAddress?.line1 || customerAddress?.line2 || "";
+
+    const legacy: Record<string, any> = {
+      PayboxRemail: payboxConfig.merchantEmail, // correo del comercio
+      PayboxSendmail: customerEmail || undefined,
+      PayboxRename: payboxConfig.merchantName || undefined,
+      PayboxSendname: customerName || undefined,
+      PayboxBase0: "0.00", // si no tenemos desglose de IVA, mandamos 0
+      PayboxBase12: String(total.toFixed ? total.toFixed(2) : total),
+      PayboxDescription: `Orden ${orderId}`,
+      PayboxLanguage: (payboxConfig.extras as any)?.language || "es",
+      PayboxDirection: direction,
+      PayBoxClientPhone: customerAddress?.phone || undefined,
+      PayboxProduction: payboxConfig.environment === "production",
+      PayboxEnvironment: payboxConfig.environment === "production" ? "prod" : "sandbox",
+      PayboxPagoPlux: (payboxConfig.extras as any)?.pagoPlux ?? true,
+      PayboxEvento: (payboxConfig.extras as any)?.evento || undefined,
+      PayboxOnlyCredit: (payboxConfig.extras as any)?.onlyCredit ?? undefined,
+      PayboxonlyDebit: (payboxConfig.extras as any)?.onlyDebit ?? undefined,
+      PayboxIdElement: (payboxConfig.extras as any)?.buttonId || undefined,
+      PayboxExtras: (payboxConfig.extras as any)?.orderId || orderId,
+      PayboxPermitirBloquearDiferimientos: (payboxConfig.extras as any)?.permitirBloquearDiferimientos ?? undefined,
+      PayboxPermitirDatosAdicionales: (payboxConfig.extras as any)?.permitirDatosAdicionales ?? undefined,
+    };
+
+    // Recurrentes si están habilitados
+    if ((payboxConfig.extras as any)?.recurrent) {
+      legacy.PayboxRecurrent = true;
+      legacy.PayboxIdPlan = (payboxConfig.extras as any)?.planId || undefined;
+      legacy.PayboxPermitirCalendarizar = true;
+      legacy.PayboxPagoInmediato = true;
+      legacy.PayboxCobroPrueba = false;
+      legacy.PayBoxClientIdentification = customerAddress?.document || undefined;
+      legacy.PayboxAmountVariablePlan = (payboxConfig.extras as any)?.amountVariable || false;
+      legacy.PayboxFrequencyPlan = (payboxConfig.extras as any)?.frequency || undefined;
+      legacy.PayboxTieneIvaPlan = true;
+      legacy.PayboxDescriptionPlan = (payboxConfig.extras as any)?.descriptionPlan || `Plan orden ${orderId}`;
+    }
+
+    return legacy;
+  }, [customerAddress, customerEmail, customerName, orderId, payboxConfig, totals.total]);
+
   const ready = jqueryLoaded && sdkLoaded;
 
   const closeSnackbar = useCallback(() => setSnackbar(null), []);
@@ -250,9 +295,35 @@ export default function PayboxButton({
       return;
     }
 
-    const payboxGlobal = window.PayboxCheckout ?? window.Paybox;
+    // Intentar múltiples variantes conocidas del objeto global expuesto por el SDK
+    const resolveGlobal = (): PayboxGlobal | undefined => {
+      const candidates: any[] = [
+        (window as any).PayboxCheckout,
+        (window as any).Paybox,
+        (window as any).payboxCheckout,
+        (window as any).paybox,
+        (window as any).PXPaybox,
+      ];
+      return candidates.find((c) => typeof c !== "undefined") as any;
+    };
+
+    let payboxGlobal = resolveGlobal();
     if (!payboxGlobal) {
-      setError("No se pudo inicializar Paybox. Verifica la configuración del comercio.");
+      // Reintento breve: algunos SDKs inicializan el global ligeramente después del onLoad
+      setTimeout(() => {
+        const retry = resolveGlobal();
+        if (!retry) {
+          const available = Object.keys(window).filter((k) => /paybox|px|plux/i.test(k)).join(", ");
+          setError(
+            available
+              ? `No se pudo inicializar Paybox (globals vistos: ${available}). Verifica la URL del SDK y el dominio.`
+              : "No se pudo inicializar Paybox. Verifica la configuración del comercio."
+          );
+          return;
+        }
+        // Llamar nuevamente a open con el handler resuelto
+        tryOpen(retry as any);
+      }, 300);
       return;
     }
 
@@ -265,65 +336,94 @@ export default function PayboxButton({
       buttonId: payboxConfig.extras?.buttonId ?? undefined,
     };
 
-    let handler: PayboxGlobalHandler | undefined;
-    try {
-      if (typeof payboxGlobal === "function") {
-        handler = payboxGlobal(config) || undefined;
-      } else if (typeof payboxGlobal.configure === "function") {
-        handler = payboxGlobal.configure(config);
-      } else if (payboxGlobal.checkout && typeof payboxGlobal.checkout.configure === "function") {
-        handler = payboxGlobal.checkout.configure(config);
-      } else if (payboxGlobal.checkout && typeof payboxGlobal.checkout === "function") {
-        handler = (payboxGlobal.checkout as any)(config);
-      } else {
-        handler = (payboxGlobal as PayboxGlobalHandler) ?? undefined;
+    const tryOpen = (globalRef: PayboxGlobal) => {
+      let handler: PayboxGlobalHandler | undefined;
+      try {
+        if (typeof globalRef === "function") {
+          handler = (globalRef as any)(config) || undefined;
+        } else if (typeof (globalRef as any).configure === "function") {
+          handler = (globalRef as any).configure(config);
+        } else if ((globalRef as any).checkout && typeof (globalRef as any).checkout.configure === "function") {
+          handler = (globalRef as any).checkout.configure(config);
+        } else if ((globalRef as any).checkout && typeof (globalRef as any).checkout === "function") {
+          handler = (globalRef as any).checkout(config);
+        } else {
+          handler = (globalRef as any) ?? undefined;
+        }
+      } catch (err) {
+        console.error("Error configuring Paybox", err);
+        setError("No se pudo configurar el pago. Revisa la consola para más detalles.");
+        return;
       }
-    } catch (err) {
-      console.error("Error configuring Paybox", err);
-      setError("No se pudo configurar el pago. Revisa la consola para más detalles.");
-      return;
-    }
 
-    const openFn: ((...args: any[]) => void) | undefined =
-      handler?.open ||
-      (typeof payboxGlobal !== "function" && typeof payboxGlobal.open === "function"
-        ? payboxGlobal.open
-        : undefined) ||
-      (payboxGlobal as any)?.checkout?.open;
+      const openFn: ((...args: any[]) => void) | undefined =
+        handler?.open ||
+        (typeof globalRef !== "function" && typeof (globalRef as any).open === "function"
+          ? (globalRef as any).open
+          : undefined) ||
+        (globalRef as any)?.checkout?.open;
 
-    if (typeof openFn !== "function") {
-      setError("El SDK de Paybox no expone un método de apertura compatible.");
-      return;
-    }
+      // Fallback para SDK alternativo que expone initializePpx
+      const initializePpx = (window as any).initializePpx;
+      const tryOpenWithInitializePpx = () => {
+        if (typeof initializePpx !== "function") return false;
+        try {
+          // Variante clásica: setear window.data y llamar initializePpx()
+          (window as any).data = legacyPayload;
+          initializePpx();
+          return true;
+        } catch (e1) {
+          console.warn("initializePpx() con window.data falló, probando variante payload único", e1);
+        }
+        try {
+          // Algunas variantes aceptan un único objeto con todo
+          initializePpx({ ...legacyPayload });
+          return true;
+        } catch (e2) {
+          console.error("initializePpx fallback falló", e2);
+          return false;
+        }
+      };
 
-    const callbacks = {
-      onAuthorize: (payload: unknown) => onAuthorize(payload),
-      onClose: () => {
-        setSnackbar({
-          open: true,
-          severity: "info",
-          message: "Se cerró la ventana de pago.",
-        });
-      },
-      onCancel: () => {
-        setSnackbar({
-          open: true,
-          severity: "info",
-          message: "El pago fue cancelado por el usuario.",
-        });
-      },
+      if (typeof openFn !== "function") {
+        const ok = tryOpenWithInitializePpx();
+        if (!ok) {
+          setError("El SDK de Paybox no expone un método de apertura compatible.");
+        }
+        return;
+      }
+
+      const callbacks = {
+        onAuthorize: (payload: unknown) => onAuthorize(payload),
+        onClose: () => {
+          setSnackbar({
+            open: true,
+            severity: "info",
+            message: "Se cerró la ventana de pago.",
+          });
+        },
+        onCancel: () => {
+          setSnackbar({
+            open: true,
+            severity: "info",
+            message: "El pago fue cancelado por el usuario.",
+          });
+        },
+      };
+
+      try {
+        if (openFn.length >= 2) {
+          openFn(data, callbacks);
+        } else {
+          openFn({ ...data, ...callbacks });
+        }
+      } catch (err) {
+        console.error("Error opening Paybox", err);
+        setError("No se pudo abrir la ventana de pago de Paybox.");
+      }
     };
 
-    try {
-      if (openFn.length >= 2) {
-        openFn(data, callbacks);
-      } else {
-        openFn({ ...data, ...callbacks });
-      }
-    } catch (err) {
-      console.error("Error opening Paybox", err);
-      setError("No se pudo abrir la ventana de pago de Paybox.");
-    }
+    tryOpen(payboxGlobal as any);
   }, [data, onAuthorize, payboxConfig, ready]);
 
   return (

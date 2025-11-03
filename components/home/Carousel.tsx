@@ -28,7 +28,7 @@ const slides: Slide[] = [
     subtitle:
       "Productos tecnológicos y servicios profesionales en software y hardware.",
     cta1: { label: "Ver productos", href: "/products" },
-    cta2: { label: "Solicitar servicio", href: "/services/hardware" },
+    cta2: { label: "Nuestros servicios", href: "/services" },
     bg: "/hero/hero-products.png",
     tag: "Destacados",
   },

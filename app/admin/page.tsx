@@ -6,6 +6,7 @@ import { adminProductInclude, toAdminProduct } from "@/lib/products/serializatio
 import type { AdminCategory, AdminProduct } from "@/lib/products/types";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import AdminPayboxSettings from "@/components/admin/AdminPayboxSettings";
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions);
@@ -34,10 +35,13 @@ export default async function AdminPage() {
   }));
 
   return (
-    <AdminProductManager
-      initialProducts={formatted}
-      categories={formattedCategories}
-      adminName={session.user?.name ?? email ?? "Administrador"}
-    />
+    <>
+      <AdminPayboxSettings />
+      <AdminProductManager
+        initialProducts={formatted}
+        categories={formattedCategories}
+        adminName={session.user?.name ?? email ?? "Administrador"}
+      />
+    </>
   );
 }

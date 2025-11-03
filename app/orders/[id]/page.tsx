@@ -70,7 +70,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
     ? mapAddressToPaybox(shippingAddress)
     : null;
 
-  const payboxConfig = resolvePayboxConfig();
+  const payboxConfig = await resolvePayboxConfig();
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -223,7 +223,7 @@ function Row({
   );
 }
 
-function resolvePayboxConfig(): PayboxConfig {
+async function resolvePayboxConfig(): Promise<PayboxConfig> {
   const rawEnv =
     process.env.PAYBOX_ENVIRONMENT ??
     process.env.NEXT_PUBLIC_PAYBOX_ENV ??
@@ -250,13 +250,44 @@ function resolvePayboxConfig(): PayboxConfig {
   if (process.env.PAYBOX_CONFIRMATION_URL) {
     extras.confirmationUrl = process.env.PAYBOX_CONFIRMATION_URL;
   }
+  // Banderas desde variables de entorno (fallback)
+  if (process.env.PAYBOX_ONLY_CREDIT) {
+    extras.onlyCredit = process.env.PAYBOX_ONLY_CREDIT === "true";
+  }
+  if (process.env.PAYBOX_ONLY_DEBIT) {
+    extras.onlyDebit = process.env.PAYBOX_ONLY_DEBIT === "true";
+  }
+  if (process.env.PAYBOX_BLOCK_DEFERRED) {
+    extras.permitirBloquearDiferimientos = process.env.PAYBOX_BLOCK_DEFERRED === "true";
+  }
+  if (process.env.PAYBOX_EXTRA_FIELDS) {
+    extras.permitirDatosAdicionales = process.env.PAYBOX_EXTRA_FIELDS === "true";
+  }
+  if (process.env.PAYBOX_RECURRENT) {
+    extras.recurrent = process.env.PAYBOX_RECURRENT === "true";
+  }
+
+  // Fusionar con configuración administrable (si existe)
+  const db = await prisma.payboxSettings.findFirst();
+  if (db) {
+    extras.onlyCredit = db.onlyCredit;
+    extras.onlyDebit = db.onlyDebit;
+    extras.permitirBloquearDiferimientos = db.blockDeferred;
+    extras.permitirDatosAdicionales = db.extraFields;
+    extras.recurrent = db.recurrentEnabled;
+    extras.planId = db.planId ?? undefined;
+    extras.frequency = db.frequency ?? undefined;
+    extras.amountVariable = db.amountVariable;
+    if (db.responseUrl) extras.responseUrl = db.responseUrl;
+    if (db.confirmationUrl) extras.confirmationUrl = db.confirmationUrl;
+  }
 
   return {
-    environment: normalizedEnv,
+    environment: (db?.environment as any) || normalizedEnv,
     publicKey: process.env.PAYBOX_PUBLIC_KEY ?? null,
     merchantId: process.env.PAYBOX_MERCHANT_ID ?? null,
-    merchantName: process.env.PAYBOX_MERCHANT_NAME ?? null,
-    merchantEmail: process.env.PAYBOX_MERCHANT_EMAIL ?? "",
+    merchantName: db?.merchantName ?? process.env.PAYBOX_MERCHANT_NAME ?? null,
+    merchantEmail: db?.merchantEmail ?? process.env.PAYBOX_MERCHANT_EMAIL ?? "",
     scriptUrls: Object.keys(scriptUrls).length > 0 ? scriptUrls : undefined,
     currency: process.env.PAYBOX_CURRENCY ?? "USD",
     extras,

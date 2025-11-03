@@ -78,6 +78,7 @@ export default function ProfileForm() {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -199,49 +200,53 @@ export default function ProfileForm() {
               </Typography>
             </Box>
             <GridLegacy container spacing={2}>
-              <Grid item xs={12} md={6}>
+              <GridLegacy item xs={12} md={6}>
                 <TextField
                   label="Nombre"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("firstName") }}
                   {...register("firstName")}
                   error={!!errors.firstName}
                   helperText={errors.firstName?.message}
                 />
-              </Grid>
-              <Grid item xs={12} md={6}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={6}>
                 <TextField
                   label="Apellido"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("lastName") }}
                   {...register("lastName")}
                   error={!!errors.lastName}
                   helperText={errors.lastName?.message}
                 />
-              </Grid>
-              <Grid item xs={12} md={6}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={6}>
                 <TextField
                   label="Email"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("email") }}
                   {...register("email")}
                   error={!!errors.email}
                   helperText={errors.email?.message}
                 />
-              </Grid>
-              <Grid item xs={12} md={6}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={6}>
                 <TextField
                   label="Teléfono"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("phone") }}
                   {...register("phone")}
                 />
-              </Grid>
-              <Grid item xs={12} md={4}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={4}>
                 <TextField
                   select
                   size="small"
@@ -254,71 +259,78 @@ export default function ProfileForm() {
                   <option value="CEDULA">Cédula</option>
                   <option value="RUC">RUC</option>
                 </TextField>
-              </Grid>
-              <Grid item xs={12} md={8}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={8}>
                 <TextField
                   label="Nº identificación"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("documentId") }}
                   {...register("documentId")}
                 />
-              </Grid>
-              <Grid item xs={12}>
+              </GridLegacy>
+              <GridLegacy item xs={12}>
                 <TextField
                   label="Dirección principal"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("shippingLine1") }}
                   {...register("shippingLine1")}
                 />
-              </Grid>
-              <Grid item xs={12}>
+              </GridLegacy>
+              <GridLegacy item xs={12}>
                 <TextField
                   label="Referencia"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("shippingLine2") }}
                   {...register("shippingLine2")}
                 />
-              </Grid>
-              <Grid item xs={12} md={4}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={4}>
                 <TextField
                   label="Ciudad"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("shippingCity") }}
                   {...register("shippingCity")}
                 />
-              </Grid>
-              <Grid item xs={12} md={4}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={4}>
                 <TextField
                   label="Provincia/Estado"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("shippingState") }}
                   {...register("shippingState")}
                 />
-              </Grid>
-              <Grid item xs={12} md={4}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={4}>
                 <TextField
                   label="Código postal"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("shippingPostalCode") }}
                   {...register("shippingPostalCode")}
                 />
-              </Grid>
-              <Grid item xs={12} md={4}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={4}>
                 <TextField
                   label="País"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("shippingCountry") }}
                   {...register("shippingCountry")}
                   defaultValue="EC"
                 />
-              </Grid>
+              </GridLegacy>
             </GridLegacy>
           </Stack>
         </Paper>
@@ -334,45 +346,49 @@ export default function ProfileForm() {
               </Typography>
             </Box>
             <GridLegacy container spacing={2}>
-              <Grid item xs={12} md={6}>
+              <GridLegacy item xs={12} md={6}>
                 <TextField
                   label="Nombre"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("billingFirstName") }}
                   {...register("billingFirstName")}
                 />
-              </Grid>
-              <Grid item xs={12} md={6}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={6}>
                 <TextField
                   label="Apellido"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("billingLastName") }}
                   {...register("billingLastName")}
                 />
-              </Grid>
-              <Grid item xs={12} md={6}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={6}>
                 <TextField
                   label="Email"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("billingEmail") }}
                   {...register("billingEmail")}
                   error={!!errors.billingEmail}
                   helperText={errors.billingEmail?.message}
                 />
-              </Grid>
-              <Grid item xs={12} md={6}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={6}>
                 <TextField
                   label="Teléfono"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("billingPhone") }}
                   {...register("billingPhone")}
                 />
-              </Grid>
-              <Grid item xs={12} md={4}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={4}>
                 <TextField
                   select
                   size="small"
@@ -385,71 +401,78 @@ export default function ProfileForm() {
                   <option value="CEDULA">Cédula</option>
                   <option value="RUC">RUC</option>
                 </TextField>
-              </Grid>
-              <Grid item xs={12} md={8}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={8}>
                 <TextField
                   label="Nº identificación"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("billingDocumentId") }}
                   {...register("billingDocumentId")}
                 />
-              </Grid>
-              <Grid item xs={12}>
+              </GridLegacy>
+              <GridLegacy item xs={12}>
                 <TextField
                   label="Dirección"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("billingLine1") }}
                   {...register("billingLine1")}
                 />
-              </Grid>
-              <Grid item xs={12}>
+              </GridLegacy>
+              <GridLegacy item xs={12}>
                 <TextField
                   label="Referencia"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("billingLine2") }}
                   {...register("billingLine2")}
                 />
-              </Grid>
-              <Grid item xs={12} md={4}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={4}>
                 <TextField
                   label="Ciudad"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("billingCity") }}
                   {...register("billingCity")}
                 />
-              </Grid>
-              <Grid item xs={12} md={4}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={4}>
                 <TextField
                   label="Provincia/Estado"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("billingState") }}
                   {...register("billingState")}
                 />
-              </Grid>
-              <Grid item xs={12} md={4}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={4}>
                 <TextField
                   label="Código postal"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("billingPostalCode") }}
                   {...register("billingPostalCode")}
                 />
-              </Grid>
-              <Grid item xs={12} md={4}>
+              </GridLegacy>
+              <GridLegacy item xs={12} md={4}>
                 <TextField
                   label="País"
                   fullWidth
                   size="small"
                   sx={inputSx}
+                  InputLabelProps={{ shrink: !!watch("billingCountry") }}
                   {...register("billingCountry")}
                   defaultValue="EC"
                 />
-              </Grid>
+              </GridLegacy>
             </GridLegacy>
           </Stack>
         </Paper>

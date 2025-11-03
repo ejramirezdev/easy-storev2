@@ -275,6 +275,7 @@ export default function CartPage() {
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 disabled={pendingCoupon || !!appliedCoupon}
+                InputLabelProps={{ shrink: !!code }}
                 sx={{ flex: 1 }}
               />
               <Button

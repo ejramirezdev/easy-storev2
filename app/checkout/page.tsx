@@ -324,6 +324,7 @@ export default function CheckoutPage() {
                   <TextField
                     label="Nombre"
                     fullWidth
+                    InputLabelProps={{ shrink: !!watch("shipping.firstName") }}
                     {...register("shipping.firstName")}
                     error={!!errors.shipping?.firstName}
                     helperText={errors.shipping?.firstName?.message}
@@ -333,6 +334,7 @@ export default function CheckoutPage() {
                   <TextField
                     label="Apellido"
                     fullWidth
+                    InputLabelProps={{ shrink: !!watch("shipping.lastName") }}
                     {...register("shipping.lastName")}
                     error={!!errors.shipping?.lastName}
                     helperText={errors.shipping?.lastName?.message}
@@ -343,6 +345,7 @@ export default function CheckoutPage() {
                   <TextField
                     label="Email"
                     fullWidth
+                    InputLabelProps={{ shrink: !!watch("shipping.email") }}
                     {...register("shipping.email")}
                     error={!!errors.shipping?.email}
                     helperText={errors.shipping?.email?.message}
@@ -352,6 +355,7 @@ export default function CheckoutPage() {
                   <TextField
                     label="Teléfono"
                     fullWidth
+                    InputLabelProps={{ shrink: !!watch("shipping.phone") }}
                     {...register("shipping.phone")}
                   />
                 </Grid>
@@ -376,6 +380,7 @@ export default function CheckoutPage() {
                     label="Número"
                     fullWidth
                     inputMode="numeric"
+                    InputLabelProps={{ shrink: !!watch("shipping.documentId") }}
                     {...register("shipping.documentId")}
                     error={!!errors.shipping?.documentId}
                     helperText={errors.shipping?.documentId?.message}
@@ -386,6 +391,7 @@ export default function CheckoutPage() {
                   <TextField
                     label="Dirección"
                     fullWidth
+                    InputLabelProps={{ shrink: !!watch("shipping.line1") }}
                     {...register("shipping.line1")}
                     error={!!errors.shipping?.line1}
                     helperText={errors.shipping?.line1?.message}
@@ -395,6 +401,7 @@ export default function CheckoutPage() {
                   <TextField
                     label="Referencia (opcional)"
                     fullWidth
+                    InputLabelProps={{ shrink: !!watch("shipping.line2") }}
                     {...register("shipping.line2")}
                   />
                 </Grid>
@@ -402,6 +409,7 @@ export default function CheckoutPage() {
                   <TextField
                     label="Ciudad"
                     fullWidth
+                    InputLabelProps={{ shrink: !!watch("shipping.city") }}
                     {...register("shipping.city")}
                     error={!!errors.shipping?.city}
                     helperText={errors.shipping?.city?.message}
@@ -411,6 +419,7 @@ export default function CheckoutPage() {
                   <TextField
                     label="Provincia/Estado"
                     fullWidth
+                    InputLabelProps={{ shrink: !!watch("shipping.state") }}
                     {...register("shipping.state")}
                   />
                 </Grid>
@@ -418,6 +427,7 @@ export default function CheckoutPage() {
                   <TextField
                     label="Código Postal"
                     fullWidth
+                    InputLabelProps={{ shrink: !!watch("shipping.postalCode") }}
                     {...register("shipping.postalCode")}
                   />
                 </Grid>
@@ -465,6 +475,7 @@ export default function CheckoutPage() {
                       <TextField
                         label="Nombre"
                         fullWidth
+                        InputLabelProps={{ shrink: !!watch("billing.firstName") }}
                         {...register("billing.firstName")}
                         error={!!errors.billing?.firstName}
                         helperText={errors.billing?.firstName?.message}
@@ -474,6 +485,7 @@ export default function CheckoutPage() {
                       <TextField
                         label="Apellido"
                         fullWidth
+                        InputLabelProps={{ shrink: !!watch("billing.lastName") }}
                         {...register("billing.lastName")}
                         error={!!errors.billing?.lastName}
                         helperText={errors.billing?.lastName?.message}
@@ -484,6 +496,7 @@ export default function CheckoutPage() {
                       <TextField
                         label="Email"
                         fullWidth
+                        InputLabelProps={{ shrink: !!watch("billing.email") }}
                         {...register("billing.email")}
                         error={!!errors.billing?.email}
                         helperText={errors.billing?.email?.message}
@@ -493,6 +506,7 @@ export default function CheckoutPage() {
                       <TextField
                         label="Teléfono"
                         fullWidth
+                        InputLabelProps={{ shrink: !!watch("billing.phone") }}
                         {...register("billing.phone")}
                       />
                     </Grid>
@@ -517,6 +531,7 @@ export default function CheckoutPage() {
                         label="Número"
                         fullWidth
                         inputMode="numeric"
+                        InputLabelProps={{ shrink: !!watch("billing.documentId") }}
                         {...register("billing.documentId")}
                         error={!!errors.billing?.documentId}
                         helperText={errors.billing?.documentId?.message}
@@ -527,6 +542,7 @@ export default function CheckoutPage() {
                       <TextField
                         label="Dirección"
                         fullWidth
+                        InputLabelProps={{ shrink: !!watch("billing.line1") }}
                         {...register("billing.line1")}
                         error={!!errors.billing?.line1}
                         helperText={errors.billing?.line1?.message}
@@ -536,6 +552,7 @@ export default function CheckoutPage() {
                       <TextField
                         label="Referencia (opcional)"
                         fullWidth
+                        InputLabelProps={{ shrink: !!watch("billing.line2") }}
                         {...register("billing.line2")}
                       />
                     </Grid>
@@ -543,6 +560,7 @@ export default function CheckoutPage() {
                       <TextField
                         label="Ciudad"
                         fullWidth
+                        InputLabelProps={{ shrink: !!watch("billing.city") }}
                         {...register("billing.city")}
                         error={!!errors.billing?.city}
                         helperText={errors.billing?.city?.message}
@@ -552,6 +570,7 @@ export default function CheckoutPage() {
                       <TextField
                         label="Provincia/Estado"
                         fullWidth
+                        InputLabelProps={{ shrink: !!watch("billing.state") }}
                         {...register("billing.state")}
                       />
                     </Grid>
@@ -559,6 +578,7 @@ export default function CheckoutPage() {
                       <TextField
                         label="Código Postal"
                         fullWidth
+                        InputLabelProps={{ shrink: !!watch("billing.postalCode") }}
                         {...register("billing.postalCode")}
                       />
                     </Grid>
@@ -571,6 +591,7 @@ export default function CheckoutPage() {
                 fullWidth
                 multiline
                 rows={3}
+                InputLabelProps={{ shrink: !!watch("notes") }}
                 {...register("notes")}
               />
 

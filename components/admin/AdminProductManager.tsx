@@ -416,6 +416,7 @@ export default function AdminProductManager({
 
                   <TextField
                     label="Título"
+                    InputLabelProps={{ shrink: !!createForm.watch("name") }}
                     {...createForm.register("name")}
                     error={!!createForm.formState.errors.name}
                     helperText={createForm.formState.errors.name?.message}
@@ -424,6 +425,7 @@ export default function AdminProductManager({
 
                   <TextField
                     label="Slug"
+                    InputLabelProps={{ shrink: !!createForm.watch("slug") }}
                     {...createForm.register("slug")}
                     error={!!createForm.formState.errors.slug}
                     helperText={
@@ -486,6 +488,7 @@ export default function AdminProductManager({
                         type="number"
                         inputProps={{ step: "0.01" }}
                         fullWidth
+                        InputLabelProps={{ shrink: !!createForm.watch("price") }}
                         {...createForm.register("price", { valueAsNumber: true })}
                         error={!!createForm.formState.errors.price}
                         helperText={createForm.formState.errors.price?.message}
@@ -496,6 +499,7 @@ export default function AdminProductManager({
                         label="Stock"
                         type="number"
                         fullWidth
+                        InputLabelProps={{ shrink: !!createForm.watch("stock") }}
                         {...createForm.register("stock", { valueAsNumber: true })}
                         error={!!createForm.formState.errors.stock}
                         helperText={createForm.formState.errors.stock?.message}
@@ -507,6 +511,7 @@ export default function AdminProductManager({
                     label="Descripción"
                     multiline
                     minRows={4}
+                    InputLabelProps={{ shrink: !!createForm.watch("description") }}
                     {...createForm.register("description")}
                     error={!!createForm.formState.errors.description}
                     helperText={createForm.formState.errors.description?.message}
@@ -514,6 +519,7 @@ export default function AdminProductManager({
 
                   <TextField
                     label="Imagen principal (URL)"
+                    InputLabelProps={{ shrink: !!createForm.watch("imageUrl") }}
                     {...createForm.register("imageUrl")}
                     error={!!createForm.formState.errors.imageUrl}
                     helperText={createForm.formState.errors.imageUrl?.message}
@@ -564,12 +570,14 @@ export default function AdminProductManager({
 
                               <TextField
                                 label="URL"
+                                InputLabelProps={{ shrink: !!(createForm.watch(`images.${index}.url` as any) ?? "") }}
                                 {...createForm.register(`images.${index}.url` as const)}
                                 error={!!urlError}
                                 helperText={urlError?.message}
                               />
                               <TextField
                                 label="Texto alternativo"
+                                InputLabelProps={{ shrink: !!(createForm.watch(`images.${index}.alt` as any) ?? "") }}
                                 {...createForm.register(`images.${index}.alt` as const)}
                                 error={!!altError}
                                 helperText={altError?.message}
@@ -630,6 +638,7 @@ export default function AdminProductManager({
 
                   <TextField
                     label="Nombre"
+                    InputLabelProps={{ shrink: !!categoryForm.watch("name") }}
                     {...categoryForm.register("name")}
                     error={!!categoryForm.formState.errors.name}
                     helperText={categoryForm.formState.errors.name?.message}
@@ -637,6 +646,7 @@ export default function AdminProductManager({
 
                   <TextField
                     label="Slug (opcional)"
+                    InputLabelProps={{ shrink: !!categoryForm.watch("slug") }}
                     {...categoryForm.register("slug")}
                     error={!!categoryForm.formState.errors.slug}
                     helperText={
@@ -796,6 +806,7 @@ export default function AdminProductManager({
 
                       <TextField
                         label="Título"
+                        InputLabelProps={{ shrink: !!editForm.watch("name") }}
                         {...editForm.register("name")}
                         error={!!editForm.formState.errors.name}
                         helperText={editForm.formState.errors.name?.message}
@@ -803,6 +814,7 @@ export default function AdminProductManager({
 
                       <TextField
                         label="Slug"
+                        InputLabelProps={{ shrink: !!editForm.watch("slug") }}
                         {...editForm.register("slug")}
                         error={!!editForm.formState.errors.slug}
                         helperText={
@@ -865,6 +877,7 @@ export default function AdminProductManager({
                             type="number"
                             inputProps={{ step: "0.01" }}
                             fullWidth
+                            InputLabelProps={{ shrink: !!editForm.watch("price") }}
                             {...editForm.register("price", { valueAsNumber: true })}
                             error={!!editForm.formState.errors.price}
                             helperText={editForm.formState.errors.price?.message}
@@ -875,6 +888,7 @@ export default function AdminProductManager({
                             label="Stock"
                             type="number"
                             fullWidth
+                            InputLabelProps={{ shrink: !!editForm.watch("stock") }}
                             {...editForm.register("stock", { valueAsNumber: true })}
                             error={!!editForm.formState.errors.stock}
                             helperText={editForm.formState.errors.stock?.message}
@@ -886,6 +900,7 @@ export default function AdminProductManager({
                         label="Descripción"
                         multiline
                         minRows={4}
+                        InputLabelProps={{ shrink: !!editForm.watch("description") }}
                         {...editForm.register("description")}
                         error={!!editForm.formState.errors.description}
                         helperText={editForm.formState.errors.description?.message}
@@ -893,6 +908,7 @@ export default function AdminProductManager({
 
                       <TextField
                         label="Imagen principal (URL)"
+                        InputLabelProps={{ shrink: !!editForm.watch("imageUrl") }}
                         {...editForm.register("imageUrl")}
                         error={!!editForm.formState.errors.imageUrl}
                         helperText={editForm.formState.errors.imageUrl?.message}
@@ -946,12 +962,14 @@ export default function AdminProductManager({
 
                                   <TextField
                                     label="URL"
+                                    InputLabelProps={{ shrink: !!(editForm.watch(`images.${index}.url` as any) ?? "") }}
                                     {...editForm.register(`images.${index}.url` as const)}
                                     error={!!urlError}
                                     helperText={urlError?.message}
                                   />
                                   <TextField
                                     label="Texto alternativo"
+                                    InputLabelProps={{ shrink: !!(editForm.watch(`images.${index}.alt` as any) ?? "") }}
                                     {...editForm.register(`images.${index}.alt` as const)}
                                     error={!!altError}
                                     helperText={altError?.message}
