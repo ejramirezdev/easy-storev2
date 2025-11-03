@@ -1,5 +1,5 @@
 import WhatsAppFab from "@/components/home/WhatsAppFab";
-import { Box, Button, Container, Grid, Stack, Typography } from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -25,212 +25,191 @@ export default function HardwareServicesPage() {
           pb: { xs: 10, md: 14 },
         }}
       >
-        <Container maxWidth="lg" sx={{ pt: { xs: 8, md: 12 } }}>
-          <Stack spacing={{ xs: 6, md: 8 }}>
+        <Box
+          sx={{
+            maxWidth: 1240,
+            mx: "auto",
+            px: { xs: 3, md: 6 },
+            pt: { xs: 8, md: 12 },
+            display: "flex",
+            flexDirection: "column",
+            gap: { xs: 8, md: 12 },
+          }}
+        >
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "1.1fr 0.9fr" },
+              gap: { xs: 5, md: 8 },
+              alignItems: "center",
+              background:
+                "linear-gradient(135deg, rgba(113,0,150,0.6) 0%, rgba(5,5,6,0.9) 55%, rgba(5,5,6,1) 100%)",
+              px: { xs: 4, md: 6 },
+              py: { xs: 6, md: 8 },
+            }}
+          >
+            <Stack spacing={2.5}>
+              <Typography
+                variant="h2"
+                sx={{
+                  fontWeight: 800,
+                  letterSpacing: -1,
+                  maxWidth: 460,
+                  lineHeight: 1.05,
+                }}
+              >
+                Repara tu equipo
+              </Typography>
+              <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 520 }}>
+                Garantiza una reparación con componentes de las mejores marcas.
+                Ingresa tu equipo con nosotros y te lo entregaremos como nuevo.
+              </Typography>
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={2}
+                sx={{ pt: 2 }}
+              >
+                <Button
+                  component="a"
+                  href={whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                >
+                  Contáctame
+                </Button>
+                <Link href={scheduleHref} passHref legacyBehavior>
+                  <Button
+                    component="a"
+                    variant="outlined"
+                    color="secondary"
+                    size="large"
+                    sx={{ borderWidth: 2 }}
+                  >
+                    Agenda una cita
+                  </Button>
+                </Link>
+              </Stack>
+            </Stack>
             <Box
               sx={{
                 position: "relative",
-                overflow: "hidden",
-                borderRadius: 5,
-                px: { xs: 4, md: 6 },
-                py: { xs: 6, md: 8 },
-                background:
-                  "radial-gradient(120% 120% at 10% 10%, rgba(216,27,156,0.35), transparent 55%), linear-gradient(150deg, rgba(12,12,16,0.95), rgba(12,12,16,0.65))",
-                border: "1px solid rgba(216,27,156,0.28)",
-                boxShadow: "0 45px 80px rgba(12, 12, 16, 0.45)",
+                minHeight: { xs: 280, md: 360 },
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              <Grid container spacing={{ xs: 6, md: 4 }} alignItems="center">
-                <Grid item xs={12} md={6}>
-                  <Stack spacing={2}>
-                    <Typography
-                      variant="h2"
-                      sx={{
-                        fontWeight: 800,
-                        letterSpacing: -1,
-                        maxWidth: 460,
-                        lineHeight: 1.05,
-                      }}
-                    >
-                      Repara tu equipo
-                    </Typography>
-                    <Typography
-                      variant="h6"
-                      color="text.secondary"
-                      sx={{ maxWidth: 480 }}
-                    >
-                      Garantiza una reparación con componentes de las mejores marcas.
-                      Ingresa tu equipo con nosotros y te lo entregaremos como nuevo.
-                    </Typography>
-                    <Stack
-                      direction={{ xs: "column", sm: "row" }}
-                      spacing={2}
-                      sx={{ pt: 2 }}
-                    >
-                      <Button
-                        component="a"
-                        href={whatsappLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        variant="contained"
-                        color="primary"
-                        size="large"
-                      >
-                        Contáctame
-                      </Button>
-                      <Link href={scheduleHref} passHref legacyBehavior>
-                        <Button
-                          component="a"
-                          variant="outlined"
-                          color="secondary"
-                          size="large"
-                          sx={{ borderWidth: 2 }}
-                        >
-                          Agenda una cita
-                        </Button>
-                      </Link>
-                    </Stack>
-                  </Stack>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Box
-                    sx={{
-                      position: "relative",
-                      minHeight: { xs: 240, md: 320 },
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        inset: { xs: 20, md: 40 },
-                        borderRadius: "50%",
-                        background: "radial-gradient(circle, rgba(138,43,226,0.45), transparent 70%)",
-                        filter: "blur(0.5px)",
-                      }}
-                    />
-                    <Image
-                      src="/hero/hero-hardware.png"
-                      alt="Laptop abierta mostrando componentes internos"
-                      fill
-                      priority
-                      sizes="(min-width: 1200px) 500px, (min-width: 900px) 360px, 80vw"
-                      style={{ objectFit: "contain" }}
-                    />
-                  </Box>
-                </Grid>
-              </Grid>
+              <Box
+                sx={{
+                  position: "absolute",
+                  inset: { xs: 16, md: 40 },
+                  background:
+                    "radial-gradient(circle at 50% 50%, rgba(133,20,197,0.45), transparent 70%)",
+                }}
+              />
+              <Image
+                src="/services/hardware/laptop-repair.png"
+                alt="Técnico reparando una laptop"
+                fill
+                priority
+                sizes="(min-width: 1200px) 480px, (min-width: 900px) 400px, 80vw"
+                style={{ objectFit: "contain" }}
+              />
+            </Box>
+          </Box>
+
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+              gap: { xs: 6, md: 4 },
+            }}
+          >
+            <Box
+              sx={{
+                position: "relative",
+                minHeight: { xs: 320, md: 420 },
+                overflow: "hidden",
+                background:
+                  "linear-gradient(140deg, rgba(5,5,6,0.85) 10%, rgba(5,5,6,0.55) 45%, rgba(5,5,6,0.85) 95%)",
+              }}
+            >
+              <Image
+                src="/services/hardware/upgrade1.png"
+                alt="Componentes de computadora iluminados"
+                fill
+                sizes="(min-width: 1200px) 600px, (min-width: 900px) 50vw, 100vw"
+                style={{ objectFit: "cover", filter: "brightness(0.65)" }}
+              />
+              <Box
+                sx={{
+                  position: "relative",
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  gap: 2.5,
+                  px: { xs: 4, md: 6 },
+                }}
+              >
+                <Typography variant="h3" sx={{ fontWeight: 800 }}>
+                  Mejora y repotencia
+                </Typography>
+                <Typography color="text.secondary" sx={{ maxWidth: 380 }}>
+                  Dale una nueva vida a tu computadora con actualizaciones de memoria,
+                  almacenamiento y tarjetas gráficas.
+                </Typography>
+              </Box>
             </Box>
 
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <Box
-                  sx={{
-                    position: "relative",
-                    borderRadius: 5,
-                    overflow: "hidden",
-                    px: { xs: 4, md: 5 },
-                    py: { xs: 5, md: 6 },
-                    background:
-                      "linear-gradient(140deg, rgba(138,43,226,0.38), rgba(10,10,11,0.92)), url(/hero/hero-products.png)",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    minHeight: { xs: 260, md: 320 },
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "flex-end",
-                    gap: 1.5,
-                    border: "1px solid rgba(138,43,226,0.25)",
-                  }}
-                >
-                  <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                    Mejora y repotencia
-                  </Typography>
-                  <Typography color="text.secondary" sx={{ maxWidth: 360 }}>
-                    Dale una nueva vida a tu computadora con actualizaciones de
-                    memoria, almacenamiento y tarjetas gráficas.
-                  </Typography>
-                </Box>
-              </Grid>
+            <Box
+              sx={{
+                background:
+                  "linear-gradient(135deg, rgba(37,0,76,0.8) 0%, rgba(5,5,6,0.95) 60%)",
+                minHeight: { xs: 320, md: 420 },
+                display: "flex",
+                flexDirection: { xs: "column", md: "row" },
+                alignItems: "center",
+                justifyContent: "space-between",
+                px: { xs: 4, md: 6 },
+                py: { xs: 6, md: 0 },
+                gap: { xs: 4, md: 6 },
+              }}
+            >
+              <Stack spacing={2.5} sx={{ maxWidth: 420 }}>
+                <Typography variant="h3" sx={{ fontWeight: 800 }}>
+                  Experiencia profesional
+                </Typography>
+                <Typography color="text.secondary">
+                  Más de 100 certificaciones en excelencia de hardware respaldan cada
+                  reparación y diagnóstico especializado.
+                </Typography>
+                <Typography color="text.secondary">
+                  Acompañamiento personalizado, seguimiento continuo y garantías
+                  extendidas para tu tranquilidad.
+                </Typography>
+                <Link href={scheduleHref} passHref legacyBehavior>
+                  <Button component="a" variant="contained" color="secondary" size="large">
+                    Agenda una cita
+                  </Button>
+                </Link>
+              </Stack>
 
-              <Grid item xs={12} md={6}>
-                <Box
-                  sx={{
-                    borderRadius: 5,
-                    px: { xs: 4, md: 5 },
-                    py: { xs: 5, md: 6 },
-                    bgcolor: "rgba(15,15,18,0.95)",
-                    border: "1px solid rgba(216,27,156,0.25)",
-                    minHeight: { xs: 260, md: 320 },
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 3,
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Stack spacing={2}>
-                    <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                      Experiencia profesional
-                    </Typography>
-                    <Typography color="text.secondary" sx={{ maxWidth: 360 }}>
-                      Más de 100 certificaciones en excelencia de hardware
-                      respaldan cada reparación y diagnóstico especializado.
-                    </Typography>
-                  </Stack>
-
-                  <Stack direction="row" spacing={3} alignItems="center">
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        textAlign: "center",
-                        width: 148,
-                        height: 148,
-                        borderRadius: "50%",
-                        border: "2px solid rgba(138,43,226,0.65)",
-                        background: "radial-gradient(circle, rgba(138,43,226,0.22), rgba(10,10,11,0.9))",
-                        boxShadow: "0 20px 45px rgba(138,43,226,0.28)",
-                        flexShrink: 0,
-                        p: 2,
-                      }}
-                    >
-                      <Typography variant="h3" sx={{ fontWeight: 800 }}>
-                        10+
-                      </Typography>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ letterSpacing: 1.5, fontWeight: 700 }}
-                      >
-                        CERTIFIED
-                      </Typography>
-                    </Box>
-
-                    <Stack spacing={2} sx={{ flex: 1 }}>
-                      <Typography color="text.secondary">
-                        Acompañamiento personalizado, seguimiento continuo y
-                        garantías extendidas para tu tranquilidad.
-                      </Typography>
-                      <Link href={scheduleHref} passHref legacyBehavior>
-                        <Button
-                          component="a"
-                          variant="contained"
-                          color="secondary"
-                          size="large"
-                        >
-                          Agenda una cita
-                        </Button>
-                      </Link>
-                    </Stack>
-                  </Stack>
-                </Box>
-              </Grid>
-            </Grid>
-          </Stack>
-        </Container>
+              <Box sx={{ position: "relative", width: 180, height: 180 }}>
+                <Image
+                  src="/services/hardware/certified.png"
+                  alt="Sello de certificación profesional"
+                  fill
+                  sizes="180px"
+                  style={{ objectFit: "contain" }}
+                />
+              </Box>
+            </Box>
+          </Box>
+        </Box>
       </Box>
 
       <WhatsAppFab phone={whatsappNumber} />
