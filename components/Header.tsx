@@ -18,7 +18,7 @@ import HeaderCartButton from "./cart/HeaderCartButton";
 const nav = [
   { label: "Inicio", href: "/" },
   { label: "Productos", href: "/products" },
-  { label: "Servicios", href: "/servicios" },
+  { label: "Servicios", href: "/services/hardware" },
   { label: "Sobre mí", href: "/sobre-mi" },
   { label: "Contacto", href: "/contacto" },
 ];
