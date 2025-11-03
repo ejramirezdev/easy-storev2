@@ -78,16 +78,17 @@ export default function HardwareServicesPage() {
                       >
                         Contáctame
                       </Button>
-                      <Button
-                        component={Link}
-                        href={scheduleHref}
-                        variant="outlined"
-                        color="secondary"
-                        size="large"
-                        sx={{ borderWidth: 2 }}
-                      >
-                        Agenda una cita
-                      </Button>
+                      <Link href={scheduleHref} passHref legacyBehavior>
+                        <Button
+                          component="a"
+                          variant="outlined"
+                          color="secondary"
+                          size="large"
+                          sx={{ borderWidth: 2 }}
+                        >
+                          Agenda una cita
+                        </Button>
+                      </Link>
                     </Stack>
                   </Stack>
                 </Grid>
@@ -213,15 +214,16 @@ export default function HardwareServicesPage() {
                         Acompañamiento personalizado, seguimiento continuo y
                         garantías extendidas para tu tranquilidad.
                       </Typography>
-                      <Button
-                        component={Link}
-                        href={scheduleHref}
-                        variant="contained"
-                        color="secondary"
-                        size="large"
-                      >
-                        Agenda una cita
-                      </Button>
+                      <Link href={scheduleHref} passHref legacyBehavior>
+                        <Button
+                          component="a"
+                          variant="contained"
+                          color="secondary"
+                          size="large"
+                        >
+                          Agenda una cita
+                        </Button>
+                      </Link>
                     </Stack>
                   </Stack>
                 </Box>

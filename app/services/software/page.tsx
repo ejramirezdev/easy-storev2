@@ -34,9 +34,11 @@ export default function SoftwareServicesPlaceholder() {
               podrás solicitar tu proyecto desde aquí.
             </Typography>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <Button component={Link} href="/services/hardware" variant="outlined" color="secondary">
-                Ver servicios de hardware
-              </Button>
+              <Link href="/services/hardware" passHref legacyBehavior>
+                <Button component="a" variant="outlined" color="secondary">
+                  Ver servicios de hardware
+                </Button>
+              </Link>
               <Button component="a" href={contactHref} variant="contained" color="primary">
                 Escríbenos por email
               </Button>
