@@ -23,6 +23,13 @@ enum OrderStatus {
   CANCELED
 }
 
+enum PaymentStatus {
+  PENDING
+  REQUIRES_ACTION
+  PAID
+  FAILED
+}
+
 enum AddressType {
   BILLING
   SHIPPING
@@ -160,6 +167,14 @@ model Order {
   user      User        @relation(fields: [userId], references: [id])
   status    OrderStatus @default(PENDING)
   total     Decimal     @db.Decimal(10, 2)
+  subtotal      Decimal        @db.Decimal(10, 2) @default(0)
+  discountTotal Decimal        @db.Decimal(10, 2) @default(0)
+  shippingTotal Decimal        @db.Decimal(10, 2) @default(0)
+  paymentStatus PaymentStatus  @default(PENDING)
+  paymentProvider String?
+  paymentToken    String?
+  paymentPayload  Json?
+  paidAt          DateTime?
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 

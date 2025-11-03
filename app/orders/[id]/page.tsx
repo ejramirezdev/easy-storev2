@@ -6,6 +6,7 @@ import { notFound, redirect } from "next/navigation";
 import {
   Box,
   Button,
+  Chip,
   Container,
   Divider,
   Paper,
@@ -67,6 +68,8 @@ export default async function OrderDetailPage({ params }: PageProps) {
   const total = order.total
     ? Number(order.total)
     : subtotal - discount + shipping;
+  const paymentStatus = (order.paymentStatus ?? "PENDING") as string;
+  const paymentError = extractPaymentError(order.paymentPayload);
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -80,7 +83,43 @@ export default async function OrderDetailPage({ params }: PageProps) {
             <Typography variant="h6" gutterBottom>
               Estado
             </Typography>
-            <Typography variant="body1">Pago: {order.status}</Typography>
+            <Stack spacing={1}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Chip
+                  label={`Orden: ${orderStatusLabel(order.status)}`}
+                  color={order.status === "PAID" || order.status === "COMPLETED" ? "success" : "default"}
+                  variant="outlined"
+                  size="small"
+                />
+                <Chip
+                  label={`Pago: ${paymentStatusLabel(paymentStatus)}`}
+                  color={
+                    paymentStatus === "PAID"
+                      ? "success"
+                      : paymentStatus === "FAILED"
+                      ? "error"
+                      : "default"
+                  }
+                  variant="outlined"
+                  size="small"
+                />
+              </Stack>
+              {order.paymentProvider && (
+                <Typography variant="body2" color="text.secondary">
+                  Proveedor: {order.paymentProvider}
+                </Typography>
+              )}
+              {paymentStatus === "PAID" && order.paidAt && (
+                <Typography variant="body2" color="text.secondary">
+                  Pagado el {order.paidAt.toLocaleString()}
+                </Typography>
+              )}
+              {paymentError && (
+                <Typography variant="body2" color="error">
+                  Error de pago: {paymentError}
+                </Typography>
+              )}
+            </Stack>
           </Paper>
 
           <Paper sx={{ p: 2 }}>
@@ -137,10 +176,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
           </Paper>
 
           <Box mt={2}>
-            {/* Placeholder para integrar Kushki/Datafast en el siguiente paso */}
             <Link href="/" style={{ textDecoration: "none" }}>
-              <Button variant="contained" fullWidth>
-                Pagar ahora (placeholder)
+              <Button variant="contained" fullWidth disabled>
+                Pago en línea disponible próximamente
               </Button>
             </Link>
           </Box>
@@ -210,4 +248,40 @@ function Row({
       </Typography>
     </Stack>
   );
+}
+
+function paymentStatusLabel(status: string) {
+  switch (status) {
+    case "PAID":
+      return "Pagado";
+    case "FAILED":
+      return "Pago fallido";
+    case "REQUIRES_ACTION":
+      return "Pago requiere acción";
+    default:
+      return "Pago pendiente";
+  }
+}
+
+function orderStatusLabel(status: string) {
+  switch (status) {
+    case "PAID":
+      return "Pagado";
+    case "SHIPPED":
+      return "Enviado";
+    case "COMPLETED":
+      return "Completado";
+    case "CANCELED":
+      return "Cancelado";
+    default:
+      return "Pendiente";
+  }
+}
+
+function extractPaymentError(payload: any): string | undefined {
+  if (!payload || typeof payload !== "object") return undefined;
+  if ("errorMessage" in payload && payload.errorMessage) return String(payload.errorMessage);
+  if ("message" in payload && payload.message) return String(payload.message);
+  if ("error" in payload && payload.error) return String(payload.error);
+  return undefined;
 }

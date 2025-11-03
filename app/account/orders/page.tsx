@@ -70,6 +70,8 @@ export default async function AccountOrdersPage() {
             const shipping = order.shippingTotal ? Number(order.shippingTotal) : 0;
             const total = order.total ? Number(order.total) : subtotal - discount + shipping;
             const shippingAddress = order.addresses.find((addr) => addr.type === "SHIPPING");
+            const paymentStatus = (order.paymentStatus ?? "PENDING") as string;
+            const paymentError = extractPaymentError(order.paymentPayload);
 
             return (
               <Stack
@@ -91,12 +93,28 @@ export default async function AccountOrdersPage() {
                       {order.createdAt.toLocaleString()}
                     </Typography>
                   </Stack>
-                  <Chip
-                    label={order.status}
-                    color={order.status === "COMPLETED" ? "success" : "default"}
-                    variant="outlined"
+                  <Stack
+                    direction="row"
+                    spacing={1}
                     sx={{ alignSelf: { xs: "flex-start", sm: "center" } }}
-                  />
+                  >
+                    <Chip
+                      label={order.status}
+                      color={order.status === "COMPLETED" || order.status === "PAID" ? "success" : "default"}
+                      variant="outlined"
+                    />
+                    <Chip
+                      label={paymentStatusLabel(paymentStatus)}
+                      color={
+                        paymentStatus === "PAID"
+                          ? "success"
+                          : paymentStatus === "FAILED"
+                          ? "error"
+                          : "default"
+                      }
+                      variant="outlined"
+                    />
+                  </Stack>
                 </Stack>
 
                 <Stack spacing={0.5}>
@@ -125,6 +143,12 @@ export default async function AccountOrdersPage() {
                   </Typography>
                 </Stack>
 
+                {paymentError && (
+                  <Typography variant="body2" color="error">
+                    Pago rechazado: {paymentError}
+                  </Typography>
+                )}
+
                 {shippingAddress && (
                   <Box>
                     <Typography variant="caption" color="text.secondary">
@@ -150,4 +174,25 @@ export default async function AccountOrdersPage() {
       </Stack>
     </Paper>
   );
+}
+
+function paymentStatusLabel(status: string) {
+  switch (status) {
+    case "PAID":
+      return "Pagado";
+    case "FAILED":
+      return "Pago fallido";
+    case "REQUIRES_ACTION":
+      return "Pago requiere acción";
+    default:
+      return "Pago pendiente";
+  }
+}
+
+function extractPaymentError(payload: any): string | undefined {
+  if (!payload || typeof payload !== "object") return undefined;
+  if ("errorMessage" in payload && payload.errorMessage) return String(payload.errorMessage);
+  if ("message" in payload && payload.message) return String(payload.message);
+  if ("error" in payload && payload.error) return String(payload.error);
+  return undefined;
 }

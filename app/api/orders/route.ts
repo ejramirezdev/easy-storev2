@@ -103,6 +103,11 @@ export async function POST(req: Request) {
         userId: session.user.id,
         status: "PENDING",
         total: String(totals.total), // Decimal(10,2)
+        subtotal: String(totals.subtotal),
+        discountTotal: String(totals.discount),
+        shippingTotal: String(totals.shipping),
+        paymentStatus: "PENDING",
+        paymentProvider: "PAYBOX",
         items: {
           create: items.map((it) => ({
             productId: it.productId,
@@ -129,6 +134,15 @@ export async function POST(req: Request) {
       billing && "useShipping" in billing
         ? shipping
         : ((billing as AddressInput | undefined) ?? shipping);
+
+    const payboxSnapshot = buildPayboxSnapshot({
+      orderId: order.id,
+      totals,
+      shipping,
+      billing: billingAddressInput,
+      items,
+      couponCode: redemption?.coupon?.code,
+    });
 
     await prisma.userProfile.upsert({
       where: { userId: session.user.id },
@@ -187,7 +201,12 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ ok: true, orderId: order.id });
+    return NextResponse.json({
+      ok: true,
+      orderId: order.id,
+      totals,
+      paybox: payboxSnapshot,
+    });
   } catch (e: any) {
     return NextResponse.json(
       { ok: false, error: e?.message ?? "Error creando orden" },
@@ -212,5 +231,66 @@ function normalizeAddress(address: AddressInput, type: "SHIPPING" | "BILLING") {
     state: address.state ?? "",
     postalCode: address.postalCode ?? null,
     country: address.country,
+  };
+}
+
+function buildPayboxSnapshot({
+  orderId,
+  totals,
+  shipping,
+  billing,
+  items,
+  couponCode,
+}: {
+  orderId: string;
+  totals: ReturnType<typeof calcTotals>;
+  shipping: AddressInput;
+  billing: AddressInput;
+  items: {
+    productId: string;
+    quantity: number;
+    unitPrice: string;
+    snapshot: {
+      name: string;
+      slug: string;
+      imageUrl: string | null;
+    };
+  }[];
+  couponCode?: string;
+}) {
+  return {
+    reference: orderId,
+    amount: Number(totals.total.toFixed(2)),
+    currency: "USD",
+    description: `Orden ${orderId.slice(0, 8).toUpperCase()}`,
+    customer: {
+      name: `${shipping.firstName} ${shipping.lastName}`.trim(),
+      email: shipping.email,
+      phone: shipping.phone ?? "",
+      documentType: shipping.documentType ?? "",
+      documentId: shipping.documentId ?? "",
+    },
+    billing: {
+      name: `${billing.firstName ?? shipping.firstName} ${
+        billing.lastName ?? shipping.lastName
+      }`.trim(),
+      email: billing.email ?? shipping.email,
+      phone: billing.phone ?? shipping.phone ?? "",
+      documentType: billing.documentType ?? shipping.documentType ?? "",
+      documentId: billing.documentId ?? shipping.documentId ?? "",
+    },
+    items: items.map((item) => ({
+      id: item.productId,
+      name: item.snapshot.name,
+      quantity: item.quantity,
+      unitPrice: Number(item.unitPrice),
+    })),
+    breakdown: {
+      subtotal: Number(totals.subtotal.toFixed(2)),
+      discount: Number(totals.discount.toFixed(2)),
+      shipping: Number(totals.shipping.toFixed(2)),
+      total: Number(totals.total.toFixed(2)),
+      coupon: couponCode ?? null,
+    },
   };
 }
