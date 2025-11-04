@@ -125,67 +125,8 @@ export async function POST(req: Request) {
       },
     });
 
-    const billingAddressInput =
-      billing && "useShipping" in billing
-        ? shipping
-        : ((billing as AddressInput | undefined) ?? shipping);
-
-    await prisma.userProfile.upsert({
-      where: { userId: session.user.id },
-      create: {
-        userId: session.user.id,
-        firstName: shipping.firstName,
-        lastName: shipping.lastName,
-        email: shipping.email,
-        phone: shipping.phone ?? null,
-        documentType: shipping.documentType ?? null,
-        documentId: shipping.documentId ?? null,
-        shippingLine1: shipping.line1,
-        shippingLine2: shipping.line2 ?? null,
-        shippingCity: shipping.city,
-        shippingState: shipping.state ?? null,
-        shippingPostalCode: shipping.postalCode ?? null,
-        shippingCountry: shipping.country,
-        billingFirstName: billingAddressInput.firstName ?? shipping.firstName,
-        billingLastName: billingAddressInput.lastName ?? shipping.lastName,
-        billingEmail: billingAddressInput.email ?? shipping.email,
-        billingPhone: billingAddressInput.phone ?? null,
-        billingDocumentType: billingAddressInput.documentType ?? null,
-        billingDocumentId: billingAddressInput.documentId ?? null,
-        billingLine1: billingAddressInput.line1 ?? shipping.line1,
-        billingLine2: billingAddressInput.line2 ?? null,
-        billingCity: billingAddressInput.city ?? shipping.city,
-        billingState: billingAddressInput.state ?? null,
-        billingPostalCode: billingAddressInput.postalCode ?? null,
-        billingCountry: billingAddressInput.country ?? shipping.country,
-      },
-      update: {
-        firstName: shipping.firstName,
-        lastName: shipping.lastName,
-        email: shipping.email,
-        phone: shipping.phone ?? null,
-        documentType: shipping.documentType ?? null,
-        documentId: shipping.documentId ?? null,
-        shippingLine1: shipping.line1,
-        shippingLine2: shipping.line2 ?? null,
-        shippingCity: shipping.city,
-        shippingState: shipping.state ?? null,
-        shippingPostalCode: shipping.postalCode ?? null,
-        shippingCountry: shipping.country,
-        billingFirstName: billingAddressInput.firstName ?? shipping.firstName,
-        billingLastName: billingAddressInput.lastName ?? shipping.lastName,
-        billingEmail: billingAddressInput.email ?? shipping.email,
-        billingPhone: billingAddressInput.phone ?? null,
-        billingDocumentType: billingAddressInput.documentType ?? null,
-        billingDocumentId: billingAddressInput.documentId ?? null,
-        billingLine1: billingAddressInput.line1 ?? shipping.line1,
-        billingLine2: billingAddressInput.line2 ?? null,
-        billingCity: billingAddressInput.city ?? shipping.city,
-        billingState: billingAddressInput.state ?? null,
-        billingPostalCode: billingAddressInput.postalCode ?? null,
-        billingCountry: billingAddressInput.country ?? shipping.country,
-      },
-    });
+    // NO guardar automáticamente los datos en el perfil
+    // Solo se guardarán cuando el usuario los actualice manualmente desde /account/profile
 
     return NextResponse.json({ ok: true, orderId: order.id });
   } catch (e: any) {

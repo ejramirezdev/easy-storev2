@@ -52,9 +52,9 @@ export default async function Page() {
               Estamos preparando los primeros productos.
             </Typography>
           ) : (
-            <Grid container spacing={3}>
+            <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }}>
               {featured.map((product) => (
-                <Grid item key={product.id} xs={12} sm={6} md={4}>
+                <Grid item key={product.id} xs={6} sm={6} md={4}>
                   <ProductCard product={product} />
                 </Grid>
               ))}

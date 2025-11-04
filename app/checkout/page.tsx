@@ -79,7 +79,13 @@ type FormValues = z.infer<typeof BaseFormSchema>;
 
 /** 4) Form final con reglas condicionales (requeridos en billing si corresponde) */
 const FormSchema = BaseFormSchema.superRefine((val, ctx) => {
-  if (!val.billingSameAsShipping) {
+  // Si billingSameAsShipping es true, NO validar billing en absoluto
+  if (val.billingSameAsShipping) {
+    return; // Salir temprano, no validar billing
+  }
+  
+  // Solo validar billing si NO está marcado "usar mismos datos" Y billing existe
+  if (val.billing) {
     const required: (keyof Address)[] = [
       "firstName",
       "lastName",
@@ -217,22 +223,16 @@ export default function CheckoutPage() {
           ["shipping.state", profile.shippingState ?? ""],
           ["shipping.postalCode", profile.shippingPostalCode ?? ""],
           ["shipping.country", profile.shippingCountry ?? "EC"],
-          ["billing.firstName", profile.billingFirstName ?? ""],
-          ["billing.lastName", profile.billingLastName ?? ""],
-          ["billing.email", profile.billingEmail ?? profile.email ?? ""],
-          ["billing.phone", profile.billingPhone ?? ""],
-          ["billing.documentType", profile.billingDocumentType ?? "CEDULA"],
-          ["billing.documentId", profile.billingDocumentId ?? ""],
-          ["billing.line1", profile.billingLine1 ?? ""],
-          ["billing.line2", profile.billingLine2 ?? ""],
-          ["billing.city", profile.billingCity ?? ""],
-          ["billing.state", profile.billingState ?? ""],
-          ["billing.postalCode", profile.billingPostalCode ?? ""],
-          ["billing.country", profile.billingCountry ?? "EC"],
         ];
+        
         for (const [key, value] of entries) {
           setValue(key, value, { shouldValidate: false, shouldDirty: false });
         }
+        
+        // Si billingSameAsShipping está marcado (por defecto es true), limpiar billing
+        // Esto asegura que no se validen campos de billing cuando el checkbox está marcado
+        // El checkbox está marcado por defecto, así que siempre limpiamos billing al cargar
+        setValue("billing", undefined, { shouldValidate: false, shouldDirty: false });
       } catch (err) {
         console.error("No se pudo precargar el perfil", err);
       }
@@ -448,8 +448,14 @@ export default function CheckoutPage() {
                           const checked = e.target.checked;
                           setError(null);
                           field.onChange(checked);
-                          if (!checked) {
-                            // Al mostrar facturación, setear defaults útiles
+                          if (checked) {
+                            // Al marcar "usar misma dirección", limpiar todos los campos de billing
+                            setValue("billing", undefined, {
+                              shouldValidate: false,
+                              shouldDirty: false,
+                            });
+                          } else {
+                            // Al desmarcar, setear defaults útiles
                             setValue("billing.country", "EC", {
                               shouldValidate: false,
                             });

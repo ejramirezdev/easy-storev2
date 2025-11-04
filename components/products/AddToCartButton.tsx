@@ -49,10 +49,12 @@ export default function AddToCartButton({
               sx={{
                 bgcolor: "#000",
                 color: "#fff",
-                borderRadius: 2.5,
-                px: 1.75,
-                minWidth: 56,
-                minHeight: 44,
+                borderRadius: { xs: 1, sm: 2.5 }, // Más rectangular en móvil
+                px: { xs: 1, sm: 1.75 },
+                minWidth: { xs: 40, sm: 56 }, // Más pequeño
+                minHeight: { xs: 24, sm: 44 }, // Más pequeño
+                width: { xs: 40, sm: "auto" },
+                height: { xs: 24, sm: "auto" },
                 boxShadow: "0 6px 20px rgba(0,0,0,0.25)",
                 transition: "transform 0.2s ease, background-color 0.2s ease",
                 display: "flex",
@@ -70,9 +72,22 @@ export default function AddToCartButton({
               }}
             >
               {loading ? (
-                <CircularProgress size={18} sx={{ color: "inherit" }} />
+                <CircularProgress 
+                  size={18}
+                  sx={{ 
+                    color: "inherit",
+                    width: { xs: "12px", sm: "18px" },
+                    height: { xs: "12px", sm: "18px" },
+                  }} 
+                />
               ) : (
-                <AddShoppingCartIcon fontSize="small" />
+                <AddShoppingCartIcon 
+                  sx={{ 
+                    fontSize: { xs: "0.875rem", sm: "1.25rem" },
+                    width: { xs: "0.875rem", sm: "1.25rem" },
+                    height: { xs: "0.875rem", sm: "1.25rem" },
+                  }} 
+                />
               )}
             </Button>
           </span>

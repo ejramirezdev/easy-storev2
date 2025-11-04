@@ -55,8 +55,8 @@ export default function ProductCard({ product }: { product: UiProduct }) {
           <Box
             sx={{
               position: "absolute",
-              top: 8,
-              right: 8,
+              top: { xs: 4, sm: 8 },
+              right: { xs: 4, sm: 8 },
               zIndex: 2,
             }}
             onClick={(event) => {
@@ -97,13 +97,21 @@ export default function ProductCard({ product }: { product: UiProduct }) {
           )}
         </Box>
 
-        <CardContent sx={{ flex: 1, pb: 1.5 }}>
+        <CardContent sx={{ flex: 1, pb: { xs: 0.75, sm: 1 }, px: { xs: 1, sm: 2 }, pt: { xs: 1.5, sm: 2 }, display: "flex", flexDirection: "column" }}>
           <Typography
             variant="subtitle1"
             fontWeight={700}
-            gutterBottom
-            noWrap
-            sx={{ color: "#fff" }}
+            sx={{ 
+              color: "#fff",
+              fontSize: { xs: "0.8125rem", sm: "1rem" },
+              lineHeight: { xs: 1.3, sm: 1.4 },
+              display: "-webkit-box",
+              WebkitLineClamp: { xs: 2, sm: 1 },
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              mb: { xs: 0.5, sm: 1 },
+              wordBreak: "break-word",
+            }}
           >
             {product.name}
           </Typography>
@@ -114,10 +122,13 @@ export default function ProductCard({ product }: { product: UiProduct }) {
               color="text.secondary"
               sx={{
                 display: "-webkit-box",
-                WebkitLineClamp: 2,
+                WebkitLineClamp: { xs: 2, sm: 2 },
                 WebkitBoxOrient: "vertical",
                 overflow: "hidden",
-                minHeight: 36,
+                fontSize: { xs: "0.6875rem", sm: "0.875rem" },
+                lineHeight: { xs: 1.2, sm: 1.4 },
+                mt: { xs: 0.25, sm: 0 },
+                wordBreak: "break-word",
               }}
             >
               {product.description}
@@ -129,10 +140,22 @@ export default function ProductCard({ product }: { product: UiProduct }) {
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              mt: 1,
+              mt: "auto",
+              pt: { xs: 0.5, sm: 0.75 },
+              minHeight: { xs: 28, sm: 44 },
             }}
           >
-            <Typography variant="h6" fontWeight={800} color="secondary">
+            <Typography 
+              variant="h6" 
+              fontWeight={800} 
+              color="secondary"
+              sx={{ 
+                fontSize: { xs: "0.75rem", sm: "1.1rem" },
+                lineHeight: 1,
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
               ${Number(product.price).toFixed(2)}
             </Typography>
             <Box
@@ -146,7 +169,11 @@ export default function ProductCard({ product }: { product: UiProduct }) {
                   event.stopPropagation();
                 }
               }}
-              sx={{ display: "flex" }}
+              sx={{ 
+                display: "flex", 
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
               <AddToCartButton
                 productId={product.id}

@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
 import nodemailer from "nodemailer";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -67,24 +65,20 @@ export async function POST(req: NextRequest, context: RouteContext) {
       );
     }
 
-    // Generar nombre único para el archivo
+    // Convertir File a Buffer y luego a base64 para almacenamiento en memoria
+    // En producción (Vercel), el sistema de archivos es de solo lectura
+    const bytes = await receiptFile.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const base64Image = buffer.toString("base64");
+    const mimeType = receiptFile.type;
+
+    // Generar nombre único para referencia
     const timestamp = Date.now();
     const fileExtension = receiptFile.name.split(".").pop() || "jpg";
     const fileName = `${id}-${timestamp}.${fileExtension}`;
 
-    // Ruta donde se guardará el archivo (public/receipts)
-    const receiptsDir = join(process.cwd(), "public", "receipts");
-    const filePath = join(receiptsDir, fileName);
-
-    // Asegurar que el directorio existe
-    await mkdir(receiptsDir, { recursive: true });
-
-    // Convertir File a Buffer y guardarlo
-    const bytes = await receiptFile.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
-
-    // URL relativa para acceder al archivo
+    // URL de referencia (no se guarda físicamente en producción)
+    // En desarrollo, podríamos guardar en public/receipts, pero en producción usamos base64
     const receiptUrl = `/receipts/${fileName}`;
 
     // Actualizar la orden con la URL del comprobante, cambiar estado a REVIEW y marcar fecha de carga
@@ -212,9 +206,8 @@ ${shippingAddress.phone ? `Tel: ${shippingAddress.phone}` : ""}
 Fecha: ${new Date().toLocaleString("es-EC", { timeZone: "America/Guayaquil" })}
       `;
 
-      // Obtener la ruta absoluta del archivo para adjuntarlo
-      const absoluteFilePath = join(process.cwd(), "public", receiptUrl);
-
+      // Adjuntar la imagen como base64 (compatible con Vercel/serverless)
+      // No intentamos escribir en el sistema de archivos ya que es de solo lectura en producción
       await transporter.sendMail({
         from: `"Easy Store" <${fromEmail}>`,
         to: recipientEmail,
@@ -224,7 +217,9 @@ Fecha: ${new Date().toLocaleString("es-EC", { timeZone: "America/Guayaquil" })}
         attachments: [
           {
             filename: `comprobante-${order.id.slice(0, 8)}.${fileExtension}`,
-            path: absoluteFilePath,
+            content: base64Image,
+            encoding: "base64",
+            contentType: mimeType,
           },
         ],
       });

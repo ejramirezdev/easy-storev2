@@ -141,9 +141,9 @@ export default async function ProductsPage({
             : "Aún no hay productos."}
         </Typography>
       ) : (
-        <Grid container spacing={2.5}>
+        <Grid container spacing={{ xs: 1.5, sm: 2, md: 2.5 }}>
           {uiProducts.map((p) => (
-            <Grid key={p.id} item xs={12} sm={6} md={3} lg={3} xl={3}>
+            <Grid key={p.id} item xs={4} sm={6} md={3} lg={3} xl={3}>
               <ProductCard product={p} />
             </Grid>
           ))}
