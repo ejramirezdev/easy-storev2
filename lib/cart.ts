@@ -76,3 +76,24 @@ export async function getOrCreateCart(userId?: string) {
     };
   }
 }
+
+/**
+ * Limpia todos los items del carrito y las redenciones de cupones asociadas
+ */
+export async function clearCart(cartId: string) {
+  if (!prisma) return;
+
+  try {
+    // Eliminar todos los items del carrito
+    await prisma.cartItem.deleteMany({
+      where: { cartId },
+    });
+
+    // Eliminar redenciones de cupones asociadas
+    await prisma.couponRedemption.deleteMany({
+      where: { cartId },
+    });
+  } catch (error: any) {
+    console.warn("Error clearing cart:", error?.message || error);
+  }
+}

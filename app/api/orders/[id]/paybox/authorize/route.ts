@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { clearCart, getOrCreateCart } from "@/lib/cart";
 
 export async function POST(
   req: NextRequest,
@@ -60,6 +61,12 @@ export async function POST(
     where: { id: orderId },
     data: { status: "PAID" },
   });
+
+  // Limpiar el carrito después de un pago exitoso
+  const { cart } = await getOrCreateCart(userId);
+  if (cart && cart.id !== "empty") {
+    await clearCart(cart.id);
+  }
 
   return NextResponse.json({ ok: true });
 }

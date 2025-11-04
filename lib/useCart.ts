@@ -1,5 +1,5 @@
 "use client";
-import useSWR, { MutatorCallback, MutatorOptions, useSWRConfig } from "swr";
+import useSWR, { MutatorCallback, MutatorOptions, useSWRConfig, mutate as swrMutate } from "swr";
 import { useCallback, useState } from "react";
 
 type CartProduct = {
@@ -30,6 +30,14 @@ type CartResponse = {
 
 const CART_KEY = "/api/cart";
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+/**
+ * Refresca el carrito globalmente desde cualquier componente.
+ * Útil para invalidar el cache después de operaciones como pagos.
+ */
+export async function refreshCartGlobally() {
+  await swrMutate(CART_KEY);
+}
 
 type Action = "inc" | "dec" | "remove" | "add";
 

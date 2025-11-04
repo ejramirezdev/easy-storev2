@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import nodemailer from "nodemailer";
+import { clearCart, getOrCreateCart } from "@/lib/cart";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -90,6 +91,12 @@ export async function POST(req: NextRequest, context: RouteContext) {
         status: "REVIEW",
       },
     });
+
+    // Limpiar el carrito después de subir el comprobante
+    const { cart } = await getOrCreateCart(session.user.id);
+    if (cart && cart.id !== "empty") {
+      await clearCart(cart.id);
+    }
 
     // Enviar email al administrador
     const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;

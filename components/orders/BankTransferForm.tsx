@@ -18,6 +18,7 @@ import {
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import Image from "next/image";
+import { refreshCartGlobally } from "@/lib/useCart";
 
 type BankTransferFormProps = {
   orderId: string;
@@ -148,6 +149,10 @@ export default function BankTransferForm({
       }
 
       setSuccess(true);
+      
+      // Refrescar el carrito globalmente para que se actualice en todos los componentes
+      await refreshCartGlobally();
+      
       onReceiptUploaded();
     } catch (error: any) {
       console.error("Error:", error);

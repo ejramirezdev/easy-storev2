@@ -1,6 +1,7 @@
 "use client";
 
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import CloseIcon from "@mui/icons-material/Close";
 import Badge from "@mui/material/Badge";
 import IconButton from "@mui/material/IconButton";
 import Drawer from "@mui/material/Drawer";
@@ -78,7 +79,22 @@ export default function HeaderCartButton() {
             gap: 1,
           }}
         >
-          <Typography variant="h6">Tu carrito</Typography>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="h6">Tu carrito</Typography>
+            <IconButton
+              onClick={() => setOpen(false)}
+              aria-label="Cerrar carrito"
+              size="small"
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
           <Divider />
 
           {isLoading ? (

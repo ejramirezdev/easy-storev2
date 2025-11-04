@@ -12,6 +12,7 @@ import {
   Snackbar,
   Typography,
 } from "@mui/material";
+import { refreshCartGlobally } from "@/lib/useCart";
 
 const DEFAULT_JQUERY_URL = "https://code.jquery.com/jquery-3.4.1.min.js";
 const DEFAULT_SANDBOX_SCRIPT = "https://sandbox-paybox.pagoplux.com/paybox/index.js";
@@ -271,6 +272,10 @@ export default function PayboxButton({
           severity: "success",
           message: "Pago autorizado correctamente.",
         });
+        
+        // Refrescar el carrito globalmente para que se actualice en todos los componentes
+        await refreshCartGlobally();
+        
         router.refresh();
       } catch (err: any) {
         console.error("Paybox authorization error", err);
