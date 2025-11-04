@@ -10,7 +10,6 @@ import {
   CircularProgress,
   Container,
   Divider,
-  Grid,
   IconButton,
   InputAdornment,
   List,
@@ -22,6 +21,7 @@ import {
   Typography,
   MenuItem,
 } from "@mui/material";
+import Grid from "@mui/material/GridLegacy";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
