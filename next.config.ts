@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Evitar que Next.js intente hacer static export de páginas dinámicas
+  output: 'standalone',
 };
 
 export default nextConfig;

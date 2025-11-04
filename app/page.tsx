@@ -3,7 +3,6 @@ import WhatsAppFab from "@/components/home/WhatsAppFab";
 import ProductCard, { UiProduct } from "@/components/products/ProductCard";
 import Grid from "@mui/material/GridLegacy";
 import { Box, Container, Typography } from "@mui/material";
-import { prisma } from "@/lib/prisma";
 import { unstable_noStore as noStore } from "next/cache";
 
 // Forzar renderizado dinámico para evitar problemas de conexión a BD durante el build
@@ -15,10 +14,14 @@ async function getFeaturedProducts(): Promise<UiProduct[]> {
   // Forzar que esta función no se cachee ni se pre-renderice
   noStore();
   
-  // Si estamos en build time (sin conexión a BD), retornar array vacío
-  if (process.env.NEXT_PHASE === 'phase-production-build') {
+  // Verificar primero si DATABASE_URL está disponible
+  // Si no está disponible (durante build), retornar vacío sin intentar conectar
+  if (!process.env.DATABASE_URL) {
     return [];
   }
+
+  // Importar Prisma dinámicamente solo si necesitamos usarlo
+  const { prisma } = await import("@/lib/prisma");
 
   try {
     const products = await prisma.product.findMany({
@@ -48,9 +51,9 @@ async function getFeaturedProducts(): Promise<UiProduct[]> {
       price: Number(product.price),
       stock: product.stock,
     }));
-  } catch (error) {
-    // Durante el build o si hay error de conexión, retornar array vacío
-    console.warn("Could not fetch featured products, returning empty array:", error);
+  } catch (error: any) {
+    // Cualquier error de Prisma, retornar array vacío silenciosamente
+    // Especialmente durante build donde la BD puede no estar disponible
     return [];
   }
 }
