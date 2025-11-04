@@ -4,11 +4,22 @@ import ProductCard, { UiProduct } from "@/components/products/ProductCard";
 import Grid from "@mui/material/GridLegacy";
 import { Box, Container, Typography } from "@mui/material";
 import { prisma } from "@/lib/prisma";
+import { unstable_noStore as noStore } from "next/cache";
 
 // Forzar renderizado dinámico para evitar problemas de conexión a BD durante el build
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 async function getFeaturedProducts(): Promise<UiProduct[]> {
+  // Forzar que esta función no se cachee ni se pre-renderice
+  noStore();
+  
+  // Si estamos en build time (sin conexión a BD), retornar array vacío
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return [];
+  }
+
   try {
     const products = await prisma.product.findMany({
       orderBy: { createdAt: "desc" },
@@ -38,8 +49,8 @@ async function getFeaturedProducts(): Promise<UiProduct[]> {
       stock: product.stock,
     }));
   } catch (error) {
-    console.error("Error fetching featured products:", error);
-    // Retornar array vacío si hay error de conexión durante el build
+    // Durante el build o si hay error de conexión, retornar array vacío
+    console.warn("Could not fetch featured products, returning empty array:", error);
     return [];
   }
 }
