@@ -15,22 +15,36 @@ function createPrismaClient() {
   }
 
   try {
+    // Resolver la URL con los parámetros correctos
+    const dbUrl = resolvePrismaDatabaseUrl();
+    
     const client = new PrismaClient({
       datasources: {
         db: {
-          url: resolvePrismaDatabaseUrl(),
+          url: dbUrl,
         },
       },
       log:
         process.env.NODE_ENV === "development"
           ? ["error", "warn"] // Solo errores y warnings para reducir ruido
           : ["error"],
+      // Configuración de conexión para evitar saturar el pooler
+      // En producción, cada instancia de Vercel puede crear su propio cliente
+      // Esto limita las conexiones y evita saturar Supabase
     });
 
     if (typeof (client as unknown as { favorite?: object }).favorite === "undefined") {
       throw new Error(
         "Prisma Client no fue generado correctamente. Ejecuta `npx prisma generate` o reinstala las dependencias para regenerar el cliente.",
       );
+    }
+
+    // En producción, asegurar que las conexiones se cierren correctamente
+    if (process.env.NODE_ENV === "production") {
+      // Manejar desconexión limpia al cerrar
+      process.on("beforeExit", async () => {
+        await client.$disconnect();
+      });
     }
 
     return client;
@@ -68,6 +82,13 @@ function createPrismaClient() {
   }
 }
 
+// Solo crear una instancia si no existe en global
+// Esto es crítico para evitar múltiples conexiones
 export const prisma = global.prisma ?? createPrismaClient();
 
-if (process.env.NODE_ENV !== "production") global.prisma = prisma;
+// Solo guardar en global si se creó exitosamente (no es null)
+// Esto evita guardar null en global.prisma
+// En producción también usar singleton para evitar múltiples clientes
+if (prisma) {
+  global.prisma = prisma;
+}

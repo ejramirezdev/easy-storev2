@@ -1,24 +1,60 @@
 import { PrismaClient } from "@prisma/client";
+import { resolvePrismaDatabaseUrl } from "../lib/prisma-url";
 
 async function testConnection() {
   console.log("🔍 Probando conexión a la base de datos...\n");
-  
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) {
+
+  const rawDbUrl = process.env.DATABASE_URL;
+  if (!rawDbUrl) {
     console.error("❌ DATABASE_URL no está configurada en .env");
     process.exit(1);
   }
 
-  // Mostrar URL parcialmente (sin contraseña)
+  // Usar la misma función que usa la aplicación para resolver la URL
+  // Esto aplica automáticamente las correcciones (puerto, parámetros, etc.)
+  const dbUrl = resolvePrismaDatabaseUrl(rawDbUrl);
+
+  // Mostrar URL original y corregida
+  const rawUrlObj = new URL(rawDbUrl);
   const urlObj = new URL(dbUrl);
-  const safeUrl = `${urlObj.protocol}//${urlObj.username}@${urlObj.hostname}:${urlObj.port}${urlObj.pathname}`;
-  console.log(`📡 URL: ${safeUrl}`);
+
+  console.log(
+    `📡 URL Original: ${rawUrlObj.protocol}//${rawUrlObj.username}@${rawUrlObj.hostname}:${rawUrlObj.port}${rawUrlObj.pathname}`
+  );
+  console.log(
+    `📡 URL Corregida: ${urlObj.protocol}//${urlObj.username}@${urlObj.hostname}:${urlObj.port}${urlObj.pathname}`
+  );
   console.log(`🏠 Host: ${urlObj.hostname}`);
-  console.log(`🔌 Puerto: ${urlObj.port}`);
-  console.log(`📊 Base de datos: ${urlObj.pathname.replace("/", "")}\n`);
+  console.log(
+    `🔌 Puerto: ${urlObj.port}${
+      rawUrlObj.port !== urlObj.port ? ` (corregido de ${rawUrlObj.port})` : ""
+    }`
+  );
+  console.log(`📊 Base de datos: ${urlObj.pathname.replace("/", "")}`);
+
+  // Mostrar parámetros importantes
+  const params = urlObj.searchParams;
+  if (params.has("pgbouncer")) {
+    console.log(`✅ pgbouncer: ${params.get("pgbouncer")}`);
+  }
+  if (params.has("connection_limit")) {
+    console.log(`✅ connection_limit: ${params.get("connection_limit")}`);
+  }
+  if (params.has("connect_timeout")) {
+    console.log(`✅ connect_timeout: ${params.get("connect_timeout")}`);
+  }
+  if (params.has("pool_timeout")) {
+    console.log(`✅ pool_timeout: ${params.get("pool_timeout")}`);
+  }
+  console.log();
 
   const prisma = new PrismaClient({
-    log: ["query", "error", "warn"],
+    log: ["error", "warn"],
+    datasources: {
+      db: {
+        url: dbUrl, // Usar la URL corregida
+      },
+    },
   });
 
   try {
@@ -53,8 +89,12 @@ async function testConnection() {
     if (error.message.includes("Can't reach database")) {
       console.error("\n💡 Posibles soluciones:");
       console.error("   1. Verifica que Supabase esté activo");
-      console.error("   2. Intenta usar la conexión DIRECTA en lugar del pooler");
-      console.error("      En Supabase: Settings → Database → Connection String");
+      console.error(
+        "   2. Intenta usar la conexión DIRECTA en lugar del pooler"
+      );
+      console.error(
+        "      En Supabase: Settings → Database → Connection String"
+      );
       console.error("      Cambia 'Session pooler' a 'Direct Connection'");
       console.error("   3. Verifica tu conexión a internet");
       console.error("   4. Verifica que tu IP esté permitida en Supabase");
@@ -66,4 +106,3 @@ async function testConnection() {
 }
 
 testConnection();
-
