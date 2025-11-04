@@ -351,15 +351,12 @@ async function main() {
     for (const { id, data } of addresses) {
       await prisma.address.upsert({
         where: { id },
-        update: {
-          ...data,
-          orderId: order.id,
-        },
+        update: data as any,
         create: {
           id,
           ...data,
           orderId: order.id,
-        },
+        } as any,
       });
     }
   }

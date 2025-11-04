@@ -35,7 +35,7 @@ export default function ProductLinkCard({
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
   const lockIdRef = useRef<string | number | null>(null);
-  const failsafeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const failsafeRef = useRef<number | null>(null);
 
   const basePath = useMemo(() => resolveBasePath(href), [href]);
 

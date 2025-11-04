@@ -18,7 +18,7 @@ export default function ProductGallery({
 }) {
   // Normaliza: imagen principal primero, luego galería, luego placeholder
   const normalized: Img[] = useMemo(() => {
-    const gallery = (images ?? [])
+    const galleryItems: (Img | null)[] = (images ?? [])
       .map((img, index) => {
         if (!img || typeof img.url !== "string") return null;
 
@@ -30,8 +30,9 @@ export default function ProductGallery({
           url,
           alt: img.alt && img.alt.trim().length > 0 ? img.alt : name,
         } satisfies Img;
-      })
-      .filter((img): img is Img => img !== null);
+      });
+    
+    let gallery: Img[] = galleryItems.filter((img): img is Img => img !== null);
 
     const mainUrl =
       typeof imageUrl === "string" && imageUrl.trim().length > 0
