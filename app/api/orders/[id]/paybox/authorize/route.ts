@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id as string | undefined;
@@ -16,7 +16,7 @@ export async function POST(
     );
   }
 
-  const orderId = params.id;
+  const { id: orderId } = await context.params;
   if (!orderId) {
     return NextResponse.json(
       { ok: false, error: "Orden inválida" },
