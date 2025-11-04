@@ -4,6 +4,8 @@ import { Box, Chip, Container, Typography, Pagination, PaginationItem } from "@m
 import Grid from "@mui/material/GridLegacy";
 import ProductCard, { UiProduct } from "@/components/products/ProductCard";
 
+export const dynamic = "force-dynamic";
+
 type SearchParams = { cat?: string; page?: string };
 
 export default async function ProductsPage({
@@ -17,40 +19,66 @@ export default async function ProductsPage({
   const requestedPage = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
   const pageSize = 24;
 
-  const categories = await prisma.category.findMany({
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, slug: true },
-  });
+  let categories: Array<{ id: string; name: string; slug: string }> = [];
+  let products: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    price: any;
+    imageUrl: string | null;
+    images: Array<{ url: string }>;
+    stock: number;
+  }> = [];
+  let totalProducts = 0;
 
-  const where =
-    activeCat && activeCat !== "all"
-      ? { category: { slug: activeCat } }
-      : undefined;
+  try {
+    // Verificar si Prisma está disponible
+    if (!prisma) {
+      throw new Error("Database not available");
+    }
 
-  const totalProducts = await prisma.product.count({ where });
-  const totalPages = Math.max(1, Math.ceil(totalProducts / pageSize));
-  const page = Math.min(requestedPage, totalPages);
-  const skip = (page - 1) * pageSize;
+    categories = await prisma.category.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, slug: true },
+    }).catch(() => []);
 
-  const products = await prisma.product.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    take: pageSize,
-    skip,
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      description: true,
-      price: true, // Decimal
-      imageUrl: true, // string | null
-      images: {
-        orderBy: { sortOrder: "asc" },
-        select: { url: true },
+    const where =
+      activeCat && activeCat !== "all"
+        ? { category: { slug: activeCat } }
+        : undefined;
+
+    totalProducts = await prisma.product.count({ where }).catch(() => 0);
+    const totalPages = Math.max(1, Math.ceil(totalProducts / pageSize));
+    const page = Math.min(requestedPage, totalPages);
+    const skip = (page - 1) * pageSize;
+
+    products = await prisma.product.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: pageSize,
+      skip,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        price: true, // Decimal
+        imageUrl: true, // string | null
+        images: {
+          orderBy: { sortOrder: "asc" },
+          select: { url: true },
+        },
+        stock: true,
       },
-      stock: true,
-    },
-  });
+    }).catch(() => []);
+  } catch (error: any) {
+    // Si hay error de conexión, retornar arrays vacíos
+    console.warn("Error fetching products:", error?.message || error);
+    categories = [];
+    products = [];
+    totalProducts = 0;
+  }
 
   const uiProducts: UiProduct[] = products.map((p) => ({
     id: p.id,
@@ -150,11 +178,11 @@ export default async function ProductsPage({
         </Grid>
       )}
 
-      {totalPages > 1 && (
+      {totalProducts > 0 && Math.ceil(totalProducts / pageSize) > 1 && (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <Pagination
-            count={totalPages}
-            page={page}
+            count={Math.ceil(totalProducts / pageSize)}
+            page={Math.min(requestedPage, Math.ceil(totalProducts / pageSize))}
             color="secondary"
             siblingCount={0}
             boundaryCount={1}

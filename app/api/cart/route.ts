@@ -9,31 +9,46 @@ import { ensureSessionUser } from "@/lib/session-user";
 
 // Utilidad: formatea el carrito a un payload plano (Decimal -> number)
 async function buildCartPayload(cartId: string) {
-  const rawItems = await prisma.cartItem.findMany({
-    where: { cartId },
-    include: {
-      product: {
-        select: {
-          id: true,
-          name: true,
-          price: true, // Decimal
-          imageUrl: true,
-          stock: true,
-          images: {
-            orderBy: { sortOrder: "asc" },
-            take: 1,
-            select: { url: true },
+  // Si Prisma no está disponible, retornar carrito vacío
+  if (!prisma) {
+    return {
+      id: cartId,
+      items: [],
+      count: 0,
+      subtotal: 0,
+      discount: 0,
+      shipping: 0,
+      total: 0,
+      coupon: null,
+    };
+  }
+
+  try {
+    const rawItems = await prisma.cartItem.findMany({
+      where: { cartId },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            price: true, // Decimal
+            imageUrl: true,
+            stock: true,
+            images: {
+              orderBy: { sortOrder: "asc" },
+              take: 1,
+              select: { url: true },
+            },
           },
         },
       },
-    },
-  });
+    }).catch(() => []);
 
-  const items = rawItems.map((it) => ({
-    id: it.id,
-    cartId: it.cartId,
-    productId: it.productId,
-    quantity: it.quantity,
+    const items = rawItems.map((it) => ({
+      id: it.id,
+      cartId: it.cartId,
+      productId: it.productId,
+      quantity: it.quantity,
       product: {
         id: it.product.id,
         name: it.product.name,
@@ -43,186 +58,259 @@ async function buildCartPayload(cartId: string) {
       },
     }));
 
-  const count = items.reduce((a, it) => a + it.quantity, 0);
+    const count = items.reduce((a, it) => a + it.quantity, 0);
 
-  // Lines para totals (usa price como number en dólares)
-  const lines = items.map((it) => ({
-    price: Number(it.product.price),
-    quantity: it.quantity,
-  }));
+    // Lines para totals (usa price como number en dólares)
+    const lines = items.map((it) => ({
+      price: Number(it.product.price),
+      quantity: it.quantity,
+    }));
 
-  // ¿Hay cupón aplicado a este cart?
-  const redemption = await prisma.couponRedemption.findFirst({
-    where: { cartId },
-    include: { coupon: true },
-    orderBy: { createdAt: "desc" }, // por si acaso
-  });
-  const coupon = redemption?.coupon ?? undefined;
+    // ¿Hay cupón aplicado a este cart?
+    const redemption = await prisma.couponRedemption.findFirst({
+      where: { cartId },
+      include: { coupon: true },
+      orderBy: { createdAt: "desc" }, // por si acaso
+    }).catch(() => null);
+    const coupon = redemption?.coupon ?? undefined;
 
-  // Totales usando tu helper
-  const { subtotal, discount, shipping, total } = calcTotals(lines, coupon);
+    // Totales usando tu helper
+    const { subtotal, discount, shipping, total } = calcTotals(lines, coupon);
 
-  // Estructura final
-  return {
-    id: cartId,
-    items,
-    count,
-    subtotal, // number
-    discount, // number
-    shipping, // number
-    total, // number
-    coupon: coupon
-      ? { code: coupon.code, type: coupon.type, value: Number(coupon.value) }
-      : null,
-  };
+    // Estructura final
+    return {
+      id: cartId,
+      items,
+      count,
+      subtotal, // number
+      discount, // number
+      shipping, // number
+      total, // number
+      coupon: coupon
+        ? { code: coupon.code, type: coupon.type, value: Number(coupon.value) }
+        : null,
+    };
+  } catch (error: any) {
+    // Si hay error, retornar carrito vacío
+    console.warn("Error in buildCartPayload:", error?.message || error);
+    return {
+      id: cartId,
+      items: [],
+      count: 0,
+      subtotal: 0,
+      discount: 0,
+      shipping: 0,
+      total: 0,
+      coupon: null,
+    };
+  }
 }
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  const sessionUser = await ensureSessionUser(session);
-  const userId = sessionUser?.id;
-  const { cart, setCookieId } = await getOrCreateCart(userId);
+  try {
+    const session = await getServerSession(authOptions);
+    const sessionUser = await ensureSessionUser(session);
+    const userId = sessionUser?.id;
+    
+    // Si no hay Prisma, retornar carrito vacío
+    if (!prisma) {
+      return NextResponse.json({
+        id: "empty",
+        items: [],
+        count: 0,
+        subtotal: 0,
+        discount: 0,
+        shipping: 0,
+        total: 0,
+        coupon: null,
+      });
+    }
 
-  const payload = await buildCartPayload(cart.id);
+    const { cart, setCookieId } = await getOrCreateCart(userId).catch(() => ({
+      cart: { id: "empty" },
+      setCookieId: null,
+    }));
 
-  const res = NextResponse.json(payload);
-  if (setCookieId) {
-    res.cookies.set(setCookieId.name, setCookieId.value, setCookieId.options);
+    const payload = await buildCartPayload(cart.id);
+
+    const res = NextResponse.json(payload);
+    if (setCookieId) {
+      res.cookies.set(setCookieId.name, setCookieId.value, setCookieId.options);
+    }
+    return res;
+  } catch (error: any) {
+    console.warn("Error in GET /api/cart:", error?.message || error);
+    return NextResponse.json({
+      id: "empty",
+      items: [],
+      count: 0,
+      subtotal: 0,
+      discount: 0,
+      shipping: 0,
+      total: 0,
+      coupon: null,
+    });
   }
-  return res;
 }
 
 // body: { productId: string, quantity?: number } -> incrementa (default 1)
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  const sessionUser = await ensureSessionUser(session);
-  const userId = sessionUser?.id;
-  const { productId, quantity = 1 } = (await req.json()) as {
-    productId: string;
-    quantity?: number;
-  };
-
-  if (!productId || quantity <= 0) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
-  }
-
-  // Validar producto
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
-    select: { id: true, stock: true },
-  });
-  if (!product) {
-    return NextResponse.json({ error: "Product not found" }, { status: 404 });
-  }
-
-  const { cart, setCookieId } = await getOrCreateCart(userId);
-  const existingItem = await prisma.cartItem.findUnique({
-    where: { cartId_productId: { cartId: cart.id, productId } },
-    select: { quantity: true },
-  });
-
-  const availableStock = Math.max(0, product.stock ?? 0);
-  const desiredQuantity = Math.min(
-    availableStock,
-    (existingItem?.quantity ?? 0) + quantity
-  );
-
-  if (desiredQuantity <= 0) {
-    if (existingItem) {
-      await prisma.cartItem.delete({
-        where: { cartId_productId: { cartId: cart.id, productId } },
-      });
+  try {
+    if (!prisma) {
+      return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
     }
-  } else if (!existingItem) {
-    await prisma.cartItem.create({
-      data: { cartId: cart.id, productId, quantity: desiredQuantity },
-    });
-  } else if (existingItem.quantity !== desiredQuantity) {
-    await prisma.cartItem.update({
+
+    const session = await getServerSession(authOptions);
+    const sessionUser = await ensureSessionUser(session);
+    const userId = sessionUser?.id;
+    const { productId, quantity = 1 } = (await req.json()) as {
+      productId: string;
+      quantity?: number;
+    };
+
+    if (!productId || quantity <= 0) {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+
+    // Validar producto
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true, stock: true },
+    }).catch(() => null);
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    const { cart, setCookieId } = await getOrCreateCart(userId);
+    const existingItem = await prisma.cartItem.findUnique({
       where: { cartId_productId: { cartId: cart.id, productId } },
-      data: { quantity: desiredQuantity },
-    });
-  }
+      select: { quantity: true },
+    }).catch(() => null);
 
-  const payload = await buildCartPayload(cart.id);
+    const availableStock = Math.max(0, product.stock ?? 0);
+    const desiredQuantity = Math.min(
+      availableStock,
+      (existingItem?.quantity ?? 0) + quantity
+    );
 
-  const res = NextResponse.json(payload);
-  if (setCookieId) {
-    res.cookies.set(setCookieId.name, setCookieId.value, setCookieId.options);
+    if (desiredQuantity <= 0) {
+      if (existingItem) {
+        await prisma.cartItem.delete({
+          where: { cartId_productId: { cartId: cart.id, productId } },
+        }).catch(() => {});
+      }
+    } else if (!existingItem) {
+      await prisma.cartItem.create({
+        data: { cartId: cart.id, productId, quantity: desiredQuantity },
+      }).catch(() => {});
+    } else if (existingItem.quantity !== desiredQuantity) {
+      await prisma.cartItem.update({
+        where: { cartId_productId: { cartId: cart.id, productId } },
+        data: { quantity: desiredQuantity },
+      }).catch(() => {});
+    }
+
+    const payload = await buildCartPayload(cart.id);
+
+    const res = NextResponse.json(payload);
+    if (setCookieId) {
+      res.cookies.set(setCookieId.name, setCookieId.value, setCookieId.options);
+    }
+    return res;
+  } catch (error: any) {
+    console.warn("Error in POST /api/cart:", error?.message || error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-  return res;
 }
 
 // body: { productId: string, quantity: number } -> setea cantidad exacta (0 elimina)
 export async function PATCH(req: Request) {
-  const session = await getServerSession(authOptions);
-  const sessionUser = await ensureSessionUser(session);
-  const userId = sessionUser?.id;
-  const { productId, quantity } = (await req.json()) as {
-    productId: string;
-    quantity: number;
-  };
+  try {
+    if (!prisma) {
+      return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
+    }
 
-  if (!productId || typeof quantity !== "number" || quantity < 0) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    const session = await getServerSession(authOptions);
+    const sessionUser = await ensureSessionUser(session);
+    const userId = sessionUser?.id;
+    const { productId, quantity } = (await req.json()) as {
+      productId: string;
+      quantity: number;
+    };
+
+    if (!productId || typeof quantity !== "number" || quantity < 0) {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true, stock: true },
+    }).catch(() => null);
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    const { cart, setCookieId } = await getOrCreateCart(userId);
+
+    const availableStock = Math.max(0, product.stock ?? 0);
+    const safeQuantity = Math.min(availableStock, quantity);
+
+    if (safeQuantity <= 0) {
+      await prisma.cartItem.deleteMany({
+        where: { cartId: cart.id, productId },
+      }).catch(() => {});
+    } else {
+      await prisma.cartItem.upsert({
+        where: { cartId_productId: { cartId: cart.id, productId } },
+        create: { cartId: cart.id, productId, quantity: safeQuantity },
+        update: { quantity: safeQuantity },
+      }).catch(() => {});
+    }
+
+    const payload = await buildCartPayload(cart.id);
+
+    const res = NextResponse.json(payload);
+    if (setCookieId) {
+      res.cookies.set(setCookieId.name, setCookieId.value, setCookieId.options);
+    }
+    return res;
+  } catch (error: any) {
+    console.warn("Error in PATCH /api/cart:", error?.message || error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
-    select: { id: true, stock: true },
-  });
-  if (!product) {
-    return NextResponse.json({ error: "Product not found" }, { status: 404 });
-  }
-
-  const { cart, setCookieId } = await getOrCreateCart(userId);
-
-  const availableStock = Math.max(0, product.stock ?? 0);
-  const safeQuantity = Math.min(availableStock, quantity);
-
-  if (safeQuantity <= 0) {
-    await prisma.cartItem.deleteMany({
-      where: { cartId: cart.id, productId },
-    });
-  } else {
-    await prisma.cartItem.upsert({
-      where: { cartId_productId: { cartId: cart.id, productId } },
-      create: { cartId: cart.id, productId, quantity: safeQuantity },
-      update: { quantity: safeQuantity },
-    });
-  }
-
-  const payload = await buildCartPayload(cart.id);
-
-  const res = NextResponse.json(payload);
-  if (setCookieId) {
-    res.cookies.set(setCookieId.name, setCookieId.value, setCookieId.options);
-  }
-  return res;
 }
 
 // body: { productId: string } -> elimina ítem
 export async function DELETE(req: Request) {
-  const session = await getServerSession(authOptions);
-  const sessionUser = await ensureSessionUser(session);
-  const userId = sessionUser?.id;
-  const { productId } = (await req.json()) as { productId: string };
+  try {
+    if (!prisma) {
+      return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
+    }
 
-  if (!productId) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    const session = await getServerSession(authOptions);
+    const sessionUser = await ensureSessionUser(session);
+    const userId = sessionUser?.id;
+    const { productId } = (await req.json()) as { productId: string };
+
+    if (!productId) {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+
+    const { cart, setCookieId } = await getOrCreateCart(userId);
+
+    await prisma.cartItem.deleteMany({
+      where: { cartId: cart.id, productId },
+    }).catch(() => {});
+
+    const payload = await buildCartPayload(cart.id);
+
+    const res = NextResponse.json(payload);
+    if (setCookieId) {
+      res.cookies.set(setCookieId.name, setCookieId.value, setCookieId.options);
+    }
+    return res;
+  } catch (error: any) {
+    console.warn("Error in DELETE /api/cart:", error?.message || error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const { cart, setCookieId } = await getOrCreateCart(userId);
-
-  await prisma.cartItem.deleteMany({
-    where: { cartId: cart.id, productId },
-  });
-
-  const payload = await buildCartPayload(cart.id);
-
-  const res = NextResponse.json(payload);
-  if (setCookieId) {
-    res.cookies.set(setCookieId.name, setCookieId.value, setCookieId.options);
-  }
-  return res;
 }
