@@ -37,7 +37,7 @@ const slides: Slide[] = [
     subtitle:
       "Diagnóstico, mantenimiento y optimización con repuestos de calidad.",
     cta1: { label: "Servicio de hardware", href: "/services/hardware" },
-    cta2: { label: "Agenda tu cita", href: "/contacto" },
+    cta2: { label: "Agenda tu cita", href: "/services/hardware/schedule" },
     bg: "/hero/hero-hardware.png",
     tag: "Hardware",
   },
@@ -45,7 +45,7 @@ const slides: Slide[] = [
     title: "Desarrollo de software a medida",
     subtitle: "Web apps modernas, seguras y escalables para tu negocio.",
     cta1: { label: "Servicios de software", href: "/services/software" },
-    cta2: { label: "Cotizar proyecto", href: "/contacto" },
+    cta2: { label: "Cotizar proyecto", href: "/services/software/quote" },
     bg: "/hero/hero-software.png",
     tag: "Software",
   },

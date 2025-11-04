@@ -46,6 +46,9 @@ export default function ModalContainer({
   }, [router, onClosePath]);
 
   useEffect(() => {
+    // El modal solo debe mostrarse cuando estamos en una ruta de producto
+    // Y NO estamos en la ruta de cierre (/products)
+    // Si pathname es /products, cerrar el modal
     if (!pathname || pathname === onClosePath) {
       setOpen(false);
       if (releaseFailsafeRef.current) {
@@ -56,22 +59,33 @@ export default function ModalContainer({
       return;
     }
 
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
+    // Si estamos en una ruta de producto (diferente de /products), abrir el modal
+    // El intercepting route solo funciona cuando navegas desde /products hacia /products/[slug]
+    // Si navegas directamente a /products/[slug], el intercepting route no debería interceptar
+    // y este componente no debería renderizarse
+    const isProductRoute = pathname.startsWith("/products/") && pathname !== "/products";
+    
+    if (isProductRoute) {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+
+      openTimerRef.current = setTimeout(() => {
+        openTimerRef.current = null;
+        setOpen(true);
+      }, 10);
+
+      return () => {
+        if (openTimerRef.current) {
+          clearTimeout(openTimerRef.current);
+          openTimerRef.current = null;
+        }
+      };
     }
 
-    openTimerRef.current = setTimeout(() => {
-      openTimerRef.current = null;
-      setOpen(true);
-    }, 10);
-
-    return () => {
-      if (openTimerRef.current) {
-        clearTimeout(openTimerRef.current);
-        openTimerRef.current = null;
-      }
-    };
+    // Para otras rutas, no mostrar el modal
+    setOpen(false);
   }, [pathname, onClosePath, releaseProductLock]);
 
   const handleClose = () => {

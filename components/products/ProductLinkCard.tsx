@@ -42,13 +42,13 @@ export default function ProductLinkCard({
   const prefetch = useCallback(() => {
     if (prefetchedRef.current) return;
     prefetchedRef.current = true;
-    (router as any).prefetch?.(href);
+    router.prefetch?.(href);
   }, [href, router]);
 
   const prefetchBase = useCallback(() => {
     if (basePrefetchedRef.current) return;
     basePrefetchedRef.current = true;
-    (router as any).prefetch?.(basePath);
+    router.prefetch?.(basePath);
   }, [basePath, router]);
 
   useEffect(() => {
@@ -98,7 +98,9 @@ export default function ProductLinkCard({
     }
   }, [locked]);
 
-  const disabled = locked || isNavigating;
+  // Deshabilitar si el producto actual ya está abierto
+  const isCurrentProduct = pathname === href;
+  const disabled = locked || isNavigating || isCurrentProduct;
 
   const onClick = (e: MouseEvent) => {
     e.preventDefault();
@@ -109,7 +111,8 @@ export default function ProductLinkCard({
       prefetchBase();
     }
 
-    if (pathname === href) {
+    // Si ya estamos viendo este producto, no hacer nada
+    if (isCurrentProduct) {
       return;
     }
 
@@ -126,11 +129,19 @@ export default function ProductLinkCard({
       }, 8000);
     }
 
+    // Si estamos en /products, navegar directamente al producto (el modal route lo interceptará)
     if (!pathname || pathname === basePath) {
       router.push(href, { scroll: false });
       return;
     }
 
+    // Si estamos en la página de inicio, navegar directamente al producto (página completa)
+    if (pathname === "/") {
+      router.push(href);
+      return;
+    }
+
+    // Si estamos en otra página, primero ir a /products y luego al producto
     setPendingHref(href);
     router.replace(basePath, { scroll: false });
   };

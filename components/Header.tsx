@@ -20,7 +20,7 @@ const nav = [
   { label: "Productos", href: "/products" },
   { label: "Servicios", href: "/services" },
   { label: "Sobre mí", href: "/sobre-mi" },
-  { label: "Contacto", href: "/contacto" },
+  { label: "Contacto", href: "/contact" },
 ];
 export default function Header() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);

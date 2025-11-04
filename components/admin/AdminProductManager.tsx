@@ -60,6 +60,7 @@ type Props = {
   initialProducts: AdminProduct[];
   adminName: string;
   categories: AdminCategory[];
+  initialTab?: "create" | "edit" | "categories";
 };
 
 const categoryDefaults = (): CategoryFormValues => ({
@@ -122,6 +123,7 @@ export default function AdminProductManager({
   initialProducts,
   adminName,
   categories,
+  initialTab,
 }: Props) {
   const [products, setProducts] = useState<AdminProduct[]>(initialProducts);
   const [createStatus, setCreateStatus] = useState<StatusMessage>(null);
@@ -356,50 +358,62 @@ export default function AdminProductManager({
     }
   };
 
+  const Wrapper = initialTab ? Box : Container;
+  const wrapperProps = initialTab
+    ? { sx: {} }
+    : { sx: { py: 6 } };
+
   return (
-    <Container sx={{ py: 6 }}>
+    <Wrapper {...wrapperProps}>
       <Stack spacing={4}>
-        <Box>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={2}
-            alignItems={{ xs: "flex-start", sm: "center" }}
-            justifyContent="space-between"
-          >
+        {!initialTab && (
+          <>
             <Box>
-              <Typography variant="h3" fontWeight={900} gutterBottom>
-                Panel de administración
-              </Typography>
-              <Typography color="text.secondary">
-                Hola {adminName}, aquí puedes crear y mantener los productos de
-                la tienda. Por ahora las imágenes se gestionan mediante URLs
-                externas; la estructura ya contempla una galería para futuras
-                cargas directas a S3 u otros orígenes.
-              </Typography>
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={2}
+                alignItems={{ xs: "flex-start", sm: "center" }}
+                justifyContent="space-between"
+              >
+                <Box>
+                  <Typography variant="h3" fontWeight={900} gutterBottom>
+                    Panel de administración
+                  </Typography>
+                  <Typography color="text.secondary">
+                    Hola {adminName}, aquí puedes crear y mantener los productos de
+                    la tienda. Por ahora las imágenes se gestionan mediante URLs
+                    externas; la estructura ya contempla una galería para futuras
+                    cargas directas a S3 u otros orígenes.
+                  </Typography>
+                </Box>
+
+                <Link href="/" legacyBehavior passHref>
+                  <Button
+                    component="a"
+                    variant="outlined"
+                    color="secondary"
+                  >
+                    Volver a la tienda
+                  </Button>
+                </Link>
+              </Stack>
             </Box>
 
-            <Button
-              component={Link}
-              href="/"
-              variant="outlined"
-              color="secondary"
-            >
-              Volver a la tienda
-            </Button>
-          </Stack>
-        </Box>
+            <Alert severity="info">
+              Asegúrate de usar URLs accesibles públicamente por el momento. Cuando
+              integremos buckets de S3 bastará con reemplazar el origen de las
+              imágenes sin cambiar esta interfaz.
+            </Alert>
+          </>
+        )}
 
-        <Alert severity="info">
-          Asegúrate de usar URLs accesibles públicamente por el momento. Cuando
-          integremos buckets de S3 bastará con reemplazar el origen de las
-          imágenes sin cambiar esta interfaz.
-        </Alert>
-
-        <Grid container spacing={3} alignItems="stretch">
-          <Grid item xs={12} lg={5}>
-            <Stack spacing={3} sx={{ height: "100%" }}>
-              <Paper sx={{ p: 3 }} elevation={3}>
-                <Stack component="form" spacing={2.5} onSubmit={onCreate}>
+        {(!initialTab || initialTab === "create" || initialTab === "categories") && (
+          <Grid container spacing={3} alignItems="stretch">
+            {(!initialTab || initialTab === "create") && (
+              <Grid item xs={12} lg={initialTab ? 12 : 5}>
+                <Stack spacing={3} sx={{ height: "100%" }}>
+                  <Paper sx={{ p: 3 }} elevation={3}>
+                    <Stack component="form" spacing={2.5} onSubmit={onCreate}>
                   <Box>
                     <Typography variant="h6" fontWeight={800} gutterBottom>
                       Crear nuevo producto
@@ -616,78 +630,87 @@ export default function AdminProductManager({
                   </Button>
                 </Stack>
               </Paper>
-
-              <Paper sx={{ p: 3 }} elevation={3}>
-                <Stack component="form" spacing={2.5} onSubmit={onCreateCategory}>
-                  <Box>
-                    <Typography variant="h6" fontWeight={800} gutterBottom>
-                      Crear nueva categoría
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Las categorías permiten agrupar y filtrar productos en la
-                      tienda. Puedes crear las que necesites y se agregarán
-                      inmediatamente a los formularios.
-                    </Typography>
-                  </Box>
-
-                  {categoryStatus && (
-                    <Alert severity={categoryStatus.type}>
-                      {categoryStatus.text}
-                    </Alert>
-                  )}
-
-                  <TextField
-                    label="Nombre"
-                    InputLabelProps={{ shrink: !!categoryForm.watch("name") }}
-                    {...categoryForm.register("name")}
-                    error={!!categoryForm.formState.errors.name}
-                    helperText={categoryForm.formState.errors.name?.message}
-                  />
-
-                  <TextField
-                    label="Slug (opcional)"
-                    InputLabelProps={{ shrink: !!categoryForm.watch("slug") }}
-                    {...categoryForm.register("slug")}
-                    error={!!categoryForm.formState.errors.slug}
-                    helperText={
-                      categoryForm.formState.errors.slug?.message ??
-                      "Se generará automáticamente si lo dejas en blanco."
-                    }
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <Button
-                            size="small"
-                            type="button"
-                            onClick={createCategorySlugFromName}
-                          >
-                            Generar
-                          </Button>
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-
-                  <Button
-                    type="submit"
-                    variant="outlined"
-                    startIcon={
-                      categoryForm.formState.isSubmitting ? (
-                        <CircularProgress size={18} color="inherit" />
-                      ) : (
-                        <AddIcon />
-                      )
-                    }
-                    disabled={categoryForm.formState.isSubmitting}
-                  >
-                    Guardar categoría
-                  </Button>
                 </Stack>
-              </Paper>
-            </Stack>
-          </Grid>
+              </Grid>
+            )}
 
-          <Grid item xs={12} lg={7}>
+            {(!initialTab || initialTab === "categories") && (
+              <Grid item xs={12} lg={initialTab ? 12 : 5}>
+                <Paper sx={{ p: 3 }} elevation={3}>
+                  <Stack component="form" spacing={2.5} onSubmit={onCreateCategory}>
+                    <Box>
+                      <Typography variant="h6" fontWeight={800} gutterBottom>
+                        Crear nueva categoría
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Las categorías permiten agrupar y filtrar productos en la
+                        tienda. Puedes crear las que necesites y se agregarán
+                        inmediatamente a los formularios.
+                      </Typography>
+                    </Box>
+
+                    {categoryStatus && (
+                      <Alert severity={categoryStatus.type}>
+                        {categoryStatus.text}
+                      </Alert>
+                    )}
+
+                    <TextField
+                      label="Nombre"
+                      InputLabelProps={{ shrink: !!categoryForm.watch("name") }}
+                      {...categoryForm.register("name")}
+                      error={!!categoryForm.formState.errors.name}
+                      helperText={categoryForm.formState.errors.name?.message}
+                    />
+
+                    <TextField
+                      label="Slug (opcional)"
+                      InputLabelProps={{ shrink: !!categoryForm.watch("slug") }}
+                      {...categoryForm.register("slug")}
+                      error={!!categoryForm.formState.errors.slug}
+                      helperText={
+                        categoryForm.formState.errors.slug?.message ??
+                        "Se generará automáticamente si lo dejas en blanco."
+                      }
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <Button
+                              size="small"
+                              type="button"
+                              onClick={createCategorySlugFromName}
+                            >
+                              Generar
+                            </Button>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+
+                    <Button
+                      type="submit"
+                      variant="outlined"
+                      startIcon={
+                        categoryForm.formState.isSubmitting ? (
+                          <CircularProgress size={18} color="inherit" />
+                        ) : (
+                          <AddIcon />
+                        )
+                      }
+                      disabled={categoryForm.formState.isSubmitting}
+                    >
+                      Guardar categoría
+                    </Button>
+                  </Stack>
+                </Paper>
+              </Grid>
+            )}
+          </Grid>
+        )}
+
+        {(!initialTab || initialTab === "edit") && (
+          <Grid container spacing={3} alignItems="stretch">
+          <Grid item xs={12} lg={initialTab ? 12 : 7}>
             <Stack spacing={2} sx={{ height: "100%" }}>
               <Paper sx={{ p: 2 }} elevation={2}>
                 <Typography variant="h6" fontWeight={800} gutterBottom>
@@ -1012,8 +1035,9 @@ export default function AdminProductManager({
               </Paper>
             </Stack>
           </Grid>
-        </Grid>
+          </Grid>
+        )}
       </Stack>
-    </Container>
+    </Wrapper>
   );
 }

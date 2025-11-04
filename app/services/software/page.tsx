@@ -5,7 +5,7 @@ import Link from "next/link";
 
 const whatsappNumber = "+593958720950";
 const whatsappLink = `https://wa.me/${whatsappNumber.replace(/\D/g, "")}`;
-const quoteHref = "/contact";
+const quoteHref = "/services/software/quote";
 const learnMoreHref = "/about";
 
 export const metadata = {

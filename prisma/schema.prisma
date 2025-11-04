@@ -17,6 +17,7 @@ enum Role {
 /// Estado de una orden
 enum OrderStatus {
   PENDING
+  REVIEW
   PAID
   SHIPPED
   COMPLETED
@@ -163,6 +164,12 @@ model Order {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
+  // Método de pago y transferencia bancaria
+  paymentMethod    String? // "CARD" | "BANK_TRANSFER"
+  selectedBank     String? // "GUAYAQUIL" | "PICHINCHA" | "PACIFICO"
+  receiptUrl       String? // URL del comprobante de transferencia
+  receiptUploadedAt DateTime?
+
   items OrderItem[]
   addresses Address[]
 }
@@ -171,7 +178,7 @@ model Order {
 model OrderItem {
   id        String   @id @default(uuid())
   orderId   String
-  order     Order    @relation(fields: [orderId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId String?
   product   Product? @relation(fields: [productId], references: [id])
   serviceId String?

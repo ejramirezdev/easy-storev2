@@ -3,12 +3,17 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getServerSession } from "next-auth";
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound, redirect } from "next/navigation";
-import { Box, Container, Divider, Paper, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  Container,
+  Divider,
+  Paper,
+  Stack,
+  Typography,
+} from "@mui/material";
 import Grid from "@mui/material/GridLegacy";
-import PayboxButton, {
-  PayboxAddress,
-  PayboxConfig,
-} from "@/components/orders/PayboxButton";
+import OrderPaymentSection from "@/components/orders/OrderPaymentSection";
+import { PayboxAddress, PayboxConfig } from "@/components/orders/PayboxButton";
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function OrderDetailPage({ params }: PageProps) {
@@ -47,18 +52,20 @@ export default async function OrderDetailPage({ params }: PageProps) {
     return notFound();
   }
 
-  const shippingAddress = order.addresses.find((it: any) => it.type === "SHIPPING");
-  const billingAddress = order.addresses.find((it: any) => it.type === "BILLING");
+  const shippingAddress = order.addresses.find(
+    (it: any) => it.type === "SHIPPING"
+  );
+  const billingAddress = order.addresses.find(
+    (it: any) => it.type === "BILLING"
+  );
 
-  // Totales (soporta snapshot si lo agregaste; si no, usa total)
-  const subtotal = order.subtotal
-    ? Number(order.subtotal)
-    : order.items.reduce(
-        (acc, it) => acc + Number(it.unitPrice) * it.quantity,
-        0
-      );
-  const discount = order.discountTotal ? Number(order.discountTotal) : 0;
-  const shipping = order.shippingTotal ? Number(order.shippingTotal) : 0;
+  // Totales (calcular desde los items si no están almacenados)
+  const subtotal = order.items.reduce(
+    (acc, it) => acc + Number(it.unitPrice) * it.quantity,
+    0
+  );
+  const discount = 0; // Los descuentos se pueden agregar en el futuro
+  const shipping = 0; // El envío se puede agregar en el futuro
   const total = order.total
     ? Number(order.total)
     : subtotal - discount + shipping;
@@ -102,13 +109,13 @@ export default async function OrderDetailPage({ params }: PageProps) {
                     direction="row"
                     justifyContent="space-between"
                   >
-                  <Typography>
-                    {itemName} × {it.quantity}
-                  </Typography>
-                  <Typography>
-                    ${(Number(it.unitPrice) * it.quantity).toFixed(2)}
-                  </Typography>
-                </Stack>
+                    <Typography>
+                      {itemName} × {it.quantity}
+                    </Typography>
+                    <Typography>
+                      ${(Number(it.unitPrice) * it.quantity).toFixed(2)}
+                    </Typography>
+                  </Stack>
                 );
               })}
             </Stack>
@@ -141,8 +148,16 @@ export default async function OrderDetailPage({ params }: PageProps) {
           </Paper>
 
           <Box mt={2}>
-            <PayboxButton
+            <OrderPaymentSection
               orderId={order.id}
+              status={order.status}
+              total={total}
+              currentPaymentMethod={
+                (order as any).paymentMethod as "CARD" | "BANK_TRANSFER" | null
+              }
+              currentBank={(order as any).selectedBank}
+              receiptUrl={(order as any).receiptUrl}
+              payboxConfig={payboxConfig}
               totals={{
                 subtotal,
                 discount,
@@ -152,7 +167,6 @@ export default async function OrderDetailPage({ params }: PageProps) {
               }}
               billingAddress={payboxBillingAddress}
               shippingAddress={payboxShippingAddress}
-              payboxConfig={payboxConfig}
             />
           </Box>
         </Grid>
@@ -175,7 +189,8 @@ function AddressBlock({ address }: AddressProps) {
     : [];
   const line1 = address.line1 ?? streetLines[0];
   const remainingStreet = streetLines.slice(1).join(" ").trim();
-  const line2 = address.line2 ?? (remainingStreet.length > 0 ? remainingStreet : undefined);
+  const line2 =
+    address.line2 ?? (remainingStreet.length > 0 ? remainingStreet : undefined);
 
   return (
     <Stack spacing={0.5}>
@@ -183,7 +198,9 @@ function AddressBlock({ address }: AddressProps) {
         {address.firstName} {address.lastName}
       </Typography>
       <Typography variant="body2">{address.email}</Typography>
-      {address.phone && <Typography variant="body2">{address.phone}</Typography>}
+      {address.phone && (
+        <Typography variant="body2">{address.phone}</Typography>
+      )}
       {line1 && <Typography variant="body2">{line1}</Typography>}
       {line2 && <Typography variant="body2">{line2}</Typography>}
       <Typography variant="body2">
@@ -228,7 +245,8 @@ async function resolvePayboxConfig(): Promise<PayboxConfig> {
     process.env.PAYBOX_ENVIRONMENT ??
     process.env.NEXT_PUBLIC_PAYBOX_ENV ??
     "sandbox";
-  const normalizedEnv = rawEnv.toLowerCase() === "production" ? "production" : "sandbox";
+  const normalizedEnv =
+    rawEnv.toLowerCase() === "production" ? "production" : "sandbox";
 
   const scriptUrls: Partial<Record<"sandbox" | "production", string>> = {};
   if (process.env.PAYBOX_SANDBOX_SCRIPT_URL) {
@@ -258,10 +276,12 @@ async function resolvePayboxConfig(): Promise<PayboxConfig> {
     extras.onlyDebit = process.env.PAYBOX_ONLY_DEBIT === "true";
   }
   if (process.env.PAYBOX_BLOCK_DEFERRED) {
-    extras.permitirBloquearDiferimientos = process.env.PAYBOX_BLOCK_DEFERRED === "true";
+    extras.permitirBloquearDiferimientos =
+      process.env.PAYBOX_BLOCK_DEFERRED === "true";
   }
   if (process.env.PAYBOX_EXTRA_FIELDS) {
-    extras.permitirDatosAdicionales = process.env.PAYBOX_EXTRA_FIELDS === "true";
+    extras.permitirDatosAdicionales =
+      process.env.PAYBOX_EXTRA_FIELDS === "true";
   }
   if (process.env.PAYBOX_RECURRENT) {
     extras.recurrent = process.env.PAYBOX_RECURRENT === "true";
@@ -334,7 +354,9 @@ function mapAddressToPaybox(address: any): PayboxAddress {
         ? address.document
         : null,
     line1: normalizedLine1,
-    line2: (address.line2 as string | undefined) ?? (line2.length > 0 ? line2 : null),
+    line2:
+      (address.line2 as string | undefined) ??
+      (line2.length > 0 ? line2 : null),
     city: address.city ?? "",
     state: normalizedState,
     postalCode: address.postalCode ?? null,

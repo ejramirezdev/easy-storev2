@@ -2,8 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
-import { Box, Chip, Divider, Link as MuiLink, Paper, Stack, Typography } from "@mui/material";
+import { Link as MuiLink, Paper, Stack, Typography } from "@mui/material";
 import Link from "next/link";
+import OrderHistoryItem from "@/components/account/OrderHistoryItem";
 
 export default async function AccountOrdersPage() {
   const session = await getServerSession(authOptions);
@@ -17,13 +18,40 @@ export default async function AccountOrdersPage() {
     include: {
       items: {
         include: {
-          product: { select: { name: true } },
+          product: {
+            select: {
+              name: true,
+              slug: true,
+              imageUrl: true,
+              images: {
+                orderBy: { sortOrder: "asc" },
+                take: 1,
+                select: { url: true },
+              },
+            },
+          },
           service: { select: { name: true } },
         },
       },
       addresses: true,
     },
   });
+
+  // Serializar los datos para pasar a Client Components (convertir Decimal a number)
+  const serializedOrders = orders.map((order) => ({
+    id: order.id,
+    status: order.status,
+    total: Number(order.total), // Convertir Decimal a number
+    createdAt: order.createdAt,
+    items: order.items.map((item) => ({
+      id: item.id,
+      quantity: item.quantity,
+      unitPrice: Number(item.unitPrice), // Convertir Decimal a number
+      product: item.product,
+      service: item.service,
+    })),
+    addresses: order.addresses,
+  }));
 
   return (
     <Paper
@@ -40,7 +68,8 @@ export default async function AccountOrdersPage() {
             Historial de compras
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Consulta el detalle de tus pedidos y realiza seguimiento a cada compra.
+            Consulta el detalle de tus pedidos y realiza seguimiento a cada
+            compra.
           </Typography>
         </Stack>
 
@@ -59,93 +88,9 @@ export default async function AccountOrdersPage() {
             </Link>
           </Stack>
         ) : (
-          orders.map((order) => {
-            const subtotal = order.subtotal
-              ? Number(order.subtotal)
-              : order.items.reduce(
-                  (acc, it) => acc + Number(it.unitPrice) * it.quantity,
-                  0
-                );
-            const discount = order.discountTotal ? Number(order.discountTotal) : 0;
-            const shipping = order.shippingTotal ? Number(order.shippingTotal) : 0;
-            const total = order.total ? Number(order.total) : subtotal - discount + shipping;
-            const shippingAddress = order.addresses.find((addr) => addr.type === "SHIPPING");
-
-            return (
-              <Stack
-                key={order.id}
-                spacing={2}
-                sx={{
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 2,
-                  p: { xs: 2, md: 2.5 },
-                  bgcolor: "rgba(0,0,0,0.15)",
-                }}
-              >
-                <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={1}>
-                  <Stack spacing={0.5}>
-                    <Typography variant="subtitle1" fontWeight={700}>
-                      Orden #{order.id.slice(0, 8).toUpperCase()}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {order.createdAt.toLocaleString()}
-                    </Typography>
-                  </Stack>
-                  <Chip
-                    label={order.status}
-                    color={order.status === "COMPLETED" ? "success" : "default"}
-                    variant="outlined"
-                    sx={{ alignSelf: { xs: "flex-start", sm: "center" } }}
-                  />
-                </Stack>
-
-                <Stack spacing={0.5}>
-                  {order.items.map((item) => {
-                    const label = item.product?.name ?? item.service?.name ?? "Producto";
-                    return (
-                      <Typography key={item.id} variant="body2">
-                        {label} × {item.quantity}
-                      </Typography>
-                    );
-                  })}
-                </Stack>
-
-                <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
-
-                <Stack spacing={0.5}>
-                  <Typography variant="body2">Subtotal: ${subtotal.toFixed(2)}</Typography>
-                  {discount > 0 && (
-                    <Typography variant="body2">Descuento: -${discount.toFixed(2)}</Typography>
-                  )}
-                  {shipping > 0 && (
-                    <Typography variant="body2">Envío: ${shipping.toFixed(2)}</Typography>
-                  )}
-                  <Typography variant="subtitle1" fontWeight={700}>
-                    Total: ${total.toFixed(2)}
-                  </Typography>
-                </Stack>
-
-                {shippingAddress && (
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Envío para:
-                    </Typography>
-                    <Typography variant="body2">
-                      {shippingAddress.firstName} {shippingAddress.lastName} - {shippingAddress.city}
-                    </Typography>
-                  </Box>
-                )}
-
-                <Box display="flex" justifyContent="flex-end">
-                  <Link href={`/orders/${order.id}`} legacyBehavior passHref>
-                    <MuiLink underline="none" color="secondary" fontWeight={600}>
-                      Ver detalle
-                    </MuiLink>
-                  </Link>
-                </Box>
-              </Stack>
-            );
-          })
+          serializedOrders.map((order) => (
+            <OrderHistoryItem key={order.id} order={order} />
+          ))
         )}
       </Stack>
     </Paper>
