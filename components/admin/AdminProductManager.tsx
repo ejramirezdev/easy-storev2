@@ -358,13 +358,7 @@ export default function AdminProductManager({
     }
   };
 
-  const Wrapper = initialTab ? Box : Container;
-  const wrapperProps = initialTab
-    ? { sx: {} }
-    : { sx: { py: 6 } };
-
-  return (
-    <Wrapper {...wrapperProps}>
+  const content = (
       <Stack spacing={4}>
         {!initialTab && (
           <>
@@ -1038,6 +1032,11 @@ export default function AdminProductManager({
           </Grid>
         )}
       </Stack>
-    </Wrapper>
   );
+
+  if (initialTab) {
+    return <Box sx={{}}>{content}</Box>;
+  }
+
+  return <Container sx={{ py: 6 }}>{content}</Container>;
 }
