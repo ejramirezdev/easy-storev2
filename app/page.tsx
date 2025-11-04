@@ -5,34 +5,43 @@ import Grid from "@mui/material/GridLegacy";
 import { Box, Container, Typography } from "@mui/material";
 import { prisma } from "@/lib/prisma";
 
-async function getFeaturedProducts(): Promise<UiProduct[]> {
-  const products = await prisma.product.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 6,
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      description: true,
-      price: true,
-      imageUrl: true,
-      images: {
-        orderBy: { sortOrder: "asc" },
-        select: { url: true },
-      },
-      stock: true,
-    },
-  });
+// Forzar renderizado dinámico para evitar problemas de conexión a BD durante el build
+export const dynamic = 'force-dynamic';
 
-  return products.map((product) => ({
-    id: product.id,
-    slug: product.slug,
-    name: product.name,
-    description: product.description ?? null,
-    imageUrl: product.imageUrl ?? product.images[0]?.url ?? null,
-    price: Number(product.price),
-    stock: product.stock,
-  }));
+async function getFeaturedProducts(): Promise<UiProduct[]> {
+  try {
+    const products = await prisma.product.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 6,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        price: true,
+        imageUrl: true,
+        images: {
+          orderBy: { sortOrder: "asc" },
+          select: { url: true },
+        },
+        stock: true,
+      },
+    });
+
+    return products.map((product) => ({
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      description: product.description ?? null,
+      imageUrl: product.imageUrl ?? product.images[0]?.url ?? null,
+      price: Number(product.price),
+      stock: product.stock,
+    }));
+  } catch (error) {
+    console.error("Error fetching featured products:", error);
+    // Retornar array vacío si hay error de conexión durante el build
+    return [];
+  }
 }
 
 export default async function Page() {
