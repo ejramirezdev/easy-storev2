@@ -14,11 +14,6 @@ function createPrismaClient() {
     return null as any;
   }
 
-  // Si no hay DATABASE_URL, retornar null en lugar de lanzar error
-  if (!process.env.DATABASE_URL) {
-    return null as any;
-  }
-
   try {
     const client = new PrismaClient({
       datasources: {
@@ -28,7 +23,7 @@ function createPrismaClient() {
       },
       log:
         process.env.NODE_ENV === "development"
-          ? ["query", "error", "warn"]
+          ? ["error", "warn"] // Solo errores y warnings para reducir ruido
           : ["error"],
     });
 
@@ -45,6 +40,19 @@ function createPrismaClient() {
       return null as any;
     }
 
+    // En desarrollo, mostrar el error pero lanzarlo para que sea visible
+    if (process.env.NODE_ENV === "development") {
+      console.error("❌ Error al crear Prisma Client:", error);
+      if (error instanceof Error) {
+        if (error.message.includes("Can't reach database")) {
+          console.error("💡 Verifica que tu DATABASE_URL sea correcta y que Supabase esté accesible");
+        }
+      }
+      // En desarrollo, lanzar el error para debugging
+      throw error;
+    }
+
+    // Si es un error de inicialización de Prisma, lanzarlo
     if (
       error instanceof Error &&
       error.message.includes("@prisma/client did not initialize yet")
@@ -55,7 +63,8 @@ function createPrismaClient() {
       );
     }
 
-    throw error;
+    // En producción, retornar null silenciosamente para evitar que la app se caiga
+    return null as any;
   }
 }
 

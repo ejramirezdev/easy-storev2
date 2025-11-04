@@ -4,6 +4,7 @@ import ProductCard, { UiProduct } from "@/components/products/ProductCard";
 import Grid from "@mui/material/GridLegacy";
 import { Box, Container, Typography } from "@mui/material";
 import { unstable_noStore as noStore } from "next/cache";
+import { prisma } from "@/lib/prisma";
 
 // Forzar renderizado dinámico para evitar problemas de conexión a BD durante el build
 export const dynamic = "force-dynamic";
@@ -16,57 +17,38 @@ async function getFeaturedProducts(): Promise<UiProduct[]> {
   noStore();
 
   // Detectar build time: si estamos en Vercel durante build, retornar vacío inmediatamente
-  // Vercel establece VERCEL=1 durante build, pero también durante runtime
-  // Usamos NEXT_PHASE para detectar específicamente la fase de build
   if (process.env.NEXT_PHASE === "phase-production-build") {
     return [];
   }
 
-  // Si no hay DATABASE_URL configurada, retornar vacío
-  if (!process.env.DATABASE_URL) {
-    return [];
-  }
-
   try {
-    // Importar Prisma dinámicamente solo si no estamos en build time
-    const prismaModule = await import("@/lib/prisma");
-    const prisma = prismaModule.prisma;
-
-    // Si prisma es null o undefined (puede pasar durante build), retornar vacío
+    // Si prisma es null o undefined (solo durante build), retornar vacío
     if (!prisma) {
+      if (process.env.NODE_ENV === "development") {
+        console.error(
+          "❌ Prisma Client no está disponible. Verifica tu configuración de DATABASE_URL."
+        );
+      }
       return [];
     }
 
-    const products = await prisma.product
-      .findMany({
-        orderBy: { createdAt: "desc" },
-        take: 6,
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          description: true,
-          price: true,
-          imageUrl: true,
-          images: {
-            orderBy: { sortOrder: "asc" },
-            select: { url: true },
-          },
-          stock: true,
+    const products = await prisma.product.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 6,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        price: true,
+        imageUrl: true,
+        images: {
+          orderBy: { sortOrder: "asc" },
+          select: { url: true },
         },
-      })
-      .catch((error: any) => {
-        // Capturar específicamente errores de conexión de Prisma
-        if (
-          error?.message?.includes("Can't reach database") ||
-          error?.code === "P1001" ||
-          error?.name === "PrismaClientInitializationError"
-        ) {
-          return [];
-        }
-        // Re-lanzar otros errores para que sean capturados por el catch externo
-        throw error;
-      });
+        stock: true,
+      },
+    });
 
     if (!products || products.length === 0) {
       return [];
@@ -82,8 +64,23 @@ async function getFeaturedProducts(): Promise<UiProduct[]> {
       stock: product.stock,
     }));
   } catch (error: any) {
-    // Cualquier error, retornar array vacío silenciosamente
-    // No hacer log durante build para evitar ruido
+    // En desarrollo, mostrar el error completo para debugging
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "❌ Error al obtener productos destacados:",
+        error?.message || error
+      );
+      if (error?.message?.includes("Can't reach database")) {
+        console.error("💡 Verifica que:");
+        console.error("   1. Tu DATABASE_URL en .env sea correcta");
+        console.error("   2. La base de datos de Supabase esté activa");
+        console.error(
+          "   3. Tu IP esté permitida en Supabase (si es necesario)"
+        );
+        console.error("   4. El pooler de Supabase esté accesible");
+      }
+    }
+    // En producción, retornar vacío silenciosamente
     return [];
   }
 }

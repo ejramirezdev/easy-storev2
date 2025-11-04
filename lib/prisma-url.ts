@@ -15,13 +15,37 @@ export function resolvePrismaDatabaseUrl(rawUrl = process.env.DATABASE_URL) {
     const url = new URL(rawUrl);
     const host = url.hostname.toLowerCase();
 
+    // Para Supabase pooler, asegurar parámetros correctos
     if (host.includes("pooler.supabase.com")) {
+      // En desarrollo, recomendar usar conexión directa
+      if (process.env.NODE_ENV === "development") {
+        console.warn("⚠️  Usando pooler de Supabase. Si tienes problemas de conexión, considera usar 'Direct Connection' en desarrollo local.");
+      }
+
       if (!url.searchParams.has("pgbouncer")) {
         url.searchParams.set("pgbouncer", "true");
       }
 
       if (!url.searchParams.has("connection_limit")) {
         url.searchParams.set("connection_limit", "1");
+      }
+
+      // Asegurar SSL mode
+      if (!url.searchParams.has("sslmode")) {
+        url.searchParams.set("sslmode", "require");
+      }
+    }
+
+    // Para conexión directa de Supabase (db.xxxxx.supabase.co)
+    if (host.includes(".supabase.co") && !host.includes("pooler")) {
+      // Conexión directa - no necesita pgbouncer
+      if (url.searchParams.has("pgbouncer")) {
+        url.searchParams.delete("pgbouncer");
+      }
+
+      // Asegurar SSL mode
+      if (!url.searchParams.has("sslmode")) {
+        url.searchParams.set("sslmode", "require");
       }
     }
 
