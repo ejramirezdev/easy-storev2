@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound, redirect } from "next/navigation";
