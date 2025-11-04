@@ -7,12 +7,12 @@ import {
   Button,
   Checkbox,
   FormControlLabel,
-  Grid,
   Paper,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
+import Grid from "@mui/material/GridLegacy";
 
 type Settings = {
   id?: string;
