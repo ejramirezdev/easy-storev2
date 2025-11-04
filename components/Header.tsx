@@ -19,7 +19,7 @@ const nav = [
   { label: "Inicio", href: "/" },
   { label: "Productos", href: "/products" },
   { label: "Servicios", href: "/services" },
-  { label: "Sobre mí", href: "/sobre-mi" },
+  // { label: "Sobre mí", href: "/sobre-mi" }, // Oculto temporalmente
   { label: "Contacto", href: "/contact" },
 ];
 export default function Header() {

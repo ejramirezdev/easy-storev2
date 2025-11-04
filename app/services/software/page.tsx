@@ -6,7 +6,6 @@ import Link from "next/link";
 const whatsappNumber = "+593958720950";
 const whatsappLink = `https://wa.me/${whatsappNumber.replace(/\D/g, "")}`;
 const quoteHref = "/services/software/quote";
-const learnMoreHref = "/about";
 
 export const metadata = {
   title: "Servicios de software | Easy Store",
@@ -99,17 +98,6 @@ export default function SoftwareServicesPage() {
                     size="large"
                   >
                     Cotiza tu proyecto
-                  </Button>
-                </Link>
-                <Link href={learnMoreHref} passHref legacyBehavior>
-                  <Button
-                    component="a"
-                    variant="outlined"
-                    color="secondary"
-                    size="large"
-                    sx={{ borderWidth: 2 }}
-                  >
-                    Conoce más
                   </Button>
                 </Link>
               </Stack>

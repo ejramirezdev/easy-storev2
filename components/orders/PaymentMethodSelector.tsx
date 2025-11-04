@@ -71,6 +71,7 @@ export default function PaymentMethodSelector({
           <FormControlLabel
             value="CARD"
             control={<Radio />}
+            disabled
             label={
               <Stack direction="row" spacing={2} alignItems="center">
                 <CreditCardIcon />
@@ -79,12 +80,12 @@ export default function PaymentMethodSelector({
                     Tarjeta de débito o crédito
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Pago seguro con PLUX
+                    Pronto podrás realizar tus pagos con tu tarjeta favorita
                   </Typography>
                 </Box>
               </Stack>
             }
-            sx={{ mb: 2 }}
+            sx={{ mb: 2, opacity: 0.6 }}
           />
 
           <FormControlLabel
