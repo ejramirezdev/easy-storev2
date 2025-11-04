@@ -1,4 +1,10 @@
 export function resolvePrismaDatabaseUrl(rawUrl = process.env.DATABASE_URL) {
+  // Durante build time, retornar una URL dummy para evitar errores
+  // Esta URL no se usará realmente porque el cliente Prisma será null
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return "postgresql://dummy:dummy@localhost:5432/dummy";
+  }
+
   if (!rawUrl) {
     throw new Error(
       "DATABASE_URL no está configurada. Asegúrate de definir la variable de entorno antes de iniciar Prisma.",

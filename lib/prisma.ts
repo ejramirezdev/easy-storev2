@@ -8,6 +8,17 @@ declare global {
 }
 
 function createPrismaClient() {
+  // Durante build time, no intentar crear el cliente
+  // Esto evita errores cuando DATABASE_URL no está disponible o la BD no es accesible
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return null as any;
+  }
+
+  // Si no hay DATABASE_URL, retornar null en lugar de lanzar error
+  if (!process.env.DATABASE_URL) {
+    return null as any;
+  }
+
   try {
     const client = new PrismaClient({
       datasources: {
@@ -29,6 +40,11 @@ function createPrismaClient() {
 
     return client;
   } catch (error) {
+    // Durante build, no lanzar errores, solo retornar null
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      return null as any;
+    }
+
     if (
       error instanceof Error &&
       error.message.includes("@prisma/client did not initialize yet")

@@ -6,41 +6,71 @@ import { Box, Container, Typography } from "@mui/material";
 import { unstable_noStore as noStore } from "next/cache";
 
 // Forzar renderizado dinámico para evitar problemas de conexión a BD durante el build
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
-export const fetchCache = 'force-no-store';
+export const fetchCache = "force-no-store";
+export const runtime = "nodejs";
 
 async function getFeaturedProducts(): Promise<UiProduct[]> {
   // Forzar que esta función no se cachee ni se pre-renderice
   noStore();
-  
-  // Verificar primero si DATABASE_URL está disponible
-  // Si no está disponible (durante build), retornar vacío sin intentar conectar
+
+  // Detectar build time: si estamos en Vercel durante build, retornar vacío inmediatamente
+  // Vercel establece VERCEL=1 durante build, pero también durante runtime
+  // Usamos NEXT_PHASE para detectar específicamente la fase de build
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    return [];
+  }
+
+  // Si no hay DATABASE_URL configurada, retornar vacío
   if (!process.env.DATABASE_URL) {
     return [];
   }
 
-  // Importar Prisma dinámicamente solo si necesitamos usarlo
-  const { prisma } = await import("@/lib/prisma");
-
   try {
-    const products = await prisma.product.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 6,
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        price: true,
-        imageUrl: true,
-        images: {
-          orderBy: { sortOrder: "asc" },
-          select: { url: true },
+    // Importar Prisma dinámicamente solo si no estamos en build time
+    const prismaModule = await import("@/lib/prisma");
+    const prisma = prismaModule.prisma;
+
+    // Si prisma es null o undefined (puede pasar durante build), retornar vacío
+    if (!prisma) {
+      return [];
+    }
+
+    const products = await prisma.product
+      .findMany({
+        orderBy: { createdAt: "desc" },
+        take: 6,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          price: true,
+          imageUrl: true,
+          images: {
+            orderBy: { sortOrder: "asc" },
+            select: { url: true },
+          },
+          stock: true,
         },
-        stock: true,
-      },
-    });
+      })
+      .catch((error: any) => {
+        // Capturar específicamente errores de conexión de Prisma
+        if (
+          error?.message?.includes("Can't reach database") ||
+          error?.code === "P1001" ||
+          error?.name === "PrismaClientInitializationError"
+        ) {
+          return [];
+        }
+        // Re-lanzar otros errores para que sean capturados por el catch externo
+        throw error;
+      });
+
+    if (!products || products.length === 0) {
+      return [];
+    }
 
     return products.map((product) => ({
       id: product.id,
@@ -52,8 +82,8 @@ async function getFeaturedProducts(): Promise<UiProduct[]> {
       stock: product.stock,
     }));
   } catch (error: any) {
-    // Cualquier error de Prisma, retornar array vacío silenciosamente
-    // Especialmente durante build donde la BD puede no estar disponible
+    // Cualquier error, retornar array vacío silenciosamente
+    // No hacer log durante build para evitar ruido
     return [];
   }
 }
