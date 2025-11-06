@@ -18,7 +18,7 @@ export async function GET() {
     );
   }
 
-  // items con producto
+  // items con producto (incluir categoría para verificar productos digitales)
   const rawItems = await prisma.cartItem.findMany({
     where: { cartId: cart.id },
     include: {
@@ -29,6 +29,13 @@ export async function GET() {
           slug: true,
           imageUrl: true,
           price: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
           images: {
             orderBy: { sortOrder: "asc" },
             take: 1,
@@ -59,11 +66,17 @@ export async function GET() {
     include: { coupon: true },
   });
 
+  // Verificar si TODOS los productos son digitales (categoría "Productos Digitales")
+  // Si hay al menos un producto que NO es digital, se debe cobrar shipping
+  const allProductsAreDigital = rawItems.length > 0 && rawItems.every(
+    (item) => item.product?.category?.name === "Productos Digitales"
+  );
+
   const lines = items.map((x) => ({
     price: x.product.price,
     quantity: x.quantity,
   }));
-  const totals = calcTotals(lines, redemption?.coupon ?? undefined);
+  const totals = calcTotals(lines, redemption?.coupon ?? undefined, { hasOnlyDigitalProducts: allProductsAreDigital });
 
   return NextResponse.json({
     ok: true,
