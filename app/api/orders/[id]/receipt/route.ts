@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import nodemailer from "nodemailer";
 import { clearCart, getOrCreateCart } from "@/lib/cart";
+import { uploadReceipt } from "@/lib/s3";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -66,21 +67,8 @@ export async function POST(req: NextRequest, context: RouteContext) {
       );
     }
 
-    // Convertir File a Buffer y luego a base64 para almacenamiento en memoria
-    // En producción (Vercel), el sistema de archivos es de solo lectura
-    const bytes = await receiptFile.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const base64Image = buffer.toString("base64");
-    const mimeType = receiptFile.type;
-
-    // Generar nombre único para referencia
-    const timestamp = Date.now();
-    const fileExtension = receiptFile.name.split(".").pop() || "jpg";
-    const fileName = `${id}-${timestamp}.${fileExtension}`;
-
-    // URL de referencia (no se guarda físicamente en producción)
-    // En desarrollo, podríamos guardar en public/receipts, pero en producción usamos base64
-    const receiptUrl = `/receipts/${fileName}`;
+    // Subir archivo a S3
+    const receiptUrl = await uploadReceipt(receiptFile, id);
 
     // Actualizar la orden con la URL del comprobante, cambiar estado a REVIEW y marcar fecha de carga
     await prisma.order.update({
@@ -169,7 +157,8 @@ export async function POST(req: NextRequest, context: RouteContext) {
             ` : ""}
 
             <div style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border-radius: 4px; border-left: 4px solid #ffc107;">
-              <p style="color: #856404; margin: 0;"><strong>⚠️ Acción Requerida:</strong> Por favor verifica el comprobante de transferencia adjunto y confirma el pago en el panel de administración.</p>
+              <p style="color: #856404; margin: 0;"><strong>⚠️ Acción Requerida:</strong> Por favor verifica el comprobante de transferencia y confirma el pago en el panel de administración.</p>
+              <p style="color: #856404; margin: 10px 0 0 0;"><a href="${receiptUrl}" style="color: #1976d2;" target="_blank">Ver comprobante en S3</a></p>
             </div>
 
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
@@ -208,27 +197,20 @@ ${shippingAddress.country}
 ${shippingAddress.phone ? `Tel: ${shippingAddress.phone}` : ""}
 ` : ""}
 
-⚠️ Acción Requerida: Por favor verifica el comprobante de transferencia adjunto y confirma el pago en el panel de administración.
+⚠️ Acción Requerida: Por favor verifica el comprobante de transferencia y confirma el pago en el panel de administración.
+
+Ver comprobante: ${receiptUrl}
 
 Fecha: ${new Date().toLocaleString("es-EC", { timeZone: "America/Guayaquil" })}
       `;
 
-      // Adjuntar la imagen como base64 (compatible con Vercel/serverless)
-      // No intentamos escribir en el sistema de archivos ya que es de solo lectura en producción
+      // Enviar email con enlace al comprobante en S3
       await transporter.sendMail({
         from: `"Easy Store" <${fromEmail}>`,
         to: recipientEmail,
         subject: `Pago por Transferencia - Orden #${order.id.slice(0, 8).toUpperCase()} - Revisión Requerida`,
         text: textContent,
         html: htmlContent,
-        attachments: [
-          {
-            filename: `comprobante-${order.id.slice(0, 8)}.${fileExtension}`,
-            content: base64Image,
-            encoding: "base64",
-            contentType: mimeType,
-          },
-        ],
       });
     }
 

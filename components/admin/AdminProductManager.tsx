@@ -20,6 +20,9 @@ import {
   TextField,
   Typography,
   MenuItem,
+  ToggleButton,
+  ToggleButtonGroup,
+  Snackbar,
 } from "@mui/material";
 import Grid from "@mui/material/GridLegacy";
 import AddIcon from "@mui/icons-material/Add";
@@ -27,6 +30,9 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import SaveIcon from "@mui/icons-material/Save";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import LinkIcon from "@mui/icons-material/Link";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import SearchIcon from "@mui/icons-material/Search";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { slugify } from "@/lib/slug";
@@ -39,6 +45,7 @@ import {
   CategoryInputSchema,
   type CategoryInput,
 } from "@/lib/validation/categories";
+import ImageUploadField, { type UploadedImage } from "./ImageUploadField";
 
 const formDefaults = (): ProductInput => ({
   name: "",
@@ -97,6 +104,21 @@ function toFormValues(product: AdminProduct): FormValues {
   };
 }
 
+/**
+ * Verifica si una URL es una imagen que debe mostrarse como preview
+ * (blob URLs o URLs de S3)
+ */
+function shouldShowImagePreview(url: string | null | undefined): boolean {
+  if (!url) return false;
+  // Blob URLs (imágenes cargadas localmente)
+  if (url.startsWith("blob:")) return true;
+  // URLs de S3
+  if (url.includes(".s3.") || url.includes("amazonaws.com")) return true;
+  // URLs que terminan en extensiones de imagen comunes
+  if (/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(url)) return true;
+  return false;
+}
+
 function normalizePayload(values: FormValues): FormValues {
   const categoryId =
     typeof values.categoryId === "string"
@@ -108,14 +130,16 @@ function normalizePayload(values: FormValues): FormValues {
     name: values.name.trim(),
     slug: values.slug?.trim() ?? "",
     description: values.description?.trim() ?? "",
-    imageUrl: typeof values.imageUrl === "string" ? values.imageUrl.trim() : values.imageUrl,
+    imageUrl: typeof values.imageUrl === "string" && values.imageUrl.trim() ? values.imageUrl.trim() : null,
     categoryId,
-    images: (values.images ?? []).map((img, index) => ({
-      id: img.id,
-      url: img.url.trim(),
-      alt: img.alt?.trim() ?? "",
-      sortOrder: index,
-    })),
+    images: (values.images ?? [])
+      .filter((img) => img && img.url && typeof img.url === "string" && img.url.trim().length > 0)
+      .map((img, index) => ({
+        id: img.id,
+        url: img.url.trim(),
+        alt: img.alt?.trim() ?? "",
+        sortOrder: index,
+      })),
   };
 }
 
@@ -135,14 +159,51 @@ export default function AdminProductManager({
   ]);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Estado para Snackbar (mensajes flotantes)
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error";
+  }>({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
+  // Estados para controlar el modo de upload de imágenes
+  const [createMainImageMode, setCreateMainImageMode] = useState<"url" | "upload">("url");
+  const [editMainImageMode, setEditMainImageMode] = useState<"url" | "upload">("url");
+
+  // Estados para guardar archivos File pendientes de subir (crear)
+  const [pendingMainImageFile, setPendingMainImageFile] = useState<File | null>(null);
+  const [pendingGalleryFiles, setPendingGalleryFiles] = useState<Map<string, File>>(new Map());
+
+  // Estados para guardar archivos File pendientes de subir (editar)
+  const [pendingEditMainImageFile, setPendingEditMainImageFile] = useState<File | null>(null);
+  const [pendingEditGalleryFiles, setPendingEditGalleryFiles] = useState<Map<string, File>>(new Map());
+
   const [selectedId, setSelectedId] = useState<string | null>(
     initialProducts[0]?.id ?? null
   );
+
+  // Estado para el buscador de productos
+  const [productSearchQuery, setProductSearchQuery] = useState("");
 
   const selectedProduct = useMemo(
     () => products.find((p) => p.id === selectedId) ?? null,
     [products, selectedId]
   );
+
+  // Filtrar productos por nombre usando el buscador
+  const filteredProducts = useMemo(() => {
+    if (!productSearchQuery.trim()) {
+      return products;
+    }
+    const query = productSearchQuery.toLowerCase().trim();
+    return products.filter((p) =>
+      p.name.toLowerCase().includes(query)
+    );
+  }, [products, productSearchQuery]);
 
   const createForm = useForm<FormValues>({
     resolver: zodResolver(ProductInputSchema),
@@ -180,16 +241,13 @@ export default function AdminProductManager({
       resetEditForm(formDefaults());
     }
     setIsDeleting(false);
+    // Limpiar estados de archivos pendientes al cambiar de producto
+    setPendingEditMainImageFile(null);
+    setPendingEditGalleryFiles(new Map());
   }, [selectedProduct, resetEditForm]);
 
-  const createSlugFromName = () => {
-    const name = createForm.getValues("name");
-    if (!name) return;
-    createForm.setValue("slug", slugify(name), {
-      shouldDirty: true,
-      shouldValidate: true,
-    });
-  };
+  // El slug ahora se genera automáticamente, no necesitamos esta función
+  // Se mantiene para compatibilidad pero no se usa
 
   const editSlugFromName = () => {
     const name = editForm.getValues("name");
@@ -216,40 +274,322 @@ export default function AdminProductManager({
 
   const onCreate = createForm.handleSubmit(async (values) => {
     setCreateStatus(null);
-    const payload = normalizePayload(values);
-
+    
+    // Variables para rollback si algo falla
+    let createdProductId: string | null = null;
+    let uploadedMainImageUrl: string | null = null;
+    const uploadedGalleryImageUrls: string[] = [];
+    
     try {
-      const res = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json?.error ?? "No se pudo crear el producto");
+      // Generar slug automáticamente si está vacío
+      if (!values.slug || values.slug.trim() === "") {
+        values.slug = slugify(values.name);
       }
+      
+      let payload = normalizePayload(values);
 
-      const created = json as AdminProduct;
-      setProducts((prev) => [created, ...prev]);
-      setSelectedId(created.id);
-      setCreateStatus({ type: "success", text: "Producto creado correctamente." });
+      // Si estamos en modo "upload", necesitamos crear el producto primero para obtener el ID
+      // y luego subir las imágenes a products/[product-id]/
+      if (createMainImageMode === "upload" && (pendingMainImageFile || pendingGalleryFiles.size > 0)) {
+        // Crear el producto primero sin imágenes blob
+        // Las imágenes se subirán después con el ID real
+        // IMPORTANTE: Asegurarnos de incluir TODOS los campos necesarios
+        const tempPayload = {
+          name: payload.name,
+          slug: payload.slug,
+          description: payload.description || null,
+          price: payload.price,
+          stock: payload.stock,
+          categoryId: payload.categoryId,
+          imageUrl: null, // Dejar null temporalmente (las imágenes blob no se envían)
+          images: payload.images?.filter(img => img.url && !img.url.startsWith("blob:")) || [], // Solo mantener URLs no-blob válidas
+        };
+
+        const createRes = await fetch("/api/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(tempPayload),
+        });
+
+        const createJson = await createRes.json();
+        if (!createRes.ok) {
+          // CRÍTICO: Si la creación falla, NO subimos imágenes a S3
+          // Si es un error de validación, mostrar detalles
+          if (createRes.status === 422 && createJson.issues) {
+            const issues = createJson.issues.map((issue: any) => 
+              `${issue.path.join('.')}: ${issue.message}`
+            ).join(', ');
+            throw new Error(`Datos inválidos: ${issues}`);
+          }
+          throw new Error(createJson?.error ?? "No se pudo crear el producto");
+        }
+
+        // IMPORTANTE: Solo si el producto se creó exitosamente, procedemos a subir imágenes
+        const created = createJson as AdminProduct;
+        createdProductId = created.id; // Guardar ID para rollback
+
+        // Ahora subir las imágenes usando el ID real del producto (solo si el producto se creó exitosamente)
+        const updatePayload: any = {};
+
+        // Subir imagen principal si hay un archivo pendiente
+        if (pendingMainImageFile) {
+          const formData = new FormData();
+          formData.append("images", pendingMainImageFile);
+          formData.append("productId", createdProductId);
+
+          const uploadRes = await fetch("/api/admin/upload/product-images", {
+            method: "POST",
+            body: formData,
+          });
+
+          const uploadData = await uploadRes.json();
+          if (!uploadRes.ok || !uploadData.success) {
+            throw new Error(uploadData.error || "Error al subir imagen principal");
+          }
+
+          uploadedMainImageUrl = uploadData.urls[0]; // Guardar URL para rollback
+          updatePayload.imageUrl = uploadedMainImageUrl;
+        }
+
+        // Subir imágenes de galería si hay archivos pendientes
+        if (pendingGalleryFiles.size > 0) {
+          const galleryFilesArray = Array.from(pendingGalleryFiles.values());
+          const formData = new FormData();
+          galleryFilesArray.forEach((file) => {
+            formData.append("images", file);
+          });
+          formData.append("productId", createdProductId);
+
+          const uploadRes = await fetch("/api/admin/upload/product-images", {
+            method: "POST",
+            body: formData,
+          });
+
+          const uploadData = await uploadRes.json();
+          if (!uploadRes.ok || !uploadData.success) {
+            throw new Error(uploadData.error || "Error al subir imágenes de galería");
+          }
+
+          // Guardar URLs para rollback
+          uploadedGalleryImageUrls.push(...uploadData.urls);
+
+          // Reemplazar las URLs blob con las URLs reales de S3
+          const uploadedUrls = uploadData.urls;
+          const blobImages = (payload.images || []).filter(img => img.url.startsWith("blob:"));
+          const nonBlobImages = (payload.images || []).filter(img => !img.url.startsWith("blob:"));
+          
+          updatePayload.images = [
+            ...nonBlobImages,
+            ...blobImages.map((img, index) => ({
+              ...img,
+              url: uploadedUrls[index] || img.url,
+            })),
+          ];
+        }
+
+        // Actualizar el producto con las URLs de las imágenes
+        // IMPORTANTE: El endpoint PUT requiere todos los campos, no solo los que cambiamos
+        if (Object.keys(updatePayload).length > 0) {
+          // Construir el payload completo con todos los campos del producto
+          const fullUpdatePayload = {
+            name: payload.name,
+            slug: payload.slug,
+            description: payload.description || null,
+            price: payload.price,
+            stock: payload.stock,
+            categoryId: payload.categoryId,
+            imageUrl: updatePayload.imageUrl ?? created.imageUrl ?? null,
+            images: updatePayload.images ?? created.images?.map(img => ({
+              id: img.id,
+              url: img.url,
+              alt: img.alt ?? "",
+              sortOrder: img.sortOrder ?? 0,
+            })) ?? [],
+          };
+
+          const updateRes = await fetch(`/api/products/${createdProductId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(fullUpdatePayload),
+          });
+
+          const updateJson = await updateRes.json();
+          if (!updateRes.ok) {
+            // Si es un error de validación, mostrar detalles
+            if (updateRes.status === 422 && updateJson.issues) {
+              const issues = updateJson.issues.map((issue: any) => 
+                `${issue.path.join('.')}: ${issue.message}`
+              ).join(', ');
+              throw new Error(`Error al actualizar producto: ${issues}`);
+            }
+            throw new Error(updateJson?.error ?? "No se pudo actualizar las imágenes del producto");
+          }
+
+          const updated = updateJson as AdminProduct;
+          // Actualizar estado ANTES de limpiar - esto asegura que el producto aparezca inmediatamente
+          setProducts((prev) => {
+            // Eliminar producto antiguo si existe y agregar el actualizado al inicio
+            const filtered = prev.filter(p => p.id !== updated.id);
+            return [updated, ...filtered];
+          });
+          setSelectedId(updated.id);
+          setCreateStatus({ type: "success", text: "Producto creado correctamente." });
+          setSnackbar({
+            open: true,
+            message: "Producto creado correctamente",
+            severity: "success",
+          });
+        } else {
+          // Si no hay imágenes para actualizar, solo agregar el producto creado
+          setProducts((prev) => {
+            const filtered = prev.filter(p => p.id !== created.id);
+            return [created, ...filtered];
+          });
+          setSelectedId(created.id);
+          setCreateStatus({ type: "success", text: "Producto creado correctamente." });
+          setSnackbar({
+            open: true,
+            message: "Producto creado correctamente",
+            severity: "success",
+          });
+        }
+      } else {
+        // Modo URL o sin imágenes - crear normalmente
+        const res = await fetch("/api/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const json = await res.json();
+        if (!res.ok) {
+          // Si es un error de validación, mostrar detalles
+          if (res.status === 422 && json.issues) {
+            const issues = json.issues.map((issue: any) => 
+              `${issue.path.join('.')}: ${issue.message}`
+            ).join(', ');
+            throw new Error(`Datos inválidos: ${issues}`);
+          }
+          throw new Error(json?.error ?? "No se pudo crear el producto");
+        }
+
+        const created = json as AdminProduct;
+        createdProductId = created.id; // Guardar ID para rollback (aunque no debería ser necesario aquí)
+        // Actualizar estado ANTES de limpiar
+        setProducts((prev) => {
+          const filtered = prev.filter(p => p.id !== created.id);
+          return [created, ...filtered];
+        });
+        setSelectedId(created.id);
+        setCreateStatus({ type: "success", text: "Producto creado correctamente." });
+        setSnackbar({
+          open: true,
+          message: "Producto creado correctamente",
+          severity: "success",
+        });
+      }
+      
+      // Limpiar estados SOLO después de éxito completo
       createForm.reset(formDefaults());
       createImages.replace([]);
+      setPendingMainImageFile(null);
+      setPendingGalleryFiles(new Map());
     } catch (error: any) {
       setCreateStatus({
         type: "error",
         text: error?.message ?? "Error desconocido al crear el producto.",
       });
+      setSnackbar({
+        open: true,
+        message: error?.message ?? "Error al crear el producto",
+        severity: "error",
+      });
+
+      // ROLLBACK: Si se creó el producto pero algo falló después, eliminarlo
+      if (createdProductId) {
+        console.warn(`Rollback: Eliminando producto ${createdProductId} debido a error.`);
+        try {
+          // Eliminar producto de la base de datos (esto también eliminará las imágenes de la BD)
+          const deleteRes = await fetch(`/api/products/${createdProductId}`, {
+            method: "DELETE",
+          });
+          
+          if (!deleteRes.ok) {
+            console.error(`Error al eliminar producto durante rollback: ${deleteRes.status}`);
+          } else {
+            console.log(`Rollback exitoso: Producto ${createdProductId} eliminado.`);
+          }
+        } catch (rollbackError: any) {
+          console.error(`Error durante rollback del producto ${createdProductId}:`, rollbackError);
+          // No lanzar el error, solo loguearlo para que el usuario vea el error original
+        }
+      }
     }
   });
 
   const onUpdate = editForm.handleSubmit(async (values) => {
     if (!selectedProduct) return;
     setUpdateStatus(null);
-    const payload = normalizePayload(values);
-
+    
     try {
+      let payload = normalizePayload(values);
+
+      // Si estamos en modo "upload", subir archivos a S3 primero
+      if (editMainImageMode === "upload") {
+        // Subir imagen principal si hay un archivo pendiente
+        if (pendingEditMainImageFile) {
+          const formData = new FormData();
+          formData.append("images", pendingEditMainImageFile);
+          formData.append("productId", selectedProduct.id);
+
+          const uploadRes = await fetch("/api/admin/upload/product-images", {
+            method: "POST",
+            body: formData,
+          });
+
+          const uploadData = await uploadRes.json();
+          if (!uploadRes.ok || !uploadData.success) {
+            throw new Error(uploadData.error || "Error al subir imagen principal");
+          }
+
+          // Reemplazar la URL blob con la URL real de S3
+          payload.imageUrl = uploadData.urls[0];
+        }
+
+        // Subir imágenes de galería si hay archivos pendientes
+        if (pendingEditGalleryFiles.size > 0) {
+          const galleryFilesArray = Array.from(pendingEditGalleryFiles.values());
+          const formData = new FormData();
+          galleryFilesArray.forEach((file) => {
+            formData.append("images", file);
+          });
+          formData.append("productId", selectedProduct.id);
+
+          const uploadRes = await fetch("/api/admin/upload/product-images", {
+            method: "POST",
+            body: formData,
+          });
+
+          const uploadData = await uploadRes.json();
+          if (!uploadRes.ok || !uploadData.success) {
+            throw new Error(uploadData.error || "Error al subir imágenes de galería");
+          }
+
+          // Reemplazar las URLs blob con las URLs reales de S3
+          const uploadedUrls = uploadData.urls;
+          let urlIndex = 0;
+          payload.images = payload.images.map((img) => {
+            if (img.url.startsWith("blob:")) {
+              return {
+                ...img,
+                url: uploadedUrls[urlIndex++] || img.url,
+              };
+            }
+            return img;
+          });
+        }
+      }
+
       const res = await fetch(`/api/products/${selectedProduct.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -270,10 +610,24 @@ export default function AdminProductManager({
         type: "success",
         text: "Producto actualizado correctamente.",
       });
+      setSnackbar({
+        open: true,
+        message: "Producto editado correctamente",
+        severity: "success",
+      });
+      
+      // Limpiar estados de archivos pendientes
+      setPendingEditMainImageFile(null);
+      setPendingEditGalleryFiles(new Map());
     } catch (error: any) {
       setUpdateStatus({
         type: "error",
         text: error?.message ?? "Error desconocido al actualizar el producto.",
+      });
+      setSnackbar({
+        open: true,
+        message: error?.message ?? "Error al editar el producto",
+        severity: "error",
       });
     }
   });
@@ -402,215 +756,489 @@ export default function AdminProductManager({
         )}
 
         {(!initialTab || initialTab === "create" || initialTab === "categories") && (
-          <Grid container spacing={3} alignItems="stretch">
+          <Box sx={{ width: "100%", mx: 0, px: 0, overflow: "hidden" }}>
             {(!initialTab || initialTab === "create") && (
-              <Grid item xs={12} lg={initialTab ? 12 : 5}>
-                <Stack spacing={3} sx={{ height: "100%" }}>
-                  <Paper sx={{ p: 3 }} elevation={3}>
-                    <Stack component="form" spacing={2.5} onSubmit={onCreate}>
-                  <Box>
-                    <Typography variant="h6" fontWeight={800} gutterBottom>
-                      Crear nuevo producto
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Completa la información básica y agrega URLs de imágenes si
-                      ya las tienes disponibles.
-                    </Typography>
-                  </Box>
+              <Stack component="form" spacing={2.5} onSubmit={onCreate} sx={{ width: "100%" }}>
+                {createStatus && (
+                  <Alert severity={createStatus.type}>{createStatus.text}</Alert>
+                )}
 
-                  {createStatus && (
-                    <Alert severity={createStatus.type}>{createStatus.text}</Alert>
-                  )}
-
-                  <TextField
-                    label="Título"
-                    InputLabelProps={{ shrink: !!createForm.watch("name") }}
-                    {...createForm.register("name")}
-                    error={!!createForm.formState.errors.name}
-                    helperText={createForm.formState.errors.name?.message}
-                    fullWidth
-                  />
-
-                  <TextField
-                    label="Slug"
-                    InputLabelProps={{ shrink: !!createForm.watch("slug") }}
-                    {...createForm.register("slug")}
-                    error={!!createForm.formState.errors.slug}
-                    helperText={
-                      createForm.formState.errors.slug?.message ??
-                      "Se generará automáticamente si lo dejas vacío."
-                    }
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <Button
-                            size="small"
-                            onClick={createSlugFromName}
-                            type="button"
-                          >
-                            Generar
-                          </Button>
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-
-                  <Controller
-                    control={createForm.control}
-                    name="categoryId"
-                    render={({ field, fieldState }) => (
-                      <TextField
-                        select
-                        label="Categoría"
-                        value={field.value ?? ""}
-                        onChange={(event) =>
-                          field.onChange(event.target.value || null)
-                        }
-                        onBlur={field.onBlur}
-                        error={!!fieldState.error}
-                        helperText={
-                          fieldState.error?.message ??
-                          (categoryList.length === 0
-                            ? "No hay categorías registradas"
-                            : "Selecciona una categoría o deja en blanco")
-                        }
+                <Grid container spacing={3} alignItems="stretch" sx={{ mx: 0, width: "100%" }}>
+                    {/* Columna izquierda: Campos de texto */}
+                    <Grid item xs={12} md={6}>
+                      <Paper
+                        sx={{
+                          p: 3,
+                          height: "100%",
+                          borderRadius: 4,
+                          boxShadow: "0 22px 45px rgba(0,0,0,0.35)",
+                          bgcolor: "background.paper",
+                        }}
                       >
-                        <MenuItem value="">
-                          {categoryList.length === 0
-                            ? "Sin categorías disponibles"
-                            : "Sin categoría"}
-                        </MenuItem>
-                        {categoryList.map((category) => (
-                          <MenuItem key={category.id} value={category.id}>
-                            {category.name}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    )}
-                  />
+                        <Stack spacing={2}>
+                            <TextField
+                              label="Título"
+                              size="small"
+                              InputLabelProps={{ shrink: !!createForm.watch("name") }}
+                              {...createForm.register("name")}
+                              error={!!createForm.formState.errors.name}
+                              helperText={createForm.formState.errors.name?.message}
+                              fullWidth
+                            />
 
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} md={6}>
-                      <TextField
-                        label="Precio"
-                        type="number"
-                        inputProps={{ step: "0.01" }}
-                        fullWidth
-                        InputLabelProps={{ shrink: !!createForm.watch("price") }}
-                        {...createForm.register("price", { valueAsNumber: true })}
-                        error={!!createForm.formState.errors.price}
-                        helperText={createForm.formState.errors.price?.message}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                      <TextField
-                        label="Stock"
-                        type="number"
-                        fullWidth
-                        InputLabelProps={{ shrink: !!createForm.watch("stock") }}
-                        {...createForm.register("stock", { valueAsNumber: true })}
-                        error={!!createForm.formState.errors.stock}
-                        helperText={createForm.formState.errors.stock?.message}
-                      />
-                    </Grid>
-                  </Grid>
+                            {/* Slug se genera automáticamente, no se muestra al usuario */}
+                            <input
+                              type="hidden"
+                              {...createForm.register("slug")}
+                            />
 
-                  <TextField
-                    label="Descripción"
-                    multiline
-                    minRows={4}
-                    InputLabelProps={{ shrink: !!createForm.watch("description") }}
-                    {...createForm.register("description")}
-                    error={!!createForm.formState.errors.description}
-                    helperText={createForm.formState.errors.description?.message}
-                  />
-
-                  <TextField
-                    label="Imagen principal (URL)"
-                    InputLabelProps={{ shrink: !!createForm.watch("imageUrl") }}
-                    {...createForm.register("imageUrl")}
-                    error={!!createForm.formState.errors.imageUrl}
-                    helperText={createForm.formState.errors.imageUrl?.message}
-                  />
-
-                  <Stack spacing={1.5}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography variant="subtitle1" fontWeight={700}>
-                        Galería
-                      </Typography>
-                      <Chip label="Opcional" size="small" color="default" />
-                    </Box>
-
-                    {createImages.fields.length === 0 && (
-                      <Typography variant="body2" color="text.secondary">
-                        Puedes agregar varias imágenes adicionales. Usa URLs
-                        temporales y más adelante podrás migrarlas a S3.
-                      </Typography>
-                    )}
-
-                    <Stack spacing={1.5}>
-                      {createImages.fields.map((field, index) => {
-                        const urlError =
-                          createForm.formState.errors.images?.[index]?.url;
-                        const altError =
-                          createForm.formState.errors.images?.[index]?.alt;
-                        return (
-                          <Paper
-                            key={field.id}
-                            variant="outlined"
-                            sx={{ p: 2, bgcolor: "rgba(255,255,255,0.02)" }}
-                          >
-                            <Stack spacing={1.5}>
-                              <Stack direction="row" spacing={1} alignItems="center">
-                                <Typography fontWeight={600}>
-                                  Imagen #{index + 1}
-                                </Typography>
-                                <IconButton
-                                  edge="end"
+                            <Controller
+                              control={createForm.control}
+                              name="categoryId"
+                              render={({ field, fieldState }) => (
+                                <TextField
+                                  select
+                                  label="Categoría"
                                   size="small"
-                                  color="inherit"
-                                  onClick={() => createImages.remove(index)}
-                                  aria-label="Eliminar imagen"
+                                  value={field.value ?? ""}
+                                  onChange={(event) =>
+                                    field.onChange(event.target.value || null)
+                                  }
+                                  onBlur={field.onBlur}
+                                  error={!!fieldState.error}
+                                  InputLabelProps={{ shrink: !!field.value }}
+                                  helperText={
+                                    fieldState.error?.message ??
+                                    (categoryList.length === 0
+                                      ? "No hay categorías registradas"
+                                      : "Selecciona una categoría o deja en blanco")
+                                  }
+                                  fullWidth
                                 >
-                                  <DeleteOutlineIcon fontSize="small" />
-                                </IconButton>
+                                  <MenuItem value="">
+                                    {categoryList.length === 0
+                                      ? "Sin categorías disponibles"
+                                      : "Sin categoría"}
+                                  </MenuItem>
+                                  {categoryList.map((category) => (
+                                    <MenuItem key={category.id} value={category.id}>
+                                      {category.name}
+                                    </MenuItem>
+                                  ))}
+                                </TextField>
+                              )}
+                            />
+
+                            <Grid container spacing={2}>
+                              <Grid item xs={6}>
+                                <TextField
+                                  label="Precio"
+                                  type="number"
+                                  size="small"
+                                  inputProps={{ 
+                                    step: "0.01",
+                                    style: {
+                                      MozAppearance: 'textfield',
+                                    }
+                                  }}
+                                  sx={{
+                                    '& input[type=number]': {
+                                      MozAppearance: 'textfield',
+                                    },
+                                    '& input[type=number]::-webkit-outer-spin-button': {
+                                      WebkitAppearance: 'none',
+                                      margin: 0,
+                                    },
+                                    '& input[type=number]::-webkit-inner-spin-button': {
+                                      WebkitAppearance: 'none',
+                                      margin: 0,
+                                    },
+                                  }}
+                                  fullWidth
+                                  InputLabelProps={{ 
+                                    shrink: (() => {
+                                      const value = createForm.watch("price");
+                                      // El label sube cuando hay un número válido (incluyendo 0)
+                                      return typeof value === 'number' && !isNaN(value);
+                                    })()
+                                  }}
+                                  {...createForm.register("price", { valueAsNumber: true })}
+                                  error={!!createForm.formState.errors.price}
+                                  helperText={createForm.formState.errors.price?.message}
+                                />
+                              </Grid>
+                              <Grid item xs={6}>
+                                <TextField
+                                  label="Stock"
+                                  type="number"
+                                  size="small"
+                                  inputProps={{
+                                    style: {
+                                      MozAppearance: 'textfield',
+                                    }
+                                  }}
+                                  sx={{
+                                    '& input[type=number]': {
+                                      MozAppearance: 'textfield',
+                                    },
+                                    '& input[type=number]::-webkit-outer-spin-button': {
+                                      WebkitAppearance: 'none',
+                                      margin: 0,
+                                    },
+                                    '& input[type=number]::-webkit-inner-spin-button': {
+                                      WebkitAppearance: 'none',
+                                      margin: 0,
+                                    },
+                                  }}
+                                  fullWidth
+                                  InputLabelProps={{ 
+                                    shrink: (() => {
+                                      const value = createForm.watch("stock");
+                                      // El label sube cuando hay un número válido (incluyendo 0)
+                                      return typeof value === 'number' && !isNaN(value);
+                                    })()
+                                  }}
+                                  {...createForm.register("stock", { valueAsNumber: true })}
+                                  error={!!createForm.formState.errors.stock}
+                                  helperText={createForm.formState.errors.stock?.message}
+                                />
+                              </Grid>
+                            </Grid>
+
+                            <TextField
+                              label="Descripción"
+                              multiline
+                              minRows={4}
+                              size="small"
+                              InputLabelProps={{ shrink: !!createForm.watch("description") }}
+                              {...createForm.register("description")}
+                              error={!!createForm.formState.errors.description}
+                              helperText={createForm.formState.errors.description?.message}
+                              fullWidth
+                            />
+                        </Stack>
+                      </Paper>
+                    </Grid>
+
+                    {/* Columna derecha: Imágenes */}
+                    <Grid item xs={12} md={6}>
+                      <Paper
+                        sx={{
+                          p: 3,
+                          height: "100%",
+                          borderRadius: 4,
+                          boxShadow: "0 22px 45px rgba(0,0,0,0.35)",
+                          bgcolor: "background.paper",
+                        }}
+                      >
+                        <Stack spacing={2.5}>
+                            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                              <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: "0.875rem" }}>
+                                ¿Cómo quieres agregar las imágenes?
+                              </Typography>
+                              <ToggleButtonGroup
+                                value={createMainImageMode}
+                                exclusive
+                                onChange={(_, value) => {
+                                  if (value) setCreateMainImageMode(value);
+                                }}
+                                size="small"
+                              >
+                                <ToggleButton value="url">
+                                  <LinkIcon sx={{ mr: 0.5 }} fontSize="small" />
+                                  Usar URLs
+                                </ToggleButton>
+                                <ToggleButton value="upload">
+                                  <CloudUploadIcon sx={{ mr: 0.5 }} fontSize="small" />
+                                  Subir archivos
+                                </ToggleButton>
+                              </ToggleButtonGroup>
+                            </Box>
+
+                            <Paper 
+                              variant="outlined" 
+                              sx={{ p: 2.5, bgcolor: "rgba(25, 118, 210, 0.04)" }}
+                            >
+                              <Stack spacing={2}>
+                                <Typography variant="subtitle2" fontWeight={700}>
+                                  Imagen principal
+                                </Typography>
+
+                                <Typography variant="caption" color="text.secondary">
+                                  Esta será la imagen destacada del producto
+                                </Typography>
+
+                                {createMainImageMode === "url" ? (
+                                  <TextField
+                                    label="URL de la imagen"
+                                    size="small"
+                                    InputLabelProps={{ shrink: !!createForm.watch("imageUrl") }}
+                                    {...createForm.register("imageUrl")}
+                                    error={!!createForm.formState.errors.imageUrl}
+                                    helperText={createForm.formState.errors.imageUrl?.message}
+                                    fullWidth
+                                  />
+                                ) : (
+                                  <Controller
+                                    name="imageUrl"
+                                    control={createForm.control}
+                                    render={({ field }) => (
+                                      <ImageUploadField
+                                        mode="single"
+                                        value={field.value ? { url: field.value } : undefined}
+                                        onChange={(value) => {
+                                          const img = value as UploadedImage;
+                                          field.onChange(img?.url || "");
+                                          // Guardar el archivo File para subirlo después
+                                          if (img?.file) {
+                                            setPendingMainImageFile(img.file);
+                                          }
+                                        }}
+                                        label="Subir imagen principal"
+                                        error={createForm.formState.errors.imageUrl?.message}
+                                        deferUpload={true}
+                                      />
+                                    )}
+                                  />
+                                )}
+                              </Stack>
+                            </Paper>
+
+                          <Paper 
+                            variant="outlined" 
+                            sx={{ p: 2.5, bgcolor: "rgba(156, 39, 176, 0.04)" }}
+                          >
+                            <Stack spacing={2}>
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                <Typography variant="subtitle2" fontWeight={700}>
+                                  Galería de imágenes
+                                </Typography>
+                                <Chip 
+                                  label="Opcional" 
+                                  size="small" 
+                                  color="default"
+                                  sx={{ height: 20, fontSize: "0.7rem" }}
+                                />
+                                <Chip 
+                                  label={`${createImages.fields.length}/5`}
+                                  size="small" 
+                                  color={createImages.fields.length >= 5 ? "error" : "primary"}
+                                  sx={{ height: 20, fontSize: "0.7rem" }}
+                                />
+                              </Box>
+
+                              <Typography variant="caption" color="text.secondary">
+                                {createMainImageMode === "url" 
+                                  ? "Agrega hasta 5 imágenes adicionales usando URLs"
+                                  : "Sube hasta 5 imágenes adicionales desde tu PC"
+                                }
+                              </Typography>
+
+                              <Stack spacing={1.5}>
+                                {createImages.fields.map((field, index) => {
+                                  // Solo mostrar campos para imágenes por URL, no para blobs
+                                  if (field.url?.startsWith("blob:")) return null;
+                                  
+                                  const urlError =
+                                    createForm.formState.errors.images?.[index]?.url;
+                                  const altError =
+                                    createForm.formState.errors.images?.[index]?.alt;
+                                  return (
+                                    <Paper
+                                      key={field.id}
+                                      variant="outlined"
+                                      sx={{ p: 1.5, bgcolor: "rgba(255,255,255,0.02)" }}
+                                    >
+                                      <Stack spacing={1}>
+                                        <Stack direction="row" spacing={1} alignItems="center">
+                                          <Typography variant="caption" fontWeight={600}>
+                                            Imagen #{index + 1}
+                                          </Typography>
+                                          <IconButton
+                                            edge="end"
+                                            size="small"
+                                            color="inherit"
+                                            onClick={() => createImages.remove(index)}
+                                            aria-label="Eliminar imagen"
+                                            sx={{ ml: "auto" }}
+                                          >
+                                            <DeleteOutlineIcon fontSize="small" />
+                                          </IconButton>
+                                        </Stack>
+
+                                        <TextField
+                                          label="URL"
+                                          size="small"
+                                          InputLabelProps={{ shrink: !!(createForm.watch(`images.${index}.url` as any) ?? "") }}
+                                          {...createForm.register(`images.${index}.url` as const)}
+                                          error={!!urlError}
+                                          helperText={urlError?.message}
+                                          fullWidth
+                                        />
+                                        
+                                        <TextField
+                                          label="Texto alternativo"
+                                          size="small"
+                                          InputLabelProps={{ shrink: !!(createForm.watch(`images.${index}.alt` as any) ?? "") }}
+                                          {...createForm.register(`images.${index}.alt` as const)}
+                                          error={!!altError}
+                                          helperText={altError?.message}
+                                          fullWidth
+                                        />
+                                      </Stack>
+                                    </Paper>
+                                  );
+                                })}
                               </Stack>
 
-                              <TextField
-                                label="URL"
-                                InputLabelProps={{ shrink: !!(createForm.watch(`images.${index}.url` as any) ?? "") }}
-                                {...createForm.register(`images.${index}.url` as const)}
-                                error={!!urlError}
-                                helperText={urlError?.message}
-                              />
-                              <TextField
-                                label="Texto alternativo"
-                                InputLabelProps={{ shrink: !!(createForm.watch(`images.${index}.alt` as any) ?? "") }}
-                                {...createForm.register(`images.${index}.alt` as const)}
-                                error={!!altError}
-                                helperText={altError?.message}
-                              />
+                              {createMainImageMode === "url" ? (
+                                createImages.fields.length < 5 && (
+                                  <Button
+                                    type="button"
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<AddIcon />}
+                                    onClick={() => createImages.append({ url: "", alt: "" })}
+                                    sx={{ alignSelf: "flex-start" }}
+                                  >
+                                    Agregar otra imagen ({createImages.fields.length}/5)
+                                  </Button>
+                                )
+                              ) : (
+                                createImages.fields.length < 5 && (
+                                  <Stack spacing={1.5}>
+                          <ImageUploadField
+                            mode="multiple"
+                            value={[]}
+                            onChange={(value) => {
+                              const uploaded = Array.isArray(value) ? value : [value];
+                              const remainingSlots = 5 - createImages.fields.length;
+                              const imagesToAdd = uploaded.slice(0, remainingSlots);
+                              
+                              // Guardar archivos File para subirlos después
+                              const newPendingFiles = new Map(pendingGalleryFiles);
+                              imagesToAdd.forEach((img, idx) => {
+                                if (img.file && img.url) {
+                                  newPendingFiles.set(img.url, img.file);
+                                }
+                                
+                                // Generar texto alternativo automáticamente
+                                const autoAlt = img.file 
+                                  ? `Imagen de galería ${createImages.fields.length + idx + 1} - ${img.file.name.replace(/\.[^/.]+$/, "")}`
+                                  : `Imagen de galería ${createImages.fields.length + idx + 1}`;
+                                
+                                // Agregar imagen a la galería usando append
+                                createImages.append({
+                                  url: img.url,
+                                  alt: autoAlt,
+                                });
+                              });
+                              
+                              setPendingGalleryFiles(newPendingFiles);
+                            }}
+                            label={`Subir archivos (quedan ${5 - createImages.fields.length} espacios)`}
+                            deferUpload={true}
+                          />
+                          
+                          {/* Mostrar miniaturas de las imágenes cargadas */}
+                          {createImages.fields.some(f => f.url?.startsWith("blob:")) && (
+                            <Box>
+                              <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: "block" }}>
+                                Imágenes cargadas ({createImages.fields.filter(f => f.url?.startsWith("blob:")).length})
+                              </Typography>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  gap: 1.5,
+                                  flexWrap: "wrap",
+                                  p: 1.5,
+                                  bgcolor: "rgba(255,255,255,0.02)",
+                                  borderRadius: 1,
+                                }}
+                              >
+                                {createImages.fields.map((field, index) => 
+                                  field.url?.startsWith("blob:") && (
+                                    <Box
+                                      key={field.id}
+                                      sx={{
+                                        position: "relative",
+                                        width: 140,
+                                        height: 140,
+                                        borderRadius: 1,
+                                        overflow: "hidden",
+                                        bgcolor: "rgba(255,255,255,0.05)",
+                                        border: "1px solid rgba(255,255,255,0.1)",
+                                      }}
+                                    >
+                                      <img
+                                        src={field.url}
+                                        alt={field.alt || `Imagen ${index + 1}`}
+                                        style={{
+                                          width: "100%",
+                                          height: "100%",
+                                          objectFit: "cover",
+                                        }}
+                                      />
+                                      <Box
+                                        sx={{
+                                          position: "absolute",
+                                          top: 4,
+                                          right: 4,
+                                          display: "flex",
+                                          gap: 0.5,
+                                        }}
+                                      >
+                                        <Chip
+                                          label={`#${index + 1}`}
+                                          size="small"
+                                          sx={{ 
+                                            bgcolor: "rgba(0,0,0,0.7)",
+                                            color: "white",
+                                            height: 20,
+                                            fontSize: "0.7rem",
+                                          }}
+                                        />
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => createImages.remove(index)}
+                                          sx={{
+                                            bgcolor: "rgba(211, 47, 47, 0.9)",
+                                            color: "white",
+                                            width: 24,
+                                            height: 24,
+                                            "&:hover": { bgcolor: "rgba(211, 47, 47, 1)" },
+                                          }}
+                                        >
+                                          <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+                                        </IconButton>
+                                      </Box>
+                                    </Box>
+                                  )
+                                )}
+                              </Box>
+                            </Box>
+                          )}
+                        </Stack>
+                      )
+                    )}
+                    
+                    {createImages.fields.length >= 5 && (
+                      <Alert severity="info" sx={{ mt: 1 }}>
+                        Has alcanzado el límite de 5 imágenes en la galería
+                      </Alert>
+                    )}
                             </Stack>
                           </Paper>
-                        );
-                      })}
-                    </Stack>
-
-                    <Button
-                      type="button"
-                      startIcon={<AddIcon />}
-                      onClick={() => createImages.append({ url: "", alt: "" })}
-                      sx={{ alignSelf: "flex-start" }}
-                    >
-                      Agregar imagen
-                    </Button>
-                  </Stack>
-
-                  <Divider />
+                        </Stack>
+                      </Paper>
+                    </Grid>
+                  </Grid>
 
                   <Button
                     type="submit"
                     variant="contained"
+                    fullWidth
+                    size="large"
                     startIcon={
                       createForm.formState.isSubmitting ? (
                         <CircularProgress size={18} color="inherit" />
@@ -623,14 +1251,12 @@ export default function AdminProductManager({
                     Guardar producto
                   </Button>
                 </Stack>
-              </Paper>
-                </Stack>
-              </Grid>
-            )}
+              )}
 
-            {(!initialTab || initialTab === "categories") && (
-              <Grid item xs={12} lg={initialTab ? 12 : 5}>
-                <Paper sx={{ p: 3 }} elevation={3}>
+              {(!initialTab || initialTab === "categories") && (
+                <Grid container spacing={3}>
+                  <Grid item xs={12} lg={initialTab ? 12 : 5}>
+                    <Paper sx={{ p: 3 }} elevation={3}>
                   <Stack component="form" spacing={2.5} onSubmit={onCreateCategory}>
                     <Box>
                       <Typography variant="h6" fontWeight={800} gutterBottom>
@@ -697,111 +1323,157 @@ export default function AdminProductManager({
                     </Button>
                   </Stack>
                 </Paper>
-              </Grid>
-            )}
-          </Grid>
+                  </Grid>
+                </Grid>
+              )}
+          </Box>
         )}
 
         {(!initialTab || initialTab === "edit") && (
-          <Grid container spacing={3} alignItems="stretch">
-          <Grid item xs={12} lg={initialTab ? 12 : 7}>
-            <Stack spacing={2} sx={{ height: "100%" }}>
-              <Paper sx={{ p: 2 }} elevation={2}>
-                <Typography variant="h6" fontWeight={800} gutterBottom>
-                  Productos existentes
-                </Typography>
-                {products.length === 0 ? (
-                  <Typography color="text.secondary">
-                    Aún no hay productos creados.
-                  </Typography>
-                ) : (
-                  <List dense sx={{ maxHeight: 260, overflowY: "auto" }}>
-                    {products.map((product) => {
-                      const selected = product.id === selectedId;
-                      return (
-                        <ListItemButton
-                          key={product.id}
-                          selected={selected}
-                          onClick={() => {
-                            setDeleteStatus(null);
-                            setUpdateStatus(null);
-                            setSelectedId(product.id);
-                          }}
-                          alignItems="flex-start"
-                        >
-                          <ListItemText
-                            primary={
-                              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                <Typography fontWeight={700}>{product.name}</Typography>
-                                <Chip
-                                  size="small"
-                                  color={product.stock > 0 ? "success" : "default"}
-                                  label={`Stock: ${product.stock}`}
-                                />
-                              </Box>
-                            }
-                            secondary={
-                              <Typography variant="caption" color="text.secondary">
-                                Actualizado {formatDate(product.updatedAt)}
-                              </Typography>
-                            }
-                          />
-                        </ListItemButton>
-                      );
-                    })}
-                  </List>
-                )}
-              </Paper>
-
-              <Paper sx={{ p: 3, flex: 1 }} elevation={3}>
-                <Stack component="form" spacing={2.5} onSubmit={onUpdate}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: { xs: "column", sm: "row" },
-                      alignItems: { xs: "flex-start", sm: "center" },
-                      justifyContent: "space-between",
-                      gap: 1.5,
-                    }}
-                  >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography variant="h6" fontWeight={800}>
-                        Editar producto
+          <Box sx={{ width: "100%", mx: 0, px: 0, overflow: "hidden" }}>
+            <Grid container spacing={3} alignItems="stretch" sx={{ mx: 0, width: "100%" }}>
+              {/* Card 1: Lista de productos */}
+              <Grid item xs={12} md={4}>
+                <Paper
+                  sx={{
+                    p: 3,
+                    height: "100%",
+                    borderRadius: 4,
+                    boxShadow: "0 22px 45px rgba(0,0,0,0.35)",
+                    bgcolor: "background.paper",
+                  }}
+                >
+                  <Stack spacing={2}>
+                    <Box>
+                      <Typography variant="h6" fontWeight={800} gutterBottom>
+                        Productos existentes
                       </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Busca y selecciona un producto para editarlo
+                      </Typography>
+                    </Box>
+                    
+                    <TextField
+                      placeholder="Buscar producto por nombre..."
+                      size="small"
+                      value={productSearchQuery}
+                      onChange={(e) => setProductSearchQuery(e.target.value)}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchIcon fontSize="small" color="action" />
+                          </InputAdornment>
+                        ),
+                      }}
+                      fullWidth
+                    />
+
+                    {filteredProducts.length === 0 ? (
+                      <Typography color="text.secondary" sx={{ py: 2, textAlign: "center" }}>
+                        {productSearchQuery.trim() 
+                          ? `No se encontraron productos que coincidan con "${productSearchQuery}"` 
+                          : "Aún no hay productos creados."}
+                      </Typography>
+                    ) : (
+                      <List dense sx={{ maxHeight: 500, overflowY: "auto" }}>
+                        {filteredProducts.map((product) => {
+                          const selected = product.id === selectedId;
+                          return (
+                            <ListItemButton
+                              key={product.id}
+                              selected={selected}
+                              onClick={() => {
+                                setDeleteStatus(null);
+                                setUpdateStatus(null);
+                                setSelectedId(product.id);
+                              }}
+                              alignItems="flex-start"
+                            >
+                              <ListItemText
+                                primary={
+                                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                    <Typography fontWeight={700}>{product.name}</Typography>
+                                    <Chip
+                                      size="small"
+                                      color={product.stock > 0 ? "success" : "default"}
+                                      label={`Stock: ${product.stock}`}
+                                    />
+                                  </Box>
+                                }
+                                secondary={
+                                  <Typography variant="caption" color="text.secondary">
+                                    Actualizado {formatDate(product.updatedAt)}
+                                  </Typography>
+                                }
+                              />
+                            </ListItemButton>
+                          );
+                        })}
+                      </List>
+                    )}
+                  </Stack>
+                </Paper>
+              </Grid>
+
+              {/* Card 2: Formulario de editar */}
+              <Grid item xs={12} md={4}>
+                <Paper
+                  sx={{
+                    p: 3,
+                    height: "100%",
+                    borderRadius: 4,
+                    boxShadow: "0 22px 45px rgba(0,0,0,0.35)",
+                    bgcolor: "background.paper",
+                  }}
+                >
+                  <Stack component="form" spacing={2.5} onSubmit={onUpdate}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: { xs: "column", sm: "row" },
+                        alignItems: { xs: "flex-start", sm: "center" },
+                        justifyContent: "space-between",
+                        gap: 1.5,
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                        <Typography variant="h6" fontWeight={800}>
+                          Editar producto
+                        </Typography>
+                        {selectedProduct && (
+                          <Button
+                            component={Link}
+                            href={`/products/${selectedProduct.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            size="small"
+                            endIcon={<OpenInNewIcon fontSize="small" />}
+                          >
+                            Ver en la tienda
+                          </Button>
+                        )}
+                      </Box>
+
                       {selectedProduct && (
                         <Button
-                          component={Link}
-                          href={`/products/${selectedProduct.slug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          size="small"
-                          endIcon={<OpenInNewIcon fontSize="small" />}
+                          type="button"
+                          variant="outlined"
+                          color="error"
+                          onClick={handleDeleteProduct}
+                          startIcon={
+                            isDeleting ? (
+                              <CircularProgress size={16} color="inherit" />
+                            ) : (
+                              <DeleteForeverIcon fontSize="small" />
+                            )
+                          }
+                          disabled={isDeleting}
+                          sx={{ width: { xs: "100%", sm: "auto" } }}
                         >
-                          Ver en la tienda
+                          Eliminar producto
                         </Button>
                       )}
                     </Box>
-
-                    {selectedProduct && (
-                      <Button
-                        type="button"
-                        variant="outlined"
-                        color="error"
-                        onClick={handleDeleteProduct}
-                        startIcon={
-                          isDeleting ? (
-                            <CircularProgress size={16} color="inherit" />
-                          ) : (
-                            <DeleteForeverIcon fontSize="small" />
-                          )
-                        }
-                        disabled={isDeleting}
-                        sx={{ width: { xs: "100%", sm: "auto" } }}
-                      >
-                        Eliminar producto
-                      </Button>
-                    )}
-                  </Box>
 
                   {deleteStatus && (
                     <Alert severity={deleteStatus.type}>
@@ -821,222 +1493,571 @@ export default function AdminProductManager({
                         </Alert>
                       )}
 
-                      <TextField
-                        label="Título"
-                        InputLabelProps={{ shrink: !!editForm.watch("name") }}
-                        {...editForm.register("name")}
-                        error={!!editForm.formState.errors.name}
-                        helperText={editForm.formState.errors.name?.message}
-                      />
+                      <Stack spacing={2}>
+                        <TextField
+                          label="Título"
+                          size="small"
+                          InputLabelProps={{ shrink: !!editForm.watch("name") }}
+                          {...editForm.register("name")}
+                          error={!!editForm.formState.errors.name}
+                          helperText={editForm.formState.errors.name?.message}
+                          fullWidth
+                        />
 
-                      <TextField
-                        label="Slug"
-                        InputLabelProps={{ shrink: !!editForm.watch("slug") }}
-                        {...editForm.register("slug")}
-                        error={!!editForm.formState.errors.slug}
-                        helperText={
-                          editForm.formState.errors.slug?.message ??
-                          "Puedes regenerarlo desde el título."
-                        }
-                        InputProps={{
-                          endAdornment: (
-                            <InputAdornment position="end">
-                              <Button
-                                size="small"
-                                onClick={editSlugFromName}
-                                type="button"
-                              >
-                                Generar
-                              </Button>
-                            </InputAdornment>
-                          ),
-                        }}
-                      />
+                        <TextField
+                          label="Slug"
+                          size="small"
+                          InputLabelProps={{ shrink: !!editForm.watch("slug") }}
+                          {...editForm.register("slug")}
+                          error={!!editForm.formState.errors.slug}
+                          helperText={
+                            editForm.formState.errors.slug?.message ??
+                            "Puedes regenerarlo desde el título."
+                          }
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <Button
+                                  size="small"
+                                  onClick={editSlugFromName}
+                                  type="button"
+                                >
+                                  Generar
+                                </Button>
+                              </InputAdornment>
+                            ),
+                          }}
+                          fullWidth
+                        />
 
-                      <Controller
-                        control={editForm.control}
-                        name="categoryId"
-                        render={({ field, fieldState }) => (
-                          <TextField
-                            select
-                            label="Categoría"
-                            value={field.value ?? ""}
-                            onChange={(event) =>
-                              field.onChange(event.target.value || null)
-                            }
-                            onBlur={field.onBlur}
-                            error={!!fieldState.error}
-                            helperText={
-                              fieldState.error?.message ??
-                              (categoryList.length === 0
-                                ? "No hay categorías registradas"
-                                : "Selecciona una categoría o deja en blanco")
-                            }
-                          >
-                            <MenuItem value="">
-                              {categoryList.length === 0
-                                ? "Sin categorías disponibles"
-                                : "Sin categoría"}
-                            </MenuItem>
-                            {categoryList.map((category) => (
-                              <MenuItem key={category.id} value={category.id}>
-                                {category.name}
+                        <Controller
+                          control={editForm.control}
+                          name="categoryId"
+                          render={({ field, fieldState }) => (
+                            <TextField
+                              select
+                              label="Categoría"
+                              size="small"
+                              value={field.value ?? ""}
+                              onChange={(event) =>
+                                field.onChange(event.target.value || null)
+                              }
+                              onBlur={field.onBlur}
+                              error={!!fieldState.error}
+                              InputLabelProps={{ shrink: !!field.value }}
+                              helperText={
+                                fieldState.error?.message ??
+                                (categoryList.length === 0
+                                  ? "No hay categorías registradas"
+                                  : "Selecciona una categoría o deja en blanco")
+                              }
+                              fullWidth
+                            >
+                              <MenuItem value="">
+                                {categoryList.length === 0
+                                  ? "Sin categorías disponibles"
+                                  : "Sin categoría"}
                               </MenuItem>
-                            ))}
-                          </TextField>
-                        )}
-                      />
+                              {categoryList.map((category) => (
+                                <MenuItem key={category.id} value={category.id}>
+                                  {category.name}
+                                </MenuItem>
+                              ))}
+                            </TextField>
+                          )}
+                        />
 
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} md={6}>
-                          <TextField
-                            label="Precio"
-                            type="number"
-                            inputProps={{ step: "0.01" }}
-                            fullWidth
-                            InputLabelProps={{ shrink: !!editForm.watch("price") }}
-                            {...editForm.register("price", { valueAsNumber: true })}
-                            error={!!editForm.formState.errors.price}
-                            helperText={editForm.formState.errors.price?.message}
-                          />
+                        <Grid container spacing={2}>
+                          <Grid item xs={6}>
+                            <TextField
+                              label="Precio"
+                              type="number"
+                              size="small"
+                              inputProps={{ 
+                                step: "0.01",
+                                style: {
+                                  MozAppearance: 'textfield',
+                                }
+                              }}
+                              sx={{
+                                '& input[type=number]': {
+                                  MozAppearance: 'textfield',
+                                },
+                                '& input[type=number]::-webkit-outer-spin-button': {
+                                  WebkitAppearance: 'none',
+                                  margin: 0,
+                                },
+                                '& input[type=number]::-webkit-inner-spin-button': {
+                                  WebkitAppearance: 'none',
+                                  margin: 0,
+                                },
+                              }}
+                              fullWidth
+                              InputLabelProps={{ 
+                                shrink: (() => {
+                                  const value = editForm.watch("price");
+                                  // El label sube cuando hay un número válido (incluyendo 0)
+                                  return typeof value === 'number' && !isNaN(value);
+                                })()
+                              }}
+                              {...editForm.register("price", { valueAsNumber: true })}
+                              error={!!editForm.formState.errors.price}
+                              helperText={editForm.formState.errors.price?.message}
+                            />
+                          </Grid>
+                          <Grid item xs={6}>
+                            <TextField
+                              label="Stock"
+                              type="number"
+                              size="small"
+                              inputProps={{
+                                style: {
+                                  MozAppearance: 'textfield',
+                                }
+                              }}
+                              sx={{
+                                '& input[type=number]': {
+                                  MozAppearance: 'textfield',
+                                },
+                                '& input[type=number]::-webkit-outer-spin-button': {
+                                  WebkitAppearance: 'none',
+                                  margin: 0,
+                                },
+                                '& input[type=number]::-webkit-inner-spin-button': {
+                                  WebkitAppearance: 'none',
+                                  margin: 0,
+                                },
+                              }}
+                              fullWidth
+                              InputLabelProps={{ 
+                                shrink: (() => {
+                                  const value = editForm.watch("stock");
+                                  // El label sube cuando hay un número válido (incluyendo 0)
+                                  return typeof value === 'number' && !isNaN(value);
+                                })()
+                              }}
+                              {...editForm.register("stock", { valueAsNumber: true })}
+                              error={!!editForm.formState.errors.stock}
+                              helperText={editForm.formState.errors.stock?.message}
+                            />
+                          </Grid>
                         </Grid>
-                        <Grid item xs={12} md={6}>
-                          <TextField
-                            label="Stock"
-                            type="number"
-                            fullWidth
-                            InputLabelProps={{ shrink: !!editForm.watch("stock") }}
-                            {...editForm.register("stock", { valueAsNumber: true })}
-                            error={!!editForm.formState.errors.stock}
-                            helperText={editForm.formState.errors.stock?.message}
-                          />
-                        </Grid>
-                      </Grid>
 
-                      <TextField
-                        label="Descripción"
-                        multiline
-                        minRows={4}
-                        InputLabelProps={{ shrink: !!editForm.watch("description") }}
-                        {...editForm.register("description")}
-                        error={!!editForm.formState.errors.description}
-                        helperText={editForm.formState.errors.description?.message}
-                      />
-
-                      <TextField
-                        label="Imagen principal (URL)"
-                        InputLabelProps={{ shrink: !!editForm.watch("imageUrl") }}
-                        {...editForm.register("imageUrl")}
-                        error={!!editForm.formState.errors.imageUrl}
-                        helperText={editForm.formState.errors.imageUrl?.message}
-                      />
-
-                      <Stack spacing={1.5}>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                          <Typography variant="subtitle1" fontWeight={700}>
-                            Galería
-                          </Typography>
-                          <Chip label="Opcional" size="small" color="default" />
-                        </Box>
-
-                        <Stack spacing={1.5}>
-                          {editImages.fields.map((field, index) => {
-                            const urlError =
-                              editForm.formState.errors.images?.[index]?.url;
-                            const altError =
-                              editForm.formState.errors.images?.[index]?.alt;
-                            return (
-                              <Paper
-                                key={field.id}
-                                variant="outlined"
-                                sx={{ p: 2, bgcolor: "rgba(255,255,255,0.02)" }}
-                              >
-                                <Stack spacing={1.5}>
-                                  <Stack
-                                    direction="row"
-                                    spacing={1}
-                                    alignItems="center"
-                                  >
-                                    <Typography fontWeight={600}>
-                                      Imagen #{index + 1}
-                                    </Typography>
-                                    <Chip
-                                      size="small"
-                                      label={`Orden ${index + 1}`}
-                                      color="primary"
-                                      variant="outlined"
-                                    />
-                                    <IconButton
-                                      edge="end"
-                                      size="small"
-                                      color="inherit"
-                                      onClick={() => editImages.remove(index)}
-                                      aria-label="Eliminar imagen"
-                                    >
-                                      <DeleteOutlineIcon fontSize="small" />
-                                    </IconButton>
-                                  </Stack>
-
-                                  <TextField
-                                    label="URL"
-                                    InputLabelProps={{ shrink: !!(editForm.watch(`images.${index}.url` as any) ?? "") }}
-                                    {...editForm.register(`images.${index}.url` as const)}
-                                    error={!!urlError}
-                                    helperText={urlError?.message}
-                                  />
-                                  <TextField
-                                    label="Texto alternativo"
-                                    InputLabelProps={{ shrink: !!(editForm.watch(`images.${index}.alt` as any) ?? "") }}
-                                    {...editForm.register(`images.${index}.alt` as const)}
-                                    error={!!altError}
-                                    helperText={altError?.message}
-                                  />
-                                </Stack>
-                              </Paper>
-                            );
-                          })}
-                        </Stack>
+                        <TextField
+                          label="Descripción"
+                          multiline
+                          minRows={4}
+                          size="small"
+                          InputLabelProps={{ shrink: !!editForm.watch("description") }}
+                          {...editForm.register("description")}
+                          error={!!editForm.formState.errors.description}
+                          helperText={editForm.formState.errors.description?.message}
+                          fullWidth
+                        />
 
                         <Button
-                          type="button"
-                          startIcon={<AddIcon />}
-                          onClick={() => editImages.append({ url: "", alt: "" })}
-                          sx={{ alignSelf: "flex-start" }}
+                          type="submit"
+                          variant="contained"
+                          color="primary"
+                          size="large"
+                          startIcon={<SaveIcon />}
+                          disabled={editForm.formState.isSubmitting}
+                          sx={{ mt: 1 }}
                         >
-                          Agregar imagen
+                          {editForm.formState.isSubmitting
+                            ? "Guardando..."
+                            : "Guardar cambios"}
                         </Button>
                       </Stack>
-
-                      <Divider />
-
-                      <Button
-                        type="submit"
-                        variant="contained"
-                        startIcon={
-                          editForm.formState.isSubmitting ? (
-                            <CircularProgress size={18} color="inherit" />
-                          ) : (
-                            <SaveIcon />
-                          )
-                        }
-                        disabled={editForm.formState.isSubmitting}
-                      >
-                        Guardar cambios
-                      </Button>
                     </>
                   )}
                 </Stack>
               </Paper>
-            </Stack>
+            </Grid>
+
+            {/* Card 3: Imágenes */}
+            <Grid item xs={12} md={4}>
+              <Paper
+                sx={{
+                  p: 3,
+                  height: "100%",
+                  borderRadius: 4,
+                  boxShadow: "0 22px 45px rgba(0,0,0,0.35)",
+                  bgcolor: "background.paper",
+                }}
+              >
+                {!selectedProduct ? (
+                  <Typography color="text.secondary" sx={{ textAlign: "center", py: 4 }}>
+                    Selecciona un producto para gestionar sus imágenes
+                  </Typography>
+                ) : (
+                  <Stack spacing={2.5}>
+                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: "0.875rem" }}>
+                        ¿Cómo quieres agregar las imágenes?
+                      </Typography>
+                      <ToggleButtonGroup
+                        value={editMainImageMode}
+                        exclusive
+                        onChange={(_, value) => {
+                          if (value) setEditMainImageMode(value);
+                        }}
+                        size="small"
+                      >
+                        <ToggleButton value="url">
+                          <LinkIcon sx={{ mr: 0.5 }} fontSize="small" />
+                          Usar URLs
+                        </ToggleButton>
+                        <ToggleButton value="upload">
+                          <CloudUploadIcon sx={{ mr: 0.5 }} fontSize="small" />
+                          Subir archivos
+                        </ToggleButton>
+                      </ToggleButtonGroup>
+                    </Box>
+
+                    <Paper 
+                      variant="outlined" 
+                      sx={{ p: 2.5, bgcolor: "rgba(25, 118, 210, 0.04)" }}
+                    >
+                      <Stack spacing={2}>
+                        <Typography variant="subtitle2" fontWeight={700}>
+                          Imagen principal
+                        </Typography>
+
+                        <Typography variant="caption" color="text.secondary">
+                          Esta será la imagen destacada del producto
+                        </Typography>
+
+                        {editMainImageMode === "url" ? (
+                          <TextField
+                            label="URL de la imagen"
+                            size="small"
+                            InputLabelProps={{ shrink: !!editForm.watch("imageUrl") }}
+                            {...editForm.register("imageUrl")}
+                            error={!!editForm.formState.errors.imageUrl}
+                            helperText={editForm.formState.errors.imageUrl?.message}
+                            fullWidth
+                          />
+                        ) : (
+                          <Controller
+                            name="imageUrl"
+                            control={editForm.control}
+                            render={({ field }) => (
+                              <ImageUploadField
+                                mode="single"
+                                value={field.value ? { url: field.value } : undefined}
+                                onChange={(value) => {
+                                  const img = value as UploadedImage;
+                                  field.onChange(img?.url || "");
+                                  // Guardar el archivo File para subirlo después
+                                  if (img?.file) {
+                                    setPendingEditMainImageFile(img.file);
+                                  }
+                                }}
+                                productId={selectedProduct?.id}
+                                label="Subir imagen principal"
+                                error={editForm.formState.errors.imageUrl?.message}
+                                deferUpload={true}
+                              />
+                            )}
+                          />
+                        )}
+                      </Stack>
+                    </Paper>
+
+                    <Paper 
+                      variant="outlined" 
+                      sx={{ p: 2.5, bgcolor: "rgba(156, 39, 176, 0.04)" }}
+                    >
+                      <Stack spacing={2}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Typography variant="subtitle2" fontWeight={700}>
+                            Galería de imágenes
+                          </Typography>
+                          <Chip 
+                            label="Opcional" 
+                            size="small" 
+                            color="default"
+                            sx={{ height: 20, fontSize: "0.7rem" }}
+                          />
+                          <Chip 
+                            label={`${editImages.fields.length}/5`}
+                            size="small" 
+                            color={editImages.fields.length >= 5 ? "error" : "primary"}
+                            sx={{ height: 20, fontSize: "0.7rem" }}
+                          />
+                        </Box>
+
+                        <Typography variant="caption" color="text.secondary">
+                            {editMainImageMode === "url" 
+                              ? "Agrega hasta 5 imágenes adicionales usando URLs"
+                              : "Sube hasta 5 imágenes adicionales desde tu PC"
+                            }
+                          </Typography>
+
+                        {/* Galería de imágenes mostrada horizontalmente */}
+                        {editImages.fields.length > 0 && (
+                          <Stack
+                            direction="row"
+                            spacing={1.5}
+                            sx={{
+                              flexWrap: "wrap",
+                              gap: 1.5,
+                            }}
+                          >
+                            {editImages.fields.map((field, index) => {
+                              const urlError =
+                                editForm.formState.errors.images?.[index]?.url;
+                              const showPreview = shouldShowImagePreview(field.url);
+                              
+                              if (showPreview) {
+                                return (
+                                  <Box
+                                    key={field.id}
+                                    sx={{
+                                      width: 160,
+                                      height: 160,
+                                      position: "relative",
+                                      borderRadius: 1,
+                                      overflow: "hidden",
+                                      bgcolor: "rgba(255,255,255,0.05)",
+                                      border: "1px solid",
+                                      borderColor: "divider",
+                                    }}
+                                  >
+                                    <img
+                                      src={field.url}
+                                      alt={field.alt || `Preview ${index + 1}`}
+                                      style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        objectFit: "cover",
+                                      }}
+                                    />
+                                    <Box
+                                      sx={{
+                                        position: "absolute",
+                                        top: 4,
+                                        right: 4,
+                                      }}
+                                    >
+                                      <IconButton
+                                        size="small"
+                                        color="error"
+                                        onClick={() => editImages.remove(index)}
+                                        sx={{
+                                          bgcolor: "rgba(255,255,255,0.9)",
+                                          "&:hover": {
+                                            bgcolor: "rgba(255,255,255,1)",
+                                          },
+                                          boxShadow: 2,
+                                        }}
+                                        aria-label="Eliminar imagen"
+                                      >
+                                        <DeleteOutlineIcon fontSize="small" />
+                                      </IconButton>
+                                    </Box>
+                                    <Chip
+                                      size="small"
+                                      label={`#${index + 1}`}
+                                      sx={{
+                                        position: "absolute",
+                                        bottom: 4,
+                                        left: 4,
+                                        bgcolor: "rgba(0,0,0,0.6)",
+                                        color: "white",
+                                      }}
+                                    />
+                                  </Box>
+                                );
+                              } else {
+                                return (
+                                  <TextField
+                                    key={field.id}
+                                    label={`URL Imagen ${index + 1}`}
+                                    size="small"
+                                    InputLabelProps={{ shrink: !!(editForm.watch(`images.${index}.url` as any) ?? "") }}
+                                    {...editForm.register(`images.${index}.url` as const)}
+                                    error={!!urlError}
+                                    helperText={urlError?.message}
+                                    sx={{ width: 200 }}
+                                  />
+                                );
+                              }
+                            })}
+                          </Stack>
+                        )}
+
+                        {editMainImageMode === "url" ? (
+                          editImages.fields.length < 5 && (
+                            <Button
+                              type="button"
+                              variant="outlined"
+                              startIcon={<AddIcon />}
+                              onClick={() => editImages.append({ url: "", alt: "" })}
+                              sx={{ alignSelf: "flex-start" }}
+                            >
+                              Agregar otra imagen ({editImages.fields.length}/5)
+                            </Button>
+                          )
+                        ) : (
+                          editImages.fields.length < 5 && (
+                            <Stack spacing={2}>
+                              <ImageUploadField
+                                mode="multiple"
+                                value={[]}
+                                onChange={(value) => {
+                                  const uploaded = Array.isArray(value) ? value : [value];
+                                  const remainingSlots = 5 - editImages.fields.length;
+                                  const imagesToAdd = uploaded.slice(0, remainingSlots);
+                                  
+                                  // Guardar archivos File para subirlos después
+                                  const newPendingFiles = new Map(pendingEditGalleryFiles);
+                                  imagesToAdd.forEach((img, idx) => {
+                                    if (img.file && img.url) {
+                                      newPendingFiles.set(img.url, img.file);
+                                    }
+                                    
+                                    // Generar texto alternativo automáticamente
+                                    const autoAlt = img.file 
+                                      ? `Imagen de galería ${editImages.fields.length + idx + 1} - ${img.file.name.replace(/\.[^/.]+$/, "")}`
+                                      : `Imagen de galería ${editImages.fields.length + idx + 1}`;
+                                    
+                                    editImages.append({
+                                      url: img.url,
+                                      alt: autoAlt,
+                                    });
+                                  });
+                                  
+                                  setPendingEditGalleryFiles(newPendingFiles);
+                                }}
+                                productId={selectedProduct?.id}
+                                label={`Subir archivos (quedan ${5 - editImages.fields.length} espacios)`}
+                                deferUpload={true}
+                              />
+                              
+                              {/* Mostrar miniaturas de las imágenes cargadas */}
+                              {editImages.fields.some(f => f.url?.startsWith("blob:")) && (
+                                <Box>
+                                  <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: "block" }}>
+                                    Imágenes cargadas ({editImages.fields.filter(f => f.url?.startsWith("blob:")).length})
+                                  </Typography>
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      gap: 1.5,
+                                      flexWrap: "wrap",
+                                      p: 1.5,
+                                      bgcolor: "rgba(255,255,255,0.02)",
+                                      borderRadius: 1,
+                                    }}
+                                  >
+                                    {editImages.fields.map((field, index) => 
+                                      field.url?.startsWith("blob:") && (
+                                        <Box
+                                          key={field.id}
+                                          sx={{
+                                            position: "relative",
+                                            width: 140,
+                                            height: 140,
+                                            borderRadius: 1,
+                                            overflow: "hidden",
+                                            bgcolor: "rgba(255,255,255,0.05)",
+                                            border: "1px solid rgba(255,255,255,0.1)",
+                                          }}
+                                        >
+                                          <img
+                                            src={field.url}
+                                            alt={field.alt || `Imagen ${index + 1}`}
+                                            style={{
+                                              width: "100%",
+                                              height: "100%",
+                                              objectFit: "cover",
+                                            }}
+                                          />
+                                          <Box
+                                            sx={{
+                                              position: "absolute",
+                                              top: 4,
+                                              right: 4,
+                                              display: "flex",
+                                              gap: 0.5,
+                                            }}
+                                          >
+                                            <Chip
+                                              label={`#${index + 1}`}
+                                              size="small"
+                                              sx={{ 
+                                                bgcolor: "rgba(0,0,0,0.7)",
+                                                color: "white",
+                                                height: 20,
+                                                fontSize: "0.7rem",
+                                              }}
+                                            />
+                                            <IconButton
+                                              size="small"
+                                              onClick={() => editImages.remove(index)}
+                                              sx={{
+                                                bgcolor: "rgba(211, 47, 47, 0.9)",
+                                                color: "white",
+                                                width: 24,
+                                                height: 24,
+                                                "&:hover": { bgcolor: "rgba(211, 47, 47, 1)" },
+                                              }}
+                                            >
+                                              <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+                                            </IconButton>
+                                          </Box>
+                                        </Box>
+                                      )
+                                    )}
+                                  </Box>
+                                </Box>
+                              )}
+                            </Stack>
+                          )
+                        )}
+                        
+                        {editImages.fields.length >= 5 && (
+                          <Alert severity="info">
+                            Has alcanzado el límite de 5 imágenes en la galería
+                          </Alert>
+                        )}
+                      </Stack>
+                    </Paper>
+                  </Stack>
+                )}
+              </Paper>
+            </Grid>
           </Grid>
-          </Grid>
+        </Box>
         )}
       </Stack>
   );
 
+  const contentWithSnackbar = (
+    <>
+      {content}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </>
+  );
+
   if (initialTab) {
-    return <Box sx={{}}>{content}</Box>;
+    return <Box sx={{}}>{contentWithSnackbar}</Box>;
   }
 
-  return <Container sx={{ py: 6 }}>{content}</Container>;
+  return <Container sx={{ py: 6 }}>{contentWithSnackbar}</Container>;
 }

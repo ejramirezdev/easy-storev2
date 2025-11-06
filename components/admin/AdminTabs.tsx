@@ -34,7 +34,7 @@ export default function AdminTabs({
   };
 
   return (
-    <Paper sx={{ bgcolor: "background.paper" }}>
+    <Paper sx={{ bgcolor: "background.paper", overflow: "hidden" }}>
       <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
         <Tabs
           value={currentTab}
@@ -57,22 +57,14 @@ export default function AdminTabs({
         </Tabs>
       </Box>
 
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ width: "100%", mx: 0, px: 0 }}>
         {currentTab === "create" && (
-          <Box>
-            <Typography variant="h5" fontWeight={700} gutterBottom>
-              Crear nuevo producto
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Completa el formulario para agregar un nuevo producto a la tienda.
-            </Typography>
-            <AdminProductManager
-              initialProducts={products}
-              categories={categories}
-              adminName={adminName}
-              initialTab="create"
-            />
-          </Box>
+          <AdminProductManager
+            initialProducts={products}
+            categories={categories}
+            adminName={adminName}
+            initialTab="create"
+          />
         )}
 
         {currentTab === "edit" && (
