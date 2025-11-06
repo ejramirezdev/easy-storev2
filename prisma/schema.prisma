@@ -169,6 +169,12 @@ model Order {
   selectedBank     String? // "GUAYAQUIL" | "PICHINCHA" | "PACIFICO"
   receiptUrl       String? // URL del comprobante de transferencia
   receiptUploadedAt DateTime?
+  
+  // Datos de transacción Payphone (para confirmación dentro de 5 minutos)
+  payphoneTransactionId      String? // ID de transacción de Payphone (recibido en callback)
+  payphoneClientTransactionId String? // clientTransactionId enviado a Payphone
+  payphonePaymentStartedAt    DateTime? // Fecha/hora cuando se inició el pago
+  payphoneConfirmedAt         DateTime? // Fecha/hora cuando se confirmó exitosamente
 
   items OrderItem[]
   addresses Address[]

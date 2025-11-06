@@ -272,175 +272,211 @@ export default function AdminProductManager({
     slug: values.slug?.trim() ? values.slug.trim() : undefined,
   });
 
-  const onCreate = createForm.handleSubmit(async (values) => {
-    setCreateStatus(null);
-    
-    // Variables para rollback si algo falla
-    let createdProductId: string | null = null;
-    let uploadedMainImageUrl: string | null = null;
-    const uploadedGalleryImageUrls: string[] = [];
-    
-    try {
-      // Generar slug automáticamente si está vacío
-      if (!values.slug || values.slug.trim() === "") {
-        values.slug = slugify(values.name);
-      }
+  const onCreate = createForm.handleSubmit(
+    async (values) => {
+      setCreateStatus(null);
       
-      let payload = normalizePayload(values);
-
-      // Si estamos en modo "upload", necesitamos crear el producto primero para obtener el ID
-      // y luego subir las imágenes a products/[product-id]/
-      if (createMainImageMode === "upload" && (pendingMainImageFile || pendingGalleryFiles.size > 0)) {
-        // Crear el producto primero sin imágenes blob
-        // Las imágenes se subirán después con el ID real
-        // IMPORTANTE: Asegurarnos de incluir TODOS los campos necesarios
-        const tempPayload = {
-          name: payload.name,
-          slug: payload.slug,
-          description: payload.description || null,
-          price: payload.price,
-          stock: payload.stock,
-          categoryId: payload.categoryId,
-          imageUrl: null, // Dejar null temporalmente (las imágenes blob no se envían)
-          images: payload.images?.filter(img => img.url && !img.url.startsWith("blob:")) || [], // Solo mantener URLs no-blob válidas
-        };
-
-        const createRes = await fetch("/api/products", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(tempPayload),
-        });
-
-        const createJson = await createRes.json();
-        if (!createRes.ok) {
-          // CRÍTICO: Si la creación falla, NO subimos imágenes a S3
-          // Si es un error de validación, mostrar detalles
-          if (createRes.status === 422 && createJson.issues) {
-            const issues = createJson.issues.map((issue: any) => 
-              `${issue.path.join('.')}: ${issue.message}`
-            ).join(', ');
-            throw new Error(`Datos inválidos: ${issues}`);
-          }
-          throw new Error(createJson?.error ?? "No se pudo crear el producto");
+      // Variables para rollback si algo falla
+      let createdProductId: string | null = null;
+      let uploadedMainImageUrl: string | null = null;
+      const uploadedGalleryImageUrls: string[] = [];
+      
+      try {
+        // Generar slug automáticamente si está vacío
+        if (!values.slug || values.slug.trim() === "") {
+          values.slug = slugify(values.name);
         }
+        
+        let payload = normalizePayload(values);
 
-        // IMPORTANTE: Solo si el producto se creó exitosamente, procedemos a subir imágenes
-        const created = createJson as AdminProduct;
-        createdProductId = created.id; // Guardar ID para rollback
-
-        // Ahora subir las imágenes usando el ID real del producto (solo si el producto se creó exitosamente)
-        const updatePayload: any = {};
-
-        // Subir imagen principal si hay un archivo pendiente
-        if (pendingMainImageFile) {
-          const formData = new FormData();
-          formData.append("images", pendingMainImageFile);
-          formData.append("productId", createdProductId);
-
-          const uploadRes = await fetch("/api/admin/upload/product-images", {
-            method: "POST",
-            body: formData,
-          });
-
-          const uploadData = await uploadRes.json();
-          if (!uploadRes.ok || !uploadData.success) {
-            throw new Error(uploadData.error || "Error al subir imagen principal");
-          }
-
-          uploadedMainImageUrl = uploadData.urls[0]; // Guardar URL para rollback
-          updatePayload.imageUrl = uploadedMainImageUrl;
-        }
-
-        // Subir imágenes de galería si hay archivos pendientes
-        if (pendingGalleryFiles.size > 0) {
-          const galleryFilesArray = Array.from(pendingGalleryFiles.values());
-          const formData = new FormData();
-          galleryFilesArray.forEach((file) => {
-            formData.append("images", file);
-          });
-          formData.append("productId", createdProductId);
-
-          const uploadRes = await fetch("/api/admin/upload/product-images", {
-            method: "POST",
-            body: formData,
-          });
-
-          const uploadData = await uploadRes.json();
-          if (!uploadRes.ok || !uploadData.success) {
-            throw new Error(uploadData.error || "Error al subir imágenes de galería");
-          }
-
-          // Guardar URLs para rollback
-          uploadedGalleryImageUrls.push(...uploadData.urls);
-
-          // Reemplazar las URLs blob con las URLs reales de S3
-          const uploadedUrls = uploadData.urls;
-          const blobImages = (payload.images || []).filter(img => img.url.startsWith("blob:"));
-          const nonBlobImages = (payload.images || []).filter(img => !img.url.startsWith("blob:"));
-          
-          updatePayload.images = [
-            ...nonBlobImages,
-            ...blobImages.map((img, index) => ({
-              ...img,
-              url: uploadedUrls[index] || img.url,
-            })),
-          ];
-        }
-
-        // Actualizar el producto con las URLs de las imágenes
-        // IMPORTANTE: El endpoint PUT requiere todos los campos, no solo los que cambiamos
-        if (Object.keys(updatePayload).length > 0) {
-          // Construir el payload completo con todos los campos del producto
-          const fullUpdatePayload = {
+        // Si estamos en modo "upload", necesitamos crear el producto primero para obtener el ID
+        // y luego subir las imágenes a products/[product-id]/
+        if (createMainImageMode === "upload" && (pendingMainImageFile || pendingGalleryFiles.size > 0)) {
+          // Crear el producto primero sin imágenes blob
+          // Las imágenes se subirán después con el ID real
+          // IMPORTANTE: Asegurarnos de incluir TODOS los campos necesarios
+          const tempPayload = {
             name: payload.name,
             slug: payload.slug,
             description: payload.description || null,
             price: payload.price,
             stock: payload.stock,
             categoryId: payload.categoryId,
-            imageUrl: updatePayload.imageUrl ?? created.imageUrl ?? null,
-            images: updatePayload.images ?? created.images?.map(img => ({
-              id: img.id,
-              url: img.url,
-              alt: img.alt ?? "",
-              sortOrder: img.sortOrder ?? 0,
-            })) ?? [],
+            imageUrl: null, // Dejar null temporalmente (las imágenes blob no se envían)
+            images: payload.images?.filter(img => img.url && !img.url.startsWith("blob:")) || [], // Solo mantener URLs no-blob válidas
           };
 
-          const updateRes = await fetch(`/api/products/${createdProductId}`, {
-            method: "PUT",
+          const createRes = await fetch("/api/products", {
+            method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(fullUpdatePayload),
+            body: JSON.stringify(tempPayload),
           });
 
-          const updateJson = await updateRes.json();
-          if (!updateRes.ok) {
+          const createJson = await createRes.json();
+          if (!createRes.ok) {
+            // CRÍTICO: Si la creación falla, NO subimos imágenes a S3
             // Si es un error de validación, mostrar detalles
-            if (updateRes.status === 422 && updateJson.issues) {
-              const issues = updateJson.issues.map((issue: any) => 
+            if (createRes.status === 422 && createJson.issues) {
+              const issues = createJson.issues.map((issue: any) => 
                 `${issue.path.join('.')}: ${issue.message}`
               ).join(', ');
-              throw new Error(`Error al actualizar producto: ${issues}`);
+              throw new Error(`Datos inválidos: ${issues}`);
             }
-            throw new Error(updateJson?.error ?? "No se pudo actualizar las imágenes del producto");
+            throw new Error(createJson?.error ?? "No se pudo crear el producto");
           }
 
-          const updated = updateJson as AdminProduct;
-          // Actualizar estado ANTES de limpiar - esto asegura que el producto aparezca inmediatamente
-          setProducts((prev) => {
-            // Eliminar producto antiguo si existe y agregar el actualizado al inicio
-            const filtered = prev.filter(p => p.id !== updated.id);
-            return [updated, ...filtered];
-          });
-          setSelectedId(updated.id);
-          setCreateStatus({ type: "success", text: "Producto creado correctamente." });
-          setSnackbar({
-            open: true,
-            message: "Producto creado correctamente",
-            severity: "success",
-          });
+          // IMPORTANTE: Solo si el producto se creó exitosamente, procedemos a subir imágenes
+          const created = createJson as AdminProduct;
+          createdProductId = created.id; // Guardar ID para rollback
+
+          // Ahora subir las imágenes usando el ID real del producto (solo si el producto se creó exitosamente)
+          const updatePayload: any = {};
+
+          // Subir imagen principal si hay un archivo pendiente
+          if (pendingMainImageFile) {
+            const formData = new FormData();
+            formData.append("images", pendingMainImageFile);
+            formData.append("productId", createdProductId);
+
+            const uploadRes = await fetch("/api/admin/upload/product-images", {
+              method: "POST",
+              body: formData,
+            });
+
+            const uploadData = await uploadRes.json();
+            if (!uploadRes.ok || !uploadData.success) {
+              throw new Error(uploadData.error || "Error al subir imagen principal");
+            }
+
+            uploadedMainImageUrl = uploadData.urls[0]; // Guardar URL para rollback
+            updatePayload.imageUrl = uploadedMainImageUrl;
+          }
+
+          // Subir imágenes de galería si hay archivos pendientes
+          if (pendingGalleryFiles.size > 0) {
+            const galleryFilesArray = Array.from(pendingGalleryFiles.values());
+            const formData = new FormData();
+            galleryFilesArray.forEach((file) => {
+              formData.append("images", file);
+            });
+            formData.append("productId", createdProductId);
+
+            const uploadRes = await fetch("/api/admin/upload/product-images", {
+              method: "POST",
+              body: formData,
+            });
+
+            const uploadData = await uploadRes.json();
+            if (!uploadRes.ok || !uploadData.success) {
+              throw new Error(uploadData.error || "Error al subir imágenes de galería");
+            }
+
+            // Guardar URLs para rollback
+            uploadedGalleryImageUrls.push(...uploadData.urls);
+
+            // Reemplazar las URLs blob con las URLs reales de S3
+            const uploadedUrls = uploadData.urls;
+            const blobImages = (payload.images || []).filter(img => img.url.startsWith("blob:"));
+            const nonBlobImages = (payload.images || []).filter(img => !img.url.startsWith("blob:"));
+            
+            updatePayload.images = [
+              ...nonBlobImages,
+              ...blobImages.map((img, index) => ({
+                ...img,
+                url: uploadedUrls[index] || img.url,
+              })),
+            ];
+          }
+
+          // Actualizar el producto con las URLs de las imágenes
+          // IMPORTANTE: El endpoint PUT requiere todos los campos, no solo los que cambiamos
+          if (Object.keys(updatePayload).length > 0) {
+            // Construir el payload completo con todos los campos del producto
+            const fullUpdatePayload = {
+              name: payload.name,
+              slug: payload.slug,
+              description: payload.description || null,
+              price: payload.price,
+              stock: payload.stock,
+              categoryId: payload.categoryId,
+              imageUrl: updatePayload.imageUrl ?? created.imageUrl ?? null,
+              images: updatePayload.images ?? created.images?.map(img => ({
+                id: img.id,
+                url: img.url,
+                alt: img.alt ?? "",
+                sortOrder: img.sortOrder ?? 0,
+              })) ?? [],
+            };
+
+            const updateRes = await fetch(`/api/products/${createdProductId}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(fullUpdatePayload),
+            });
+
+            const updateJson = await updateRes.json();
+            if (!updateRes.ok) {
+              // Si es un error de validación, mostrar detalles
+              if (updateRes.status === 422 && updateJson.issues) {
+                const issues = updateJson.issues.map((issue: any) => 
+                  `${issue.path.join('.')}: ${issue.message}`
+                ).join(', ');
+                throw new Error(`Error al actualizar producto: ${issues}`);
+              }
+              throw new Error(updateJson?.error ?? "No se pudo actualizar las imágenes del producto");
+            }
+
+            const updated = updateJson as AdminProduct;
+            // Actualizar estado ANTES de limpiar - esto asegura que el producto aparezca inmediatamente
+            setProducts((prev) => {
+              // Eliminar producto antiguo si existe y agregar el actualizado al inicio
+              const filtered = prev.filter(p => p.id !== updated.id);
+              return [updated, ...filtered];
+            });
+            setSelectedId(updated.id);
+            setCreateStatus({ type: "success", text: "Producto creado correctamente." });
+            setSnackbar({
+              open: true,
+              message: "Producto creado correctamente",
+              severity: "success",
+            });
+          } else {
+            // Si no hay imágenes para actualizar, solo agregar el producto creado
+            setProducts((prev) => {
+              const filtered = prev.filter(p => p.id !== created.id);
+              return [created, ...filtered];
+            });
+            setSelectedId(created.id);
+            setCreateStatus({ type: "success", text: "Producto creado correctamente." });
+            setSnackbar({
+              open: true,
+              message: "Producto creado correctamente",
+              severity: "success",
+            });
+          }
         } else {
-          // Si no hay imágenes para actualizar, solo agregar el producto creado
+          // Modo URL o sin imágenes - crear normalmente
+          const res = await fetch("/api/products", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          const json = await res.json();
+          if (!res.ok) {
+            // Si es un error de validación, mostrar detalles
+            if (res.status === 422 && json.issues) {
+              const issues = json.issues.map((issue: any) => 
+                `${issue.path.join('.')}: ${issue.message}`
+              ).join(', ');
+              throw new Error(`Datos inválidos: ${issues}`);
+            }
+            throw new Error(json?.error ?? "No se pudo crear el producto");
+          }
+
+          const created = json as AdminProduct;
+          createdProductId = created.id; // Guardar ID para rollback (aunque no debería ser necesario aquí)
+          // Actualizar estado ANTES de limpiar
           setProducts((prev) => {
             const filtered = prev.filter(p => p.id !== created.id);
             return [created, ...filtered];
@@ -453,79 +489,45 @@ export default function AdminProductManager({
             severity: "success",
           });
         }
-      } else {
-        // Modo URL o sin imágenes - crear normalmente
-        const res = await fetch("/api/products", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+        
+        // Limpiar estados SOLO después de éxito completo
+        createForm.reset(formDefaults());
+        createImages.replace([]);
+        setPendingMainImageFile(null);
+        setPendingGalleryFiles(new Map());
+      } catch (error: any) {
+        setCreateStatus({
+          type: "error",
+          text: error?.message ?? "Error desconocido al crear el producto.",
         });
-
-        const json = await res.json();
-        if (!res.ok) {
-          // Si es un error de validación, mostrar detalles
-          if (res.status === 422 && json.issues) {
-            const issues = json.issues.map((issue: any) => 
-              `${issue.path.join('.')}: ${issue.message}`
-            ).join(', ');
-            throw new Error(`Datos inválidos: ${issues}`);
-          }
-          throw new Error(json?.error ?? "No se pudo crear el producto");
-        }
-
-        const created = json as AdminProduct;
-        createdProductId = created.id; // Guardar ID para rollback (aunque no debería ser necesario aquí)
-        // Actualizar estado ANTES de limpiar
-        setProducts((prev) => {
-          const filtered = prev.filter(p => p.id !== created.id);
-          return [created, ...filtered];
-        });
-        setSelectedId(created.id);
-        setCreateStatus({ type: "success", text: "Producto creado correctamente." });
         setSnackbar({
           open: true,
-          message: "Producto creado correctamente",
-          severity: "success",
+          message: error?.message ?? "Error al crear el producto",
+          severity: "error",
         });
-      }
-      
-      // Limpiar estados SOLO después de éxito completo
-      createForm.reset(formDefaults());
-      createImages.replace([]);
-      setPendingMainImageFile(null);
-      setPendingGalleryFiles(new Map());
-    } catch (error: any) {
-      setCreateStatus({
-        type: "error",
-        text: error?.message ?? "Error desconocido al crear el producto.",
-      });
-      setSnackbar({
-        open: true,
-        message: error?.message ?? "Error al crear el producto",
-        severity: "error",
-      });
 
-      // ROLLBACK: Si se creó el producto pero algo falló después, eliminarlo
-      if (createdProductId) {
-        console.warn(`Rollback: Eliminando producto ${createdProductId} debido a error.`);
-        try {
-          // Eliminar producto de la base de datos (esto también eliminará las imágenes de la BD)
-          const deleteRes = await fetch(`/api/products/${createdProductId}`, {
-            method: "DELETE",
-          });
-          
-          if (!deleteRes.ok) {
-            console.error(`Error al eliminar producto durante rollback: ${deleteRes.status}`);
-          } else {
-            console.log(`Rollback exitoso: Producto ${createdProductId} eliminado.`);
+        // ROLLBACK: Si se creó el producto pero algo falló después, eliminarlo
+        if (createdProductId) {
+          console.warn(`Rollback: Eliminando producto ${createdProductId} debido a error.`);
+          try {
+            // Eliminar producto de la base de datos (esto también eliminará las imágenes de la BD)
+            const deleteRes = await fetch(`/api/products/${createdProductId}`, {
+              method: "DELETE",
+            });
+            
+            if (!deleteRes.ok) {
+              console.error(`Error al eliminar producto durante rollback: ${deleteRes.status}`);
+            } else {
+              console.log(`Rollback exitoso: Producto ${createdProductId} eliminado.`);
+            }
+          } catch (rollbackError: any) {
+            console.error(`Error durante rollback del producto ${createdProductId}:`, rollbackError);
+            // No lanzar el error, solo loguearlo para que el usuario vea el error original
           }
-        } catch (rollbackError: any) {
-          console.error(`Error durante rollback del producto ${createdProductId}:`, rollbackError);
-          // No lanzar el error, solo loguearlo para que el usuario vea el error original
         }
       }
     }
-  });
+  );
 
   const onUpdate = editForm.handleSubmit(async (values) => {
     if (!selectedProduct) return;
@@ -758,7 +760,257 @@ export default function AdminProductManager({
         {(!initialTab || initialTab === "create" || initialTab === "categories") && (
           <Box sx={{ width: "100%", mx: 0, px: 0, overflow: "hidden" }}>
             {(!initialTab || initialTab === "create") && (
-              <Stack component="form" spacing={2.5} onSubmit={onCreate} sx={{ width: "100%" }}>
+              <Stack component="form" spacing={2.5} onSubmit={createForm.handleSubmit(
+                async (data) => {
+                  console.log("✅ Form validation passed, submitting...");
+                  
+                  // Generar slug automáticamente si está vacío
+                  if (!data.slug || data.slug.trim() === "") {
+                    data.slug = slugify(data.name);
+                    console.log("Slug generado automáticamente:", data.slug);
+                  }
+                  
+                  // Llamar directamente a la lógica de creación
+                  setCreateStatus(null);
+                  
+                  // Variables para rollback si algo falla
+                  let createdProductId: string | null = null;
+                  let uploadedMainImageUrl: string | null = null;
+                  const uploadedGalleryImageUrls: string[] = [];
+                  
+                  try {
+                    let payload = normalizePayload(data);
+
+                    // Si estamos en modo "upload", necesitamos crear el producto primero para obtener el ID
+                    if (createMainImageMode === "upload" && (pendingMainImageFile || pendingGalleryFiles.size > 0)) {
+                      const tempPayload = {
+                        name: payload.name,
+                        slug: payload.slug,
+                        description: payload.description || null,
+                        price: payload.price,
+                        stock: payload.stock,
+                        categoryId: payload.categoryId,
+                        imageUrl: null,
+                        images: payload.images?.filter(img => img.url && !img.url.startsWith("blob:")) || [],
+                      };
+
+                      console.log("Creating product with payload:", tempPayload);
+                      const createRes = await fetch("/api/products", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(tempPayload),
+                      });
+
+                      const createJson = await createRes.json();
+                      if (!createRes.ok) {
+                        if (createRes.status === 422 && createJson.issues) {
+                          const issues = createJson.issues.map((issue: any) => 
+                            `${issue.path.join('.')}: ${issue.message}`
+                          ).join(', ');
+                          throw new Error(`Datos inválidos: ${issues}`);
+                        }
+                        throw new Error(createJson?.error ?? "No se pudo crear el producto");
+                      }
+
+                      const created = createJson as AdminProduct;
+                      createdProductId = created.id;
+                      const updatePayload: any = {};
+
+                      if (pendingMainImageFile) {
+                        const formData = new FormData();
+                        formData.append("images", pendingMainImageFile);
+                        formData.append("productId", createdProductId);
+
+                        const uploadRes = await fetch("/api/admin/upload/product-images", {
+                          method: "POST",
+                          body: formData,
+                        });
+
+                        const uploadData = await uploadRes.json();
+                        if (!uploadRes.ok || !uploadData.success) {
+                          throw new Error(uploadData.error || "Error al subir imagen principal");
+                        }
+
+                        uploadedMainImageUrl = uploadData.urls[0];
+                        updatePayload.imageUrl = uploadedMainImageUrl;
+                      }
+
+                      if (pendingGalleryFiles.size > 0) {
+                        const galleryFilesArray = Array.from(pendingGalleryFiles.values());
+                        const formData = new FormData();
+                        galleryFilesArray.forEach((file) => {
+                          formData.append("images", file);
+                        });
+                        formData.append("productId", createdProductId);
+
+                        const uploadRes = await fetch("/api/admin/upload/product-images", {
+                          method: "POST",
+                          body: formData,
+                        });
+
+                        const uploadData = await uploadRes.json();
+                        if (!uploadRes.ok || !uploadData.success) {
+                          throw new Error(uploadData.error || "Error al subir imágenes de galería");
+                        }
+
+                        uploadedGalleryImageUrls.push(...uploadData.urls);
+                        const uploadedUrls = uploadData.urls;
+                        const blobImages = (payload.images || []).filter(img => img.url.startsWith("blob:"));
+                        const nonBlobImages = (payload.images || []).filter(img => !img.url.startsWith("blob:"));
+                        
+                        updatePayload.images = [
+                          ...nonBlobImages,
+                          ...blobImages.map((img, index) => ({
+                            ...img,
+                            url: uploadedUrls[index] || img.url,
+                          })),
+                        ];
+                      }
+
+                      if (Object.keys(updatePayload).length > 0) {
+                        const fullUpdatePayload = {
+                          name: payload.name,
+                          slug: payload.slug,
+                          description: payload.description || null,
+                          price: payload.price,
+                          stock: payload.stock,
+                          categoryId: payload.categoryId,
+                          imageUrl: updatePayload.imageUrl ?? created.imageUrl ?? null,
+                          images: updatePayload.images ?? created.images?.map(img => ({
+                            id: img.id,
+                            url: img.url,
+                            alt: img.alt ?? "",
+                            sortOrder: img.sortOrder ?? 0,
+                          })) ?? [],
+                        };
+
+                        const updateRes = await fetch(`/api/products/${createdProductId}`, {
+                          method: "PUT",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify(fullUpdatePayload),
+                        });
+
+                        const updateJson = await updateRes.json();
+                        if (!updateRes.ok) {
+                          if (updateRes.status === 422 && updateJson.issues) {
+                            const issues = updateJson.issues.map((issue: any) => 
+                              `${issue.path.join('.')}: ${issue.message}`
+                            ).join(', ');
+                            throw new Error(`Error al actualizar producto: ${issues}`);
+                          }
+                          throw new Error(updateJson?.error ?? "No se pudo actualizar las imágenes del producto");
+                        }
+
+                        const updated = updateJson as AdminProduct;
+                        setProducts((prev) => {
+                          const filtered = prev.filter(p => p.id !== updated.id);
+                          return [updated, ...filtered];
+                        });
+                        setSelectedId(updated.id);
+                        setCreateStatus({ type: "success", text: "Producto creado correctamente." });
+                        setSnackbar({
+                          open: true,
+                          message: "Producto creado correctamente",
+                          severity: "success",
+                        });
+                      } else {
+                        setProducts((prev) => {
+                          const filtered = prev.filter(p => p.id !== created.id);
+                          return [created, ...filtered];
+                        });
+                        setSelectedId(created.id);
+                        setCreateStatus({ type: "success", text: "Producto creado correctamente." });
+                        setSnackbar({
+                          open: true,
+                          message: "Producto creado correctamente",
+                          severity: "success",
+                        });
+                      }
+                    } else {
+                      // Modo URL o sin imágenes - crear normalmente
+                      console.log("Creating product (URL mode) with payload:", payload);
+                      const res = await fetch("/api/products", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                      });
+
+                      const json = await res.json();
+                      if (!res.ok) {
+                        if (res.status === 422 && json.issues) {
+                          const issues = json.issues.map((issue: any) => 
+                            `${issue.path.join('.')}: ${issue.message}`
+                          ).join(', ');
+                          throw new Error(`Datos inválidos: ${issues}`);
+                        }
+                        throw new Error(json?.error ?? "No se pudo crear el producto");
+                      }
+
+                      const created = json as AdminProduct;
+                      createdProductId = created.id;
+                      setProducts((prev) => {
+                        const filtered = prev.filter(p => p.id !== created.id);
+                        return [created, ...filtered];
+                      });
+                      setSelectedId(created.id);
+                      setCreateStatus({ type: "success", text: "Producto creado correctamente." });
+                      setSnackbar({
+                        open: true,
+                        message: "Producto creado correctamente",
+                        severity: "success",
+                      });
+                    }
+                    
+                    // Limpiar estados SOLO después de éxito completo
+                    createForm.reset(formDefaults());
+                    createImages.replace([]);
+                    setPendingMainImageFile(null);
+                    setPendingGalleryFiles(new Map());
+                    console.log("✅ Product created successfully");
+                  } catch (error: any) {
+                    console.error("❌ Error creating product:", error);
+                    setCreateStatus({
+                      type: "error",
+                      text: error?.message ?? "Error desconocido al crear el producto.",
+                    });
+                    setSnackbar({
+                      open: true,
+                      message: error?.message ?? "Error al crear el producto",
+                      severity: "error",
+                    });
+
+                    // ROLLBACK
+                    if (createdProductId) {
+                      console.warn(`Rollback: Eliminando producto ${createdProductId}`);
+                      try {
+                        const deleteRes = await fetch(`/api/products/${createdProductId}`, {
+                          method: "DELETE",
+                        });
+                        if (deleteRes.ok) {
+                          console.log(`Rollback exitoso: Producto ${createdProductId} eliminado.`);
+                        }
+                      } catch (rollbackError: any) {
+                        console.error(`Error durante rollback:`, rollbackError);
+                      }
+                    }
+                  }
+                },
+                (errors) => {
+                  console.error("❌ Form validation failed:", errors);
+                  const firstErrorKey = Object.keys(errors)[0];
+                  const firstError = errors[firstErrorKey as keyof typeof errors];
+                  const errorMessage = (firstError as any)?.message || `Error en el campo ${firstErrorKey}`;
+                  setCreateStatus({
+                    type: "error",
+                    text: `Error de validación: ${errorMessage}`,
+                  });
+                  setSnackbar({
+                    open: true,
+                    message: errorMessage,
+                    severity: "error",
+                  });
+                }
+              )} sx={{ width: "100%" }}>
                 {createStatus && (
                   <Alert severity={createStatus.type}>{createStatus.text}</Alert>
                 )}

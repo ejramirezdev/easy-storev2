@@ -101,8 +101,13 @@ export default function AdminPayphoneSettings() {
               type="password"
               fullWidth
               value={settings.token ?? ""}
-              onChange={(e) => setSettings({ ...settings, token: e.target.value || null })}
-              helperText="Token de autenticación obtenido de Payphone Developer"
+              onChange={(e) => {
+                let tokenValue = e.target.value;
+                // Remover "Bearer " si el usuario lo incluye por error al inicio
+                tokenValue = tokenValue.trim().replace(/^Bearer\s+/i, '');
+                setSettings({ ...settings, token: tokenValue || null });
+              }}
+              helperText="Token de autenticación obtenido de Payphone Developer. NO incluir 'Bearer' - solo el token."
             />
           </Grid>
 

@@ -55,9 +55,18 @@ export const ProductInputSchema = z.object({
   slug: z
     .string()
     .trim()
-    .min(3, "Debe tener al menos 3 caracteres")
-    .max(120, "Máximo 120 caracteres")
-    .optional(),
+    .optional()
+    .refine(
+      (val) => {
+        // Permitir slug vacío, undefined o null (se generará automáticamente)
+        if (!val || val.length === 0) return true;
+        // Si tiene valor, debe cumplir con los requisitos
+        return val.length >= 3 && val.length <= 120;
+      },
+      {
+        message: "Debe tener entre 3 y 120 caracteres si se especifica",
+      }
+    ),
   description: z
     .string()
     .trim()

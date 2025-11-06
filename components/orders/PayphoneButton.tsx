@@ -163,28 +163,39 @@ export default function PayphoneButton({
   }, [orderId]);
 
   // Función para generar un clientTransactionId único para cada intento de pago
-  // Formato: orderIdShort-timestamp-random (máximo 50 caracteres según Payphone)
+  // Formato basado en el ejemplo exitoso de Payphone: [PREFIJO][FECHA]-[HORA]-[RANDOM]
+  // Ejemplo exitoso: "BR231121-1142-0215" (18 caracteres)
   // Esto permite reintentos seguros sin duplicar transacciones
   const generateClientTransactionId = useCallback(() => {
-    // Acortar orderId si es muy largo (UUIDs tienen 36 caracteres)
-    // Usamos los primeros 8 caracteres que son suficientes para identificar la orden
-    const orderIdShort = orderId.length > 8 ? orderId.substring(0, 8) : orderId;
+    // Usar los primeros 8 caracteres del orderId como prefijo (sin guiones del UUID)
+    const orderIdShort = orderId.replace(/-/g, '').substring(0, 8);
     
-    // Timestamp: usar solo los últimos 10 dígitos (suficiente para unicidad)
-    const timestamp = Date.now().toString().slice(-10);
+    // Fecha: YYMMDD (6 dígitos) - similar al ejemplo "231121"
+    const now = new Date();
+    const year = now.getFullYear().toString().slice(-2);
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    const date = `${year}${month}${day}`;
     
-    // Random: 6 caracteres alfanuméricos
-    const random = Math.random().toString(36).substring(2, 8);
+    // Hora: HHMM (4 dígitos) - similar al ejemplo "1142"
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const time = `${hours}${minutes}`;
     
-    // Formato: orderIdShort-timestamp-random
-    // Ejemplo: "25147786-1234567890-abc123" = 26 caracteres (bien dentro del límite de 50)
-    const clientTxId = `${orderIdShort}-${timestamp}-${random}`;
+    // Random: 4 dígitos alfanuméricos - similar al ejemplo "0215"
+    const random = Math.random().toString(36).substring(2, 6).padStart(4, '0');
+    
+    // Formato: [PREFIJO][FECHA]-[HORA]-[RANDOM]
+    // Ejemplo: "5daff9f6231121-1142-0215" = 22 caracteres (dentro del límite de 50)
+    const clientTxId = `${orderIdShort}${date}-${time}-${random}`;
     
     // Validar que no exceda 50 caracteres (seguridad adicional)
     if (clientTxId.length > 50) {
       console.warn("Payphone: clientTransactionId excede 50 caracteres, truncando:", clientTxId);
       return clientTxId.substring(0, 50);
     }
+    
+    console.log("Payphone: clientTransactionId generado:", clientTxId, "longitud:", clientTxId.length);
     
     return clientTxId;
   }, [orderId]);
@@ -252,7 +263,7 @@ export default function PayphoneButton({
   const ready = cssLoaded && jsLoaded;
 
   // Función para inicializar la cajita de pagos
-  const initializePaymentBox = useCallback(() => {
+  const initializePaymentBox = useCallback(async () => {
     if (!ready || !payphoneConfig.token || !payphoneConfig.storeId) {
       console.warn("Payphone: No está listo para inicializar");
       return;
@@ -422,6 +433,24 @@ export default function PayphoneButton({
         }
       );
 
+      // Guardar el clientTransactionId cuando se inicia el pago
+      // Esto permite rastrear y confirmar el pago dentro de 5 minutos
+      try {
+        await fetch(`/api/orders/${orderId}/payphone/start-payment`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            clientTransactionId: currentClientTransactionId,
+          }),
+        });
+        console.log("Payphone: clientTransactionId guardado para confirmación");
+      } catch (err) {
+        console.error("Payphone: Error guardando clientTransactionId:", err);
+        // No bloquear el flujo si falla, pero registrar el error
+      }
+
       paymentBoxRef.current = new window.PPaymentButtonBox(config);
       paymentBoxRef.current.render(containerId);
 
@@ -508,8 +537,8 @@ export default function PayphoneButton({
     setError(null);
 
     // Esperar un momento para que el modal se renderice antes de inicializar
-    setTimeout(() => {
-      initializePaymentBox();
+    setTimeout(async () => {
+      await initializePaymentBox();
     }, 100);
   }, [
     ready,

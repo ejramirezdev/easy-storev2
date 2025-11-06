@@ -37,7 +37,14 @@ export async function PUT(req: NextRequest) {
     "responseUrl",
   ] as const;
   for (const key of stringFields) {
-    if (key in body) data[key] = body[key] ?? null;
+    if (key in body) {
+      let value = body[key] ?? null;
+      // Limpiar el token: remover "Bearer " si está incluido y espacios en blanco
+      if (key === "token" && value && typeof value === "string") {
+        value = value.trim().replace(/^Bearer\s+/i, '') || null;
+      }
+      data[key] = value;
+    }
   }
 
   const existing = await prisma.payphoneSettings.findFirst();
