@@ -32,6 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # vercel
 .vercel
@@ -41,3 +45,22 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
+
+# Security: Prevent committing test files with credentials
+**/test-*.js
+**/test-*.ts
+**/*test*.js
+**/*test*.ts
+**/*postman*.json
+**/*collection*.json
+
+# Security: Prevent committing documentation with sensitive data
+**/GUIA_POSTMAN*.md
+**/INFORMACION_PARA_SOPORTE*.md
+**/MENSAJE_PARA_SOPORTE*.txt
+**/PLAN_DEBUGGING*.md
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp

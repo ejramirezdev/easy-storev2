@@ -14,13 +14,16 @@ import {
 } from "@mui/material";
 import Grid from "@mui/material/GridLegacy";
 import OrderPaymentSection from "@/components/orders/OrderPaymentSection";
-import { PayphoneAddress, PayphoneConfig } from "@/components/orders/PayphoneButton";
-type PageProps = { 
+import {
+  PayphoneAddress,
+  PayphoneConfig,
+} from "@/components/orders/PayphoneButton";
+type PageProps = {
   params: Promise<{ id: string }>;
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
-export default async function OrderDetailPage({ 
+export default async function OrderDetailPage({
   params,
   searchParams,
 }: PageProps) {
@@ -51,7 +54,20 @@ export default async function OrderDetailPage({
     include: {
       items: {
         include: {
-          product: { select: { name: true, slug: true, imageUrl: true } },
+          product: {
+            select: {
+              name: true,
+              slug: true,
+              imageUrl: true,
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                },
+              },
+            },
+          },
           service: { select: { name: true } },
         },
       },
@@ -72,21 +88,31 @@ export default async function OrderDetailPage({
     (it: any) => it.type === "BILLING"
   );
 
-  // Totales (calcular desde los items si no están almacenados)
-  const subtotal = order.items.reduce(
-    (acc, it) => acc + Number(it.unitPrice) * it.quantity,
-    0
+  // Verificar si TODOS los productos son digitales (categoría "Productos Digitales")
+  // Si hay al menos un producto que NO es digital, se debe cobrar shipping
+  const allProductsAreDigital =
+    order.items.length > 0 &&
+    order.items.every(
+      (item) => item.product?.category?.name === "Productos Digitales"
+    );
+
+  // Totales (calcular desde los items usando calcTotals para consistencia)
+  const { calcTotals } = await import("@/lib/totals");
+  const calculatedTotals = calcTotals(
+    order.items.map((it) => ({
+      price: Number(it.unitPrice),
+      quantity: it.quantity,
+    })),
+    undefined, // No hay cupón en la orden por ahora
+    { hasOnlyDigitalProducts: allProductsAreDigital }
   );
-  const discount = 0; // Los descuentos se pueden agregar en el futuro
-  const subtotalAfterDiscount = Math.max(0, subtotal - discount);
-  // El precio ya incluye IVA, calculamos el impuesto internamente
-  const basePrice = Math.round((subtotalAfterDiscount / 1.15) * 100) / 100; // Precio base sin IVA
-  const tax = Math.round((subtotalAfterDiscount - basePrice) * 100) / 100; // Impuesto incluido en el precio
-  const shipping = 0; // El envío se puede agregar en el futuro
-  // Total NO incluye tax adicional porque ya está en el subtotal
-  const total = order.total
-    ? Number(order.total)
-    : subtotal - discount + shipping;
+
+  const subtotal = calculatedTotals.subtotal;
+  const discount = calculatedTotals.discount;
+  const shipping = calculatedTotals.shipping;
+  const tax = calculatedTotals.tax;
+  // Usar el total calculado (que incluye shipping) o el total guardado en la orden
+  const total = order.total ? Number(order.total) : calculatedTotals.total;
 
   const payphoneBillingAddress = billingAddress
     ? mapAddressToPayphone(billingAddress)
@@ -105,12 +131,19 @@ export default async function OrderDetailPage({
 
       {/* Mostrar mensajes de pago */}
       {paymentStatus === "success" && (
-        <Alert severity={warning === "confirmation_api_failed" ? "warning" : "success"} sx={{ mb: 3 }}>
+        <Alert
+          severity={
+            warning === "confirmation_api_failed" ? "warning" : "success"
+          }
+          sx={{ mb: 3 }}
+        >
           {warning === "confirmation_api_failed" ? (
             <>
               ✅ Pago confirmado exitosamente. Tu orden está siendo procesada.
               <Typography variant="body2" sx={{ mt: 1, fontSize: "0.875rem" }}>
-                Nota: Hubo un problema técnico al confirmar con la API de Payphone, pero tu pago fue procesado correctamente. Payphone nos redirigió al callback, lo que confirma que el pago fue exitoso.
+                Nota: Hubo un problema técnico al confirmar con la API de
+                Payphone, pero tu pago fue procesado correctamente. Payphone nos
+                redirigió al callback, lo que confirma que el pago fue exitoso.
               </Typography>
             </>
           ) : (
@@ -125,8 +158,9 @@ export default async function OrderDetailPage({
       )}
       {warning === "confirmation_pending" && (
         <Alert severity="warning" sx={{ mb: 3 }}>
-          ⚠️ El pago fue procesado, pero estamos verificando la confirmación. 
-          Si recibiste el email de confirmación de Payphone, tu pago está siendo procesado.
+          ⚠️ El pago fue procesado, pero estamos verificando la confirmación. Si
+          recibiste el email de confirmación de Payphone, tu pago está siendo
+          procesado.
           {error && (
             <Typography variant="body2" sx={{ mt: 1, fontSize: "0.875rem" }}>
               Detalles: {decodeURIComponent(error)}
@@ -134,52 +168,90 @@ export default async function OrderDetailPage({
           )}
         </Alert>
       )}
-      {error && error !== "order_not_pending" && warning !== "confirmation_pending" && (
-        <Alert 
-          severity={resolvedSearchParams?.critical === "true" ? "error" : "error"} 
-          sx={{ mb: 3 }}
-        >
-          {error === "confirmation_failed" && resolvedSearchParams?.critical === "true" ? (
-            <>
-              <Typography variant="h6" sx={{ mb: 1, fontWeight: 700 }}>
-                ⚠️ PROBLEMA CRÍTICO: No se pudo confirmar el pago con Payphone
-              </Typography>
-              {resolvedSearchParams?.message && (
-                <Typography variant="body2" sx={{ mt: 1, fontSize: "0.875rem" }}>
-                  {decodeURIComponent(resolvedSearchParams.message as string)}
+      {error &&
+        error !== "order_not_pending" &&
+        warning !== "confirmation_pending" && (
+          <Alert
+            severity={
+              resolvedSearchParams?.critical === "true" ? "error" : "error"
+            }
+            sx={{ mb: 3 }}
+          >
+            {error === "confirmation_failed" &&
+            resolvedSearchParams?.critical === "true" ? (
+              <>
+                <Typography variant="h6" sx={{ mb: 1, fontWeight: 700 }}>
+                  ⚠️ PROBLEMA CRÍTICO: No se pudo confirmar el pago con Payphone
                 </Typography>
-              )}
-              <Typography variant="body2" sx={{ mt: 2, fontSize: "0.875rem", fontWeight: 700, color: "error.main" }}>
-                ⚠️ IMPORTANTE: Si no se confirma en 5 minutos, Payphone reversará automáticamente la transacción.
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1, fontSize: "0.875rem" }}>
-                El pago fue procesado por Payphone, pero no se pudo confirmar en nuestro sistema.
-                La orden NO ha sido marcada como pagada y el stock NO ha sido restado.
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1, fontSize: "0.875rem", fontWeight: 600 }}>
-                Por favor, contacta con soporte INMEDIATAMENTE para resolver este problema.
-              </Typography>
-            </>
-          ) : error === "confirmation_failed" ? (
-            <>
-              No se pudo confirmar la transacción con Payphone.
-              {resolvedSearchParams?.message && (
-                <Typography variant="body2" sx={{ mt: 1, fontSize: "0.875rem" }}>
-                  {decodeURIComponent(resolvedSearchParams.message as string)}
+                {resolvedSearchParams?.message && (
+                  <Typography
+                    variant="body2"
+                    sx={{ mt: 1, fontSize: "0.875rem" }}
+                  >
+                    {decodeURIComponent(resolvedSearchParams.message as string)}
+                  </Typography>
+                )}
+                <Typography
+                  variant="body2"
+                  sx={{
+                    mt: 2,
+                    fontSize: "0.875rem",
+                    fontWeight: 700,
+                    color: "error.main",
+                  }}
+                >
+                  ⚠️ IMPORTANTE: Si no se confirma en 5 minutos, Payphone
+                  reversará automáticamente la transacción.
                 </Typography>
-              )}
-              <Typography variant="body2" sx={{ mt: 1, fontSize: "0.875rem", fontWeight: 600 }}>
-                ⚠️ Importante: Si no se confirma en 5 minutos, Payphone reversará automáticamente la transacción.
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1, fontSize: "0.875rem" }}>
-                Por favor, contacta con soporte para verificar el estado del pago.
-              </Typography>
-            </>
-          ) : error === "payment_not_approved"
-          ? "El pago no fue aprobado. Por favor, intenta con otro método de pago."
-          : decodeURIComponent(error)}
-        </Alert>
-      )}
+                <Typography
+                  variant="body2"
+                  sx={{ mt: 1, fontSize: "0.875rem" }}
+                >
+                  El pago fue procesado por Payphone, pero no se pudo confirmar
+                  en nuestro sistema. La orden NO ha sido marcada como pagada y
+                  el stock NO ha sido restado.
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ mt: 1, fontSize: "0.875rem", fontWeight: 600 }}
+                >
+                  Por favor, contacta con soporte INMEDIATAMENTE para resolver
+                  este problema.
+                </Typography>
+              </>
+            ) : error === "confirmation_failed" ? (
+              <>
+                No se pudo confirmar la transacción con Payphone.
+                {resolvedSearchParams?.message && (
+                  <Typography
+                    variant="body2"
+                    sx={{ mt: 1, fontSize: "0.875rem" }}
+                  >
+                    {decodeURIComponent(resolvedSearchParams.message as string)}
+                  </Typography>
+                )}
+                <Typography
+                  variant="body2"
+                  sx={{ mt: 1, fontSize: "0.875rem", fontWeight: 600 }}
+                >
+                  ⚠️ Importante: Si no se confirma en 5 minutos, Payphone
+                  reversará automáticamente la transacción.
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ mt: 1, fontSize: "0.875rem" }}
+                >
+                  Por favor, contacta con soporte para verificar el estado del
+                  pago.
+                </Typography>
+              </>
+            ) : error === "payment_not_approved" ? (
+              "El pago no fue aprobado. Por favor, intenta con otro método de pago."
+            ) : (
+              decodeURIComponent(error)
+            )}
+          </Alert>
+        )}
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
@@ -341,25 +413,35 @@ function Row({
 async function resolvePayphoneConfig(): Promise<PayphoneConfig> {
   // Obtener configuración de la base de datos
   const db = await prisma.payphoneSettings.findFirst();
-  
+
   // Determinar entorno
-  const rawEnv = db?.environment || process.env.PAYPHONE_ENVIRONMENT || "sandbox";
-  const environment = rawEnv.toLowerCase() === "production" ? "production" : "sandbox";
+  const rawEnv =
+    db?.environment || process.env.PAYPHONE_ENVIRONMENT || "sandbox";
+  const environment =
+    rawEnv.toLowerCase() === "production" ? "production" : "sandbox";
 
   // Obtener credenciales (de DB o variables de entorno como fallback)
   const token = db?.token || process.env.PAYPHONE_TOKEN || "";
   const storeId = db?.storeId || process.env.PAYPHONE_STORE_ID || "";
 
   // URL de respuesta
-  const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const responseUrl = db?.responseUrl || process.env.PAYPHONE_RESPONSE_URL || `${baseUrl}/api/payphone/callback`;
+  const baseUrl =
+    process.env.NEXTAUTH_URL ||
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    "http://localhost:3000";
+  const responseUrl =
+    db?.responseUrl ||
+    process.env.PAYPHONE_RESPONSE_URL ||
+    `${baseUrl}/api/payphone/callback`;
 
   return {
     environment: environment as "sandbox" | "production",
     token,
     storeId,
-    merchantName: db?.merchantName || process.env.PAYPHONE_MERCHANT_NAME || null,
-    merchantEmail: db?.merchantEmail || process.env.PAYPHONE_MERCHANT_EMAIL || null,
+    merchantName:
+      db?.merchantName || process.env.PAYPHONE_MERCHANT_NAME || null,
+    merchantEmail:
+      db?.merchantEmail || process.env.PAYPHONE_MERCHANT_EMAIL || null,
     responseUrl,
     currency: process.env.PAYPHONE_CURRENCY || "USD",
   };

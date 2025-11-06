@@ -27,13 +27,16 @@ function couponIsCurrentlyValid(c?: Coupon, subtotal?: number) {
  * Calcula subtotal, descuento, envío y total.
  * - `lines.price` se asume en dólares (p.ej. 79.99), no en centavos.
  * - Envío plano = 5 por defecto; FREESHIP lo pone en 0.
+ * - Si `hasOnlyDigitalProducts` es true (TODOS los productos son digitales), el shipping se excluye (0).
+ * - Si hay al menos un producto físico, se cobra shipping.
  */
 export function calcTotals(
   lines: CartLine[],
   coupon?: Coupon,
-  opts?: { shippingFlat?: number }
+  opts?: { shippingFlat?: number; hasOnlyDigitalProducts?: boolean }
 ): Totals {
   const shippingFlat = opts?.shippingFlat ?? 5;
+  const hasOnlyDigitalProducts = opts?.hasOnlyDigitalProducts ?? false;
 
   // Subtotal
   const subtotal = round2(
@@ -63,9 +66,15 @@ export function calcTotals(
   }
 
   // Shipping
-  let shipping = subtotal > 0 ? shippingFlat : 0;
-  if (couponIsCurrentlyValid(coupon, subtotal) && coupon!.type === "FREESHIP") {
-    shipping = 0;
+  // Si TODOS los productos son digitales, no se cobra envío
+  // Si hay al menos un producto físico, se cobra envío
+  // Si hay cupón FREESHIP, no se cobra envío
+  let shipping = 0;
+  if (!hasOnlyDigitalProducts && subtotal > 0) {
+    shipping = shippingFlat;
+    if (couponIsCurrentlyValid(coupon, subtotal) && coupon!.type === "FREESHIP") {
+      shipping = 0;
+    }
   }
   shipping = round2(shipping);
 

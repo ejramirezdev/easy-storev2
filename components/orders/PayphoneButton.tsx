@@ -378,10 +378,15 @@ export default function PayphoneButton({
         diferencia: Math.abs(calculatedAmount - amountInCents),
       });
       
+      // Usar el calculatedAmount que incluye shipping correctamente
+      // El amountInCents viene de totals.total que ya debería incluir shipping
+      // pero usamos calculatedAmount para estar seguros de que incluye todo
+      const finalAmount = calculatedAmount;
+      
       // Verificar que el amount calculado coincida con el total
       if (Math.abs(calculatedAmount - amountInCents) > 1) {
         console.warn(
-          "Payphone: Discrepancia en cálculos de amount",
+          "Payphone: Discrepancia en cálculos de amount. Usando calculatedAmount que incluye shipping.",
           {
             calculatedAmount,
             amountInCents,
@@ -389,6 +394,7 @@ export default function PayphoneButton({
             taxInCents,
             serviceInCents,
             tipInCents,
+            shippingInCents,
           }
         );
       }
@@ -401,13 +407,15 @@ export default function PayphoneButton({
       const config: PPaymentButtonBoxConfig = {
         token: payphoneConfig.token,
         clientTransactionId: currentClientTransactionId, // ID único para este intento de pago
-        amount: calculatedAmount, // Total que el usuario paga (ya incluye IVA en el subtotal)
+        amount: finalAmount, // Total que el usuario paga (incluye subtotal + shipping + service + tip)
         amountWithTax: basePriceInCents, // Precio base sin IVA (sobre el cual se calcula el impuesto)
         // NO enviar amountWithoutTax cuando usamos amountWithTax + tax
         tax: taxInCents, // Impuesto calculado desde el precio que ya incluye IVA
         service: serviceInCents,
         tip: tipInCents,
         currency: currency,
+        // Nota: Payphone no tiene un campo separado para "shipping" en el config
+        // El shipping ya está incluido en el campo "amount" (calculatedAmount)
         storeId: payphoneConfig.storeId,
         reference: reference,
         lang: "es",

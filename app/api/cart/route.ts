@@ -35,6 +35,13 @@ async function buildCartPayload(cartId: string) {
             price: true, // Decimal
             imageUrl: true,
             stock: true,
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
             images: {
               orderBy: { sortOrder: "asc" },
               take: 1,
@@ -75,8 +82,18 @@ async function buildCartPayload(cartId: string) {
     }).catch(() => null);
     const coupon = redemption?.coupon ?? undefined;
 
+    // Verificar si TODOS los productos son digitales (categoría "Productos Digitales")
+    // Si hay al menos un producto que NO es digital, se debe cobrar shipping
+    const allProductsAreDigital = rawItems.length > 0 && rawItems.every(
+      (item) => item.product?.category?.name === "Productos Digitales"
+    );
+
     // Totales usando tu helper
-    const { subtotal, discount, tax, shipping, total } = calcTotals(lines, coupon);
+    const { subtotal, discount, tax, shipping, total } = calcTotals(
+      lines, 
+      coupon,
+      { hasOnlyDigitalProducts: allProductsAreDigital }
+    );
 
     // Estructura final
     return {
