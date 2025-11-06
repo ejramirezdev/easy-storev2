@@ -56,11 +56,23 @@ export async function POST(
     );
   }
 
+  // Obtener el estado actual antes de actualizar
+  const previousStatus = order.status;
+
   // Marcar orden como pagada y (opcional) guardar metadatos en una tabla futura
   await prisma.order.update({
     where: { id: orderId },
     data: { status: "PAID" },
   });
+
+  // Restar stock de los productos cuando la orden pasa a PAID (solo si estaba en PENDING)
+  const { decrementOrderStock } = await import("@/lib/orders/stock");
+  try {
+    await decrementOrderStock(orderId, previousStatus);
+  } catch (stockError: any) {
+    // Log el error pero no fallar la actualización de la orden
+    console.error(`Error restando stock para orden ${orderId}:`, stockError);
+  }
 
   // Limpiar el carrito después de un pago exitoso
   const { cart } = await getOrCreateCart(userId);

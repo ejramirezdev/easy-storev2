@@ -67,6 +67,18 @@ export async function POST(req: NextRequest, context: RouteContext) {
       );
     }
 
+    // Obtener el estado actual antes de actualizar
+    const currentOrder = await prisma.order.findUnique({
+      where: { id },
+      select: { status: true },
+    });
+
+    if (!currentOrder) {
+      return NextResponse.json({ error: "Orden no encontrada" }, { status: 404 });
+    }
+
+    const previousStatus = currentOrder.status;
+
     // Subir archivo a S3
     const receiptUrl = await uploadReceipt(receiptFile, id);
 
@@ -79,6 +91,15 @@ export async function POST(req: NextRequest, context: RouteContext) {
         status: "REVIEW",
       },
     });
+
+    // Restar stock de los productos cuando la orden pasa a REVIEW (solo si estaba en PENDING)
+    const { decrementOrderStock } = await import("@/lib/orders/stock");
+    try {
+      await decrementOrderStock(id, previousStatus);
+    } catch (stockError: any) {
+      // Log el error pero no fallar la actualización de la orden
+      console.error(`Error restando stock para orden ${id}:`, stockError);
+    }
 
     // Limpiar el carrito después de subir el comprobante
     const { cart } = await getOrCreateCart(session.user.id);

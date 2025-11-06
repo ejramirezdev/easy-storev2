@@ -351,15 +351,35 @@ export default function AdminOrdersPage() {
                     </TableCell>
                     <TableCell>
                       {order.receiptUrl ? (
-                        <Link
-                          href={order.receiptUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <IconButton size="small" color="primary">
-                            <ImageIcon />
-                          </IconButton>
-                        </Link>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Box
+                            component="img"
+                            src={order.receiptUrl}
+                            alt="Comprobante de pago"
+                            sx={{
+                              width: 60,
+                              height: 60,
+                              objectFit: "cover",
+                              borderRadius: 1,
+                              border: "1px solid",
+                              borderColor: "divider",
+                              cursor: "pointer",
+                              "&:hover": {
+                                opacity: 0.8,
+                              },
+                            }}
+                            onClick={() => window.open(order.receiptUrl!, "_blank")}
+                          />
+                          <Link
+                            href={order.receiptUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <IconButton size="small" color="primary">
+                              <ImageIcon />
+                            </IconButton>
+                          </Link>
+                        </Box>
                       ) : (
                         <Typography variant="caption" color="text.secondary">
                           -

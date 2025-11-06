@@ -114,6 +114,7 @@ export async function uploadProductImage(
 
 /**
  * Sube un comprobante de transferencia a S3
+ * Los comprobantes se guardan en receipts/[orderId]/ para mejor organización
  */
 export async function uploadReceipt(file: File, orderId: string): Promise<string> {
   const validation = validateImageFile(file);
@@ -123,8 +124,9 @@ export async function uploadReceipt(file: File, orderId: string): Promise<string
 
   const timestamp = Date.now();
   const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
-  const fileName = `receipt-${orderId}-${timestamp}.${extension}`;
-  const key = `receipts/${fileName}`;
+  const fileName = `receipt-${timestamp}.${extension}`;
+  // Guardar en receipts/[orderId]/ para mejor organización
+  const key = `receipts/${orderId}/${fileName}`;
 
   return await uploadToS3(file, key, file.type);
 }
