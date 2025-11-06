@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import {
+  Alert,
   Box,
   Container,
   Divider,
@@ -13,16 +14,28 @@ import {
 } from "@mui/material";
 import Grid from "@mui/material/GridLegacy";
 import OrderPaymentSection from "@/components/orders/OrderPaymentSection";
-import { PayboxAddress, PayboxConfig } from "@/components/orders/PayboxButton";
-type PageProps = { params: Promise<{ id: string }> };
+import { PayphoneAddress, PayphoneConfig } from "@/components/orders/PayphoneButton";
+type PageProps = { 
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+};
 
-export default async function OrderDetailPage({ params }: PageProps) {
+export default async function OrderDetailPage({ 
+  params,
+  searchParams,
+}: PageProps) {
   noStore();
 
   const { id } = await params;
   const orderId = id?.trim();
 
   if (!orderId) return notFound();
+
+  // Capturar parámetros de la URL para mostrar mensajes
+  const resolvedSearchParams = await searchParams;
+  const paymentStatus = resolvedSearchParams?.payment as string | undefined;
+  const error = resolvedSearchParams?.error as string | undefined;
+  const warning = resolvedSearchParams?.warning as string | undefined;
 
   const session = await getServerSession(authOptions);
   const sessionUserId = session?.user?.id as string | undefined;
@@ -65,25 +78,108 @@ export default async function OrderDetailPage({ params }: PageProps) {
     0
   );
   const discount = 0; // Los descuentos se pueden agregar en el futuro
+  const subtotalAfterDiscount = Math.max(0, subtotal - discount);
+  // El precio ya incluye IVA, calculamos el impuesto internamente
+  const basePrice = Math.round((subtotalAfterDiscount / 1.15) * 100) / 100; // Precio base sin IVA
+  const tax = Math.round((subtotalAfterDiscount - basePrice) * 100) / 100; // Impuesto incluido en el precio
   const shipping = 0; // El envío se puede agregar en el futuro
+  // Total NO incluye tax adicional porque ya está en el subtotal
   const total = order.total
     ? Number(order.total)
     : subtotal - discount + shipping;
 
-  const payboxBillingAddress = billingAddress
-    ? mapAddressToPaybox(billingAddress)
+  const payphoneBillingAddress = billingAddress
+    ? mapAddressToPayphone(billingAddress)
     : null;
-  const payboxShippingAddress = shippingAddress
-    ? mapAddressToPaybox(shippingAddress)
+  const payphoneShippingAddress = shippingAddress
+    ? mapAddressToPayphone(shippingAddress)
     : null;
 
-  const payboxConfig = await resolvePayboxConfig();
+  const payphoneConfig = await resolvePayphoneConfig();
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h4" fontWeight={700} mb={2}>
         Orden #{order.id.slice(0, 8).toUpperCase()}
       </Typography>
+
+      {/* Mostrar mensajes de pago */}
+      {paymentStatus === "success" && (
+        <Alert severity={warning === "confirmation_api_failed" ? "warning" : "success"} sx={{ mb: 3 }}>
+          {warning === "confirmation_api_failed" ? (
+            <>
+              ✅ Pago confirmado exitosamente. Tu orden está siendo procesada.
+              <Typography variant="body2" sx={{ mt: 1, fontSize: "0.875rem" }}>
+                Nota: Hubo un problema técnico al confirmar con la API de Payphone, pero tu pago fue procesado correctamente. Payphone nos redirigió al callback, lo que confirma que el pago fue exitoso.
+              </Typography>
+            </>
+          ) : (
+            "✅ Pago confirmado exitosamente. Tu orden está siendo procesada."
+          )}
+        </Alert>
+      )}
+      {paymentStatus === "already_paid" && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          ℹ️ Esta orden ya fue pagada anteriormente.
+        </Alert>
+      )}
+      {warning === "confirmation_pending" && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          ⚠️ El pago fue procesado, pero estamos verificando la confirmación. 
+          Si recibiste el email de confirmación de Payphone, tu pago está siendo procesado.
+          {error && (
+            <Typography variant="body2" sx={{ mt: 1, fontSize: "0.875rem" }}>
+              Detalles: {decodeURIComponent(error)}
+            </Typography>
+          )}
+        </Alert>
+      )}
+      {error && error !== "order_not_pending" && warning !== "confirmation_pending" && (
+        <Alert 
+          severity={resolvedSearchParams?.critical === "true" ? "error" : "error"} 
+          sx={{ mb: 3 }}
+        >
+          {error === "confirmation_failed" && resolvedSearchParams?.critical === "true" ? (
+            <>
+              <Typography variant="h6" sx={{ mb: 1, fontWeight: 700 }}>
+                ⚠️ PROBLEMA CRÍTICO: No se pudo confirmar el pago con Payphone
+              </Typography>
+              {resolvedSearchParams?.message && (
+                <Typography variant="body2" sx={{ mt: 1, fontSize: "0.875rem" }}>
+                  {decodeURIComponent(resolvedSearchParams.message as string)}
+                </Typography>
+              )}
+              <Typography variant="body2" sx={{ mt: 2, fontSize: "0.875rem", fontWeight: 700, color: "error.main" }}>
+                ⚠️ IMPORTANTE: Si no se confirma en 5 minutos, Payphone reversará automáticamente la transacción.
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1, fontSize: "0.875rem" }}>
+                El pago fue procesado por Payphone, pero no se pudo confirmar en nuestro sistema.
+                La orden NO ha sido marcada como pagada y el stock NO ha sido restado.
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1, fontSize: "0.875rem", fontWeight: 600 }}>
+                Por favor, contacta con soporte INMEDIATAMENTE para resolver este problema.
+              </Typography>
+            </>
+          ) : error === "confirmation_failed" ? (
+            <>
+              No se pudo confirmar la transacción con Payphone.
+              {resolvedSearchParams?.message && (
+                <Typography variant="body2" sx={{ mt: 1, fontSize: "0.875rem" }}>
+                  {decodeURIComponent(resolvedSearchParams.message as string)}
+                </Typography>
+              )}
+              <Typography variant="body2" sx={{ mt: 1, fontSize: "0.875rem", fontWeight: 600 }}>
+                ⚠️ Importante: Si no se confirma en 5 minutos, Payphone reversará automáticamente la transacción.
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1, fontSize: "0.875rem" }}>
+                Por favor, contacta con soporte para verificar el estado del pago.
+              </Typography>
+            </>
+          ) : error === "payment_not_approved"
+          ? "El pago no fue aprobado. Por favor, intenta con otro método de pago."
+          : decodeURIComponent(error)}
+        </Alert>
+      )}
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
@@ -125,6 +221,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
             <Stack spacing={0.5}>
               <Row label="Subtotal" value={subtotal} />
               {discount > 0 && <Row label="Descuento" value={-discount} />}
+              {/* Impuesto oculto - ya está incluido en el precio */}
               {shipping > 0 && <Row label="Envío" value={shipping} />}
               <Divider sx={{ my: 1 }} />
               <Row label="Total" value={total} strong />
@@ -157,16 +254,17 @@ export default async function OrderDetailPage({ params }: PageProps) {
               }
               currentBank={(order as any).selectedBank}
               receiptUrl={(order as any).receiptUrl}
-              payboxConfig={payboxConfig}
+              payphoneConfig={payphoneConfig}
               totals={{
                 subtotal,
                 discount,
+                tax,
                 shipping,
                 total,
-                currency: payboxConfig.currency,
+                currency: payphoneConfig.currency || "USD",
               }}
-              billingAddress={payboxBillingAddress}
-              shippingAddress={payboxShippingAddress}
+              billingAddress={payphoneBillingAddress}
+              shippingAddress={payphoneShippingAddress}
             />
           </Box>
         </Grid>
@@ -240,87 +338,34 @@ function Row({
   );
 }
 
-async function resolvePayboxConfig(): Promise<PayboxConfig> {
-  const rawEnv =
-    process.env.PAYBOX_ENVIRONMENT ??
-    process.env.NEXT_PUBLIC_PAYBOX_ENV ??
-    "sandbox";
-  const normalizedEnv =
-    rawEnv.toLowerCase() === "production" ? "production" : "sandbox";
+async function resolvePayphoneConfig(): Promise<PayphoneConfig> {
+  // Obtener configuración de la base de datos
+  const db = await prisma.payphoneSettings.findFirst();
+  
+  // Determinar entorno
+  const rawEnv = db?.environment || process.env.PAYPHONE_ENVIRONMENT || "sandbox";
+  const environment = rawEnv.toLowerCase() === "production" ? "production" : "sandbox";
 
-  const scriptUrls: Partial<Record<"sandbox" | "production", string>> = {};
-  if (process.env.PAYBOX_SANDBOX_SCRIPT_URL) {
-    scriptUrls.sandbox = process.env.PAYBOX_SANDBOX_SCRIPT_URL;
-  }
-  if (process.env.PAYBOX_PRODUCTION_SCRIPT_URL) {
-    scriptUrls.production = process.env.PAYBOX_PRODUCTION_SCRIPT_URL;
-  }
+  // Obtener credenciales (de DB o variables de entorno como fallback)
+  const token = db?.token || process.env.PAYPHONE_TOKEN || "";
+  const storeId = db?.storeId || process.env.PAYPHONE_STORE_ID || "";
 
-  const extras: Record<string, unknown> = {
-    channel: "order-detail",
-  };
-  if (process.env.PAYBOX_BUTTON_ID) {
-    extras.buttonId = process.env.PAYBOX_BUTTON_ID;
-  }
-  if (process.env.PAYBOX_RESPONSE_URL) {
-    extras.responseUrl = process.env.PAYBOX_RESPONSE_URL;
-  }
-  if (process.env.PAYBOX_CONFIRMATION_URL) {
-    extras.confirmationUrl = process.env.PAYBOX_CONFIRMATION_URL;
-  }
-  // Banderas desde variables de entorno (fallback)
-  if (process.env.PAYBOX_ONLY_CREDIT) {
-    extras.onlyCredit = process.env.PAYBOX_ONLY_CREDIT === "true";
-  }
-  if (process.env.PAYBOX_ONLY_DEBIT) {
-    extras.onlyDebit = process.env.PAYBOX_ONLY_DEBIT === "true";
-  }
-  if (process.env.PAYBOX_BLOCK_DEFERRED) {
-    extras.permitirBloquearDiferimientos =
-      process.env.PAYBOX_BLOCK_DEFERRED === "true";
-  }
-  if (process.env.PAYBOX_EXTRA_FIELDS) {
-    extras.permitirDatosAdicionales =
-      process.env.PAYBOX_EXTRA_FIELDS === "true";
-  }
-  if (process.env.PAYBOX_RECURRENT) {
-    extras.recurrent = process.env.PAYBOX_RECURRENT === "true";
-  }
-
-  // Fusionar con configuración administrable (si existe)
-  const db = await prisma.payboxSettings.findFirst();
-  if (db) {
-    extras.onlyCredit = db.onlyCredit;
-    extras.onlyDebit = db.onlyDebit;
-    extras.permitirBloquearDiferimientos = db.blockDeferred;
-    extras.permitirDatosAdicionales = db.extraFields;
-    extras.recurrent = db.recurrentEnabled;
-    extras.planId = db.planId ?? undefined;
-    extras.frequency = db.frequency ?? undefined;
-    extras.amountVariable = db.amountVariable;
-    if (db.responseUrl) extras.responseUrl = db.responseUrl;
-    if (db.confirmationUrl) extras.confirmationUrl = db.confirmationUrl;
-  }
+  // URL de respuesta
+  const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const responseUrl = db?.responseUrl || process.env.PAYPHONE_RESPONSE_URL || `${baseUrl}/api/payphone/callback`;
 
   return {
-    environment: (db?.environment as any) || normalizedEnv,
-    publicKey: process.env.PAYBOX_PUBLIC_KEY ?? null,
-    merchantId: process.env.PAYBOX_MERCHANT_ID ?? null,
-    merchantName: db?.merchantName ?? process.env.PAYBOX_MERCHANT_NAME ?? null,
-    merchantEmail: db?.merchantEmail ?? process.env.PAYBOX_MERCHANT_EMAIL ?? "",
-    scriptUrls: Object.keys(scriptUrls).length > 0 ? scriptUrls : undefined,
-    currency: process.env.PAYBOX_CURRENCY ?? "USD",
-    extras,
-    flags: {
-      autoReturn: (process.env.PAYBOX_AUTO_RETURN ?? "true") !== "false",
-      generateInvoice: process.env.PAYBOX_GENERATE_INVOICE === "true",
-      sendMail: (process.env.PAYBOX_SEND_MAIL ?? "true") !== "false",
-      showReceipt: process.env.PAYBOX_SHOW_RECEIPT === "true",
-    },
+    environment: environment as "sandbox" | "production",
+    token,
+    storeId,
+    merchantName: db?.merchantName || process.env.PAYPHONE_MERCHANT_NAME || null,
+    merchantEmail: db?.merchantEmail || process.env.PAYPHONE_MERCHANT_EMAIL || null,
+    responseUrl,
+    currency: process.env.PAYPHONE_CURRENCY || "USD",
   };
 }
 
-function mapAddressToPaybox(address: any): PayboxAddress {
+function mapAddressToPayphone(address: any): PayphoneAddress {
   const streetLines = Array.isArray(address.street)
     ? address.street
     : typeof address.street === "string"

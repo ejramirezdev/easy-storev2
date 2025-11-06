@@ -643,6 +643,7 @@ export default function CheckoutPage() {
                         value={-Math.abs(summary.discount)}
                       />
                     )}
+                    {/* Impuesto oculto - ya está incluido en el precio */}
                     {summary.shipping > 0 && (
                       <Row label="Envío" value={summary.shipping} />
                     )}
@@ -695,6 +696,7 @@ type PreviewResponse = {
   coupon: { code: string; type: string; value: number } | null;
   subtotal: number;
   discount: number;
+  tax: number; // Impuesto del 15%
   shipping: number;
   total: number;
 };

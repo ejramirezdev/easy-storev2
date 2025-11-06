@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import AdminProductManager from "./AdminProductManager";
-import AdminPayboxSettings from "./AdminPayboxSettings";
+import AdminPayphoneSettings from "./AdminPayphoneSettings";
 import type { AdminCategory, AdminProduct } from "@/lib/products/types";
 
 type AdminTabsProps = {
@@ -20,7 +20,7 @@ type AdminTabsProps = {
   adminName: string;
 };
 
-type TabValue = "create" | "edit" | "categories" | "orders" | "paybox";
+type TabValue = "create" | "edit" | "categories" | "orders" | "payphone";
 
 export default function AdminTabs({
   products,
@@ -53,7 +53,7 @@ export default function AdminTabs({
           <Tab label="Editar productos" value="edit" />
           <Tab label="Editar categorías" value="categories" />
           <Tab label="Órdenes" value="orders" />
-          <Tab label="Configuración de Paybox" value="paybox" />
+          <Tab label="Configuración de Payphone" value="payphone" />
         </Tabs>
       </Box>
 
@@ -124,15 +124,15 @@ export default function AdminTabs({
           </Box>
         )}
 
-        {currentTab === "paybox" && (
+        {currentTab === "payphone" && (
           <Box>
             <Typography variant="h5" fontWeight={700} gutterBottom>
-              Configuración de Paybox
+              Configuración de Payphone
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Configura los parámetros de la pasarela de pagos PLUX/Paybox.
+              Configura los parámetros de la pasarela de pagos Payphone.
             </Typography>
-            <AdminPayboxSettings />
+            <AdminPayphoneSettings />
           </Box>
         )}
       </Box>

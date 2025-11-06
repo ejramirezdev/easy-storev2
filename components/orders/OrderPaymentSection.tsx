@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Box } from "@mui/material";
 import PaymentMethodSelector from "./PaymentMethodSelector";
-import PayboxButton, { PayboxAddress, PayboxConfig } from "./PayboxButton";
+import PayphoneButton, { PayphoneAddress, PayphoneConfig } from "./PayphoneButton";
 import BankTransferForm from "./BankTransferForm";
 import { useRouter } from "next/navigation";
 
@@ -16,16 +16,17 @@ type OrderPaymentSectionProps = {
   currentPaymentMethod: PaymentMethod;
   currentBank: string | null;
   receiptUrl: string | null;
-  payboxConfig: PayboxConfig;
+  payphoneConfig: PayphoneConfig;
   totals: {
     subtotal: number;
     discount: number;
+    tax: number;
     shipping: number;
     total: number;
     currency: string;
   };
-  billingAddress: PayboxAddress | null;
-  shippingAddress: PayboxAddress | null;
+  billingAddress: PayphoneAddress | null;
+  shippingAddress: PayphoneAddress | null;
 };
 
 export default function OrderPaymentSection({
@@ -35,7 +36,7 @@ export default function OrderPaymentSection({
   currentPaymentMethod,
   currentBank,
   receiptUrl,
-  payboxConfig,
+  payphoneConfig,
   totals,
   billingAddress,
   shippingAddress,
@@ -80,49 +81,44 @@ export default function OrderPaymentSection({
     );
   }
 
-  // Si no hay método de pago seleccionado, mostrar el selector
-  if (!paymentMethod) {
-    return (
+  // Siempre mostrar el selector de métodos de pago
+  // Si hay un método seleccionado, mostrar también el botón/formulario correspondiente
+  return (
+    <Box>
       <PaymentMethodSelector
         orderId={orderId}
-        currentMethod={paymentMethod}
+        currentMethod={paymentMethod || currentPaymentMethod}
         onMethodSelected={(method) => {
           setPaymentMethod(method);
-          router.refresh(); // Refrescar para obtener los datos actualizados
+          // No refrescar inmediatamente, solo actualizar el estado local
         }}
       />
-    );
-  }
+      
+      {paymentMethod === "CARD" && (
+        <Box sx={{ mt: 2 }}>
+          <PayphoneButton
+            orderId={orderId}
+            totals={totals}
+            billingAddress={billingAddress}
+            shippingAddress={shippingAddress}
+            payphoneConfig={payphoneConfig}
+          />
+        </Box>
+      )}
 
-  // Si el método es CARD, mostrar PayboxButton
-  if (paymentMethod === "CARD") {
-    return (
-      <Box>
-        <PayboxButton
-          orderId={orderId}
-          totals={totals}
-          billingAddress={billingAddress}
-          shippingAddress={shippingAddress}
-          payboxConfig={payboxConfig}
-        />
-      </Box>
-    );
-  }
-
-  // Si el método es BANK_TRANSFER, mostrar el formulario de transferencia
-  if (paymentMethod === "BANK_TRANSFER") {
-    return (
-      <BankTransferForm
-        orderId={orderId}
-        total={total}
-        currentBank={currentBank}
-        receiptUrl={receiptUrl}
-        onReceiptUploaded={() => {
-          router.refresh(); // Refrescar para actualizar el estado
-        }}
-      />
-    );
-  }
-
-  return null;
+      {paymentMethod === "BANK_TRANSFER" && (
+        <Box sx={{ mt: 2 }}>
+          <BankTransferForm
+            orderId={orderId}
+            total={total}
+            currentBank={currentBank}
+            receiptUrl={receiptUrl}
+            onReceiptUploaded={() => {
+              router.refresh(); // Refrescar para actualizar el estado
+            }}
+          />
+        </Box>
+      )}
+    </Box>
+  );
 }

@@ -4,6 +4,7 @@ export type CartLine = { price: number; quantity: number };
 export type Totals = {
   subtotal: number;
   discount: number;
+  tax: number; // Impuesto del 15% del subtotal
   shipping: number;
   total: number;
 };
@@ -68,8 +69,16 @@ export function calcTotals(
   }
   shipping = round2(shipping);
 
-  // Total
+  // Impuesto: calculado internamente desde el precio que ya incluye IVA
+  // El precio mostrado al usuario ya incluye el 15% de IVA
+  // Calculamos el impuesto para uso interno (ej: Payphone), pero no lo agregamos al total
+  const subtotalAfterDiscount = Math.max(0, subtotal - discount);
+  const basePrice = round2(subtotalAfterDiscount / 1.15); // Precio base sin IVA
+  const tax = round2(subtotalAfterDiscount - basePrice); // Impuesto incluido en el precio
+
+  // Total: subtotal - discount + shipping
+  // NO agregamos tax porque ya está incluido en el subtotal
   const total = Math.max(0, round2(subtotal - discount + shipping));
 
-  return { subtotal, discount, shipping, total };
+  return { subtotal, discount, tax, shipping, total };
 }

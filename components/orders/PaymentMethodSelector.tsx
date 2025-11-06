@@ -33,28 +33,39 @@ export default function PaymentMethodSelector({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!selectedMethod) return;
+  // Actualizar automáticamente cuando se selecciona un método
+  const handleMethodChange = async (method: PaymentMethod) => {
+    setSelectedMethod(method);
+    
+    if (!method) return;
 
     setIsSubmitting(true);
     try {
       const res = await fetch(`/api/orders/${orderId}/payment-method`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentMethod: selectedMethod }),
+        body: JSON.stringify({ paymentMethod: method }),
       });
 
       if (!res.ok) {
         throw new Error("No se pudo actualizar el método de pago");
       }
 
-      onMethodSelected(selectedMethod);
+      // Llamar al callback para actualizar el estado en el componente padre
+      onMethodSelected(method);
     } catch (error: any) {
       console.error("Error:", error);
       alert(error.message || "Error al seleccionar el método de pago");
+      // Revertir la selección en caso de error
+      setSelectedMethod(currentMethod);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedMethod) return;
+    await handleMethodChange(selectedMethod);
   };
 
   return (
@@ -66,12 +77,11 @@ export default function PaymentMethodSelector({
       <FormControl component="fieldset" fullWidth sx={{ mt: 2 }}>
         <RadioGroup
           value={selectedMethod || ""}
-          onChange={(e) => setSelectedMethod(e.target.value as PaymentMethod)}
+          onChange={(e) => handleMethodChange(e.target.value as PaymentMethod)}
         >
           <FormControlLabel
             value="CARD"
             control={<Radio />}
-            disabled
             label={
               <Stack direction="row" spacing={2} alignItems="center">
                 <CreditCardIcon />
@@ -80,12 +90,12 @@ export default function PaymentMethodSelector({
                     Tarjeta de débito o crédito
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Pronto podrás realizar tus pagos con tu tarjeta favorita
+                    Paga con Visa, MasterCard, Diners Club, Discover o saldo Payphone
                   </Typography>
                 </Box>
               </Stack>
             }
-            sx={{ mb: 2, opacity: 0.6 }}
+            sx={{ mb: 2 }}
           />
 
           <FormControlLabel
@@ -108,15 +118,13 @@ export default function PaymentMethodSelector({
         </RadioGroup>
       </FormControl>
 
-      <Button
-        variant="contained"
-        fullWidth
-        onClick={handleSubmit}
-        disabled={!selectedMethod || isSubmitting}
-        sx={{ mt: 3 }}
-      >
-        {isSubmitting ? "Guardando..." : "Continuar"}
-      </Button>
+      {isSubmitting && (
+        <Box sx={{ mt: 2, textAlign: "center" }}>
+          <Typography variant="body2" color="text.secondary">
+            Guardando método de pago...
+          </Typography>
+        </Box>
+      )}
     </Paper>
   );
 }

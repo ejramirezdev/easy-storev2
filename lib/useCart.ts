@@ -23,6 +23,7 @@ type CartResponse = {
   count: number;
   subtotal: number;
   discount: number;
+  tax: number;
   shipping: number;
   total: number;
   coupon: { code: string; type: string; value: number } | null;

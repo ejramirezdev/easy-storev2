@@ -17,6 +17,7 @@ async function buildCartPayload(cartId: string) {
       count: 0,
       subtotal: 0,
       discount: 0,
+      tax: 0,
       shipping: 0,
       total: 0,
       coupon: null,
@@ -75,7 +76,7 @@ async function buildCartPayload(cartId: string) {
     const coupon = redemption?.coupon ?? undefined;
 
     // Totales usando tu helper
-    const { subtotal, discount, shipping, total } = calcTotals(lines, coupon);
+    const { subtotal, discount, tax, shipping, total } = calcTotals(lines, coupon);
 
     // Estructura final
     return {
@@ -84,6 +85,7 @@ async function buildCartPayload(cartId: string) {
       count,
       subtotal, // number
       discount, // number
+      tax, // number - Impuesto del 15%
       shipping, // number
       total, // number
       coupon: coupon
@@ -99,6 +101,7 @@ async function buildCartPayload(cartId: string) {
       count: 0,
       subtotal: 0,
       discount: 0,
+      tax: 0,
       shipping: 0,
       total: 0,
       coupon: null,
@@ -120,6 +123,7 @@ export async function GET() {
         count: 0,
         subtotal: 0,
         discount: 0,
+        tax: 0,
         shipping: 0,
         total: 0,
         coupon: null,
@@ -146,6 +150,7 @@ export async function GET() {
       count: 0,
       subtotal: 0,
       discount: 0,
+      tax: 0,
       shipping: 0,
       total: 0,
       coupon: null,

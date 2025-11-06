@@ -6,7 +6,6 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL") // Opcional: para migraciones, usa conexión directa
 }
 
 /// Roles muy simples para empezar
@@ -327,29 +326,19 @@ model Favorite {
   @@index([productId])
 }
 
-/// Configuración de Paybox administrable (singleton)
-model PayboxSettings {
+/// Configuración de Payphone administrable (singleton)
+model PayphoneSettings {
   id                          String   @id @default(uuid())
   createdAt                   DateTime @default(now())
   updatedAt                   DateTime @updatedAt
 
-  // Banderas de medios de pago
-  onlyCredit                  Boolean  @default(false)
-  onlyDebit                   Boolean  @default(false)
-  blockDeferred               Boolean  @default(false)
-  extraFields                 Boolean  @default(false)
+  // Credenciales de Payphone
+  token                       String?  // Bearer Token de autenticación
+  storeId                     String?  // StoreID / Id Cliente
 
-  // Recurrentes
-  recurrentEnabled            Boolean  @default(false)
-  planId                      String?  // PayboxIdPlan
-  frequency                   String?  // PayboxFrequencyPlan (SEM, MEN, ...)
-  amountVariable              Boolean  @default(false) // PayboxAmountVariablePlan
-
-  // Otros
-  language                    String?  // es/us
-  environment                 String?  // sandbox/prod
-  merchantEmail               String?  // PayboxRemail
+  // Configuración general
+  environment                 String?  // sandbox/production
+  merchantEmail               String?
   merchantName                String?
-  responseUrl                 String?
-  confirmationUrl             String?
+  responseUrl                 String?  // URL de respuesta después del pago
 }

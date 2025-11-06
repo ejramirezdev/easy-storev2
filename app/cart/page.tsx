@@ -36,6 +36,7 @@ export default function CartPage() {
 
   // Totales desde el payload (con fallback por si no vinieran aún)
   const discount = cart?.discount ?? 0;
+  const tax = cart?.tax ?? 0;
   const shipping = cart?.shipping ?? 0;
   const total = cart?.total ?? subtotal;
 
@@ -326,6 +327,7 @@ export default function CartPage() {
               {discount > 0 && (
                 <Row label="Descuento" value={-Number(discount)} />
               )}
+              {/* Impuesto oculto - ya está incluido en el precio */}
               <Row label="Envío" value={Number(shipping)} />
               <Row label="Total" value={Number(total)} strong />
             </Stack>
