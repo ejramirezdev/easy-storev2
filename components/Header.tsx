@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import AuthButtons from "./AuthButtons";
 import HeaderCartButton from "./cart/HeaderCartButton";
@@ -30,25 +31,53 @@ export default function Header() {
     <AppBar
       position="sticky"
       elevation={0}
-      sx={{ bgcolor: "rgba(12,12,16,0.9)", backdropFilter: "blur(6px)" }}
+      sx={{ 
+        bgcolor: "rgba(12,12,16,0.9)", 
+        backdropFilter: "blur(6px)",
+        "& .MuiToolbar-root": {
+          minHeight: "auto",
+        }
+      }}
     >
       <Toolbar
+        disableGutters
         sx={{
           maxWidth: 1200,
           mx: "auto",
           width: "100%",
           gap: { xs: 1, md: 2 },
+          minHeight: "auto !important",
+          height: { xs: "85px", md: "100px" },
+          py: 0,
+          px: { xs: 2, md: 3 },
         }}
       >
         {/* Logo / Marca */}
-        <Box component={Link} href="/" sx={{ textDecoration: "none", mr: 3 }}>
-          <Typography
-            variant="h6"
-            fontWeight={900}
-            sx={{ color: "#fff", letterSpacing: 0.5 }}
-          >
-            EASY<span style={{ color: "#D81B9C" }}> STORE</span>
-          </Typography>
+        <Box 
+          component={Link} 
+          href="/" 
+          sx={{ 
+            textDecoration: "none", 
+            mr: { xs: 2, md: 4 },
+            display: "flex",
+            alignItems: "center",
+            flexShrink: 0,
+            height: { xs: "80px", md: "95px" },
+          }}
+        >
+          <Image
+            src="/og-image.svg"
+            alt="Easy Store - Productos Tecnológicos y Servicios"
+            width={800}
+            height={200}
+            priority
+            style={{ 
+              height: "100%",
+              width: "auto",
+              objectFit: "contain",
+              maxWidth: "none",
+            }}
+          />
         </Box>
 
         {/* Menú desktop */}

@@ -29,7 +29,7 @@ NEXT_PUBLIC_SITE_URL=https://easy-storev2.vercel.app
 Cuando cambies al dominio `easystoreecu.com`, actualiza esta variable.
 
 ### 2. Imágenes Open Graph
-Crea una imagen Open Graph (`public/og-image.jpg`) con dimensiones 1200x630px que incluya:
+Crea una imagen Open Graph (`public/og-image.png`) con dimensiones 1200x630px que incluya:
 - Logo de Easy Store
 - Texto: "Easy Store - Productos Tecnológicos y Servicios en Ecuador"
 - Diseño atractivo y profesional

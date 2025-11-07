@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     description: defaultDescription,
     images: [
       {
-        url: `${siteUrl}/og-image.jpg`,
+        url: `${siteUrl}/og-image.png`,
         width: 1200,
         height: 630,
         alt: siteName,
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `${siteName} - Productos Tecnológicos y Servicios en Ecuador`,
     description: defaultDescription,
-    images: [`${siteUrl}/og-image.jpg`],
+    images: [`${siteUrl}/og-image.png`],
     creator: "@easystoreecu",
   },
   robots: {
@@ -97,7 +97,7 @@ export default function RootLayout({
     "description": "Tienda de productos tecnológicos, gadgets y servicios de reparación y desarrollo de software en Ecuador",
     "url": siteUrl,
     "logo": `${siteUrl}/logo.png`,
-    "image": `${siteUrl}/og-image.jpg`,
+    "image": `${siteUrl}/og-image.png`,
     "address": {
       "@type": "PostalAddress",
       "addressCountry": "EC",
