@@ -5,15 +5,87 @@ import Link from "next/link";
 
 const whatsappNumber = "+593958720950";
 
-export const metadata = {
-  title: "Servicios | Easy Store",
+import type { Metadata } from "next";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+
+export const metadata: Metadata = {
+  title: "Servicios",
   description:
-    "Servicios de desarrollo de software a medida y reparación de equipos informáticos. Soluciones tecnológicas personalizadas para tu negocio.",
+    "Servicios de desarrollo de software a medida y reparación de equipos informáticos en Ecuador. Soluciones tecnológicas personalizadas para tu negocio.",
+  keywords: [
+    "desarrollo software Ecuador",
+    "reparación laptops Ecuador",
+    "servicios informáticos Ecuador",
+    "software a medida Ecuador",
+    "reparación hardware Ecuador",
+    "mantenimiento equipos Ecuador",
+  ],
+  openGraph: {
+    title: "Servicios Tecnológicos | Easy Store",
+    description: "Desarrollo de software a medida y reparación profesional de equipos informáticos en Ecuador.",
+    url: `${siteUrl}/services`,
+  },
+  alternates: {
+    canonical: `${siteUrl}/services`,
+  },
 };
 
 export default function ServicesPage() {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+  
+  // Structured Data - Service
+  const serviceSchema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "serviceType": "Servicios Tecnológicos",
+    "provider": {
+      "@type": "Organization",
+      "name": "Easy Store",
+      "url": siteUrl,
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+593958720950",
+        "contactType": "customer service",
+        "email": "easystoreecu@gmail.com"
+      }
+    },
+    "areaServed": {
+      "@type": "Country",
+      "name": "Ecuador"
+    },
+    "hasOfferCatalog": {
+      "@type": "OfferCatalog",
+      "name": "Servicios Tecnológicos",
+      "itemListElement": [
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Service",
+            "name": "Desarrollo de Software a Medida",
+            "description": "Desarrollo de aplicaciones web, sistemas empresariales y soluciones personalizadas",
+            "url": `${siteUrl}/services/software`
+          }
+        },
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Service",
+            "name": "Reparación de Hardware",
+            "description": "Diagnóstico, reparación y mantenimiento profesional de equipos informáticos",
+            "url": `${siteUrl}/services/hardware`
+          }
+        }
+      ]
+    }
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }}
+      />
       <Box
         component="main"
         sx={{

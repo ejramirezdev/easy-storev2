@@ -5,6 +5,30 @@ import Grid from "@mui/material/GridLegacy";
 import { Box, Container, Typography } from "@mui/material";
 import { unstable_noStore as noStore } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import type { Metadata } from "next";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+
+export const metadata: Metadata = {
+  title: "Inicio",
+  description: "Easy Store - Tu tienda de productos tecnológicos, gadgets y servicios en Ecuador. Encuentra los mejores dispositivos electrónicos, reparación de laptops y desarrollo de software a medida.",
+  openGraph: {
+    title: "Easy Store - Productos Tecnológicos y Servicios en Ecuador",
+    description: "Tienda de productos tecnológicos, gadgets y servicios de reparación y desarrollo de software en Ecuador. Innovación al alcance de tus manos.",
+    url: siteUrl,
+    images: [
+      {
+        url: `${siteUrl}/og-image.jpg`,
+        width: 1200,
+        height: 630,
+        alt: "Easy Store - Productos Tecnológicos",
+      },
+    ],
+  },
+  alternates: {
+    canonical: siteUrl,
+  },
+};
 
 // Forzar renderizado dinámico para evitar problemas de conexión a BD durante el build
 export const dynamic = "force-dynamic";
@@ -87,8 +111,60 @@ async function getFeaturedProducts(): Promise<UiProduct[]> {
 
 export default async function Page() {
   const featured = await getFeaturedProducts();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+  
+  // Structured Data - WebSite with SearchAction
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Easy Store",
+    "url": siteUrl,
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": `${siteUrl}/products?search={search_term_string}`
+      },
+      "query-input": "required name=search_term_string"
+    }
+  };
+
+  // Structured Data - ItemList for featured products
+  const itemListSchema = featured.length > 0 ? {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": featured.map((product, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "item": {
+        "@type": "Product",
+        "name": product.name,
+        "description": product.description || product.name,
+        "image": product.imageUrl || `${siteUrl}/placeholder.jpg`,
+        "url": `${siteUrl}/products/${product.slug}`,
+        "offers": {
+          "@type": "Offer",
+          "price": product.price.toString(),
+          "priceCurrency": "USD",
+          "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+        }
+      }
+    }))
+  } : null;
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+      />
+      {itemListSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+        />
+      )}
+      
       <HeroCarousel />
 
       {/* Sección de destacados (opcional por ahora) */}

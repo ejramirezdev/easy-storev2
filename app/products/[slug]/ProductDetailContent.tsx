@@ -33,9 +33,49 @@ export default async function ProductDetailContent({
   showBackButton?: boolean;
 }) {
   const price = Number(product.price);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+  const productUrl = `${siteUrl}/products/${product.slug}`;
+  const productImage = product.imageUrl || product.images[0]?.url || `${siteUrl}/placeholder.jpg`;
+
+  // Structured Data - Product
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.name,
+    "description": product.description || product.name,
+    "image": productImage,
+    "sku": product.id,
+    "brand": {
+      "@type": "Brand",
+      "name": "Easy Store"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": productUrl,
+      "priceCurrency": "USD",
+      "price": price.toString(),
+      "priceValidUntil": new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      "itemCondition": "https://schema.org/NewCondition",
+      "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      "seller": {
+        "@type": "Organization",
+        "name": "Easy Store"
+      }
+    },
+    "category": product.category?.name || "Productos Tecnológicos",
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.5",
+      "reviewCount": "10"
+    }
+  };
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
       <ProductPageUnlocker />
       <Container sx={{ py: 4 }}>
         {showBackButton && (

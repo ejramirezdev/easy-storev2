@@ -2,15 +2,33 @@ import WhatsAppFab from "@/components/home/WhatsAppFab";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
 
 const whatsappNumber = "+593958720950";
 const whatsappLink = `https://wa.me/${whatsappNumber.replace(/\D/g, "")}`;
 const scheduleHref = "/services/hardware/schedule";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
 
-export const metadata = {
-  title: "Servicios de hardware | Easy Store",
+export const metadata: Metadata = {
+  title: "Reparación de Hardware y Equipos",
   description:
-    "Diagnóstico, reparación y mantenimiento profesional de equipos informáticos con componentes de calidad garantizada.",
+    "Diagnóstico, reparación y mantenimiento profesional de laptops y equipos informáticos en Ecuador. Componentes de calidad garantizada y servicio especializado.",
+  keywords: [
+    "reparación laptops Ecuador",
+    "reparación hardware Ecuador",
+    "mantenimiento computadoras Ecuador",
+    "servicio técnico Ecuador",
+    "reparación equipos Ecuador",
+    "upgrade computadoras Ecuador",
+  ],
+  openGraph: {
+    title: "Reparación de Hardware y Equipos | Easy Store",
+    description: "Servicio profesional de reparación y mantenimiento de equipos informáticos con componentes de calidad en Ecuador.",
+    url: `${siteUrl}/services/hardware`,
+  },
+  alternates: {
+    canonical: `${siteUrl}/services/hardware`,
+  },
 };
 
 export default function HardwareServicesPage() {

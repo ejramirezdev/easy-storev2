@@ -3,6 +3,22 @@ import Link from "next/link";
 import { Box, Chip, Container, Typography, Pagination, PaginationItem } from "@mui/material";
 import Grid from "@mui/material/GridLegacy";
 import ProductCard, { UiProduct } from "@/components/products/ProductCard";
+import type { Metadata } from "next";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+
+export const metadata: Metadata = {
+  title: "Productos",
+  description: "Explora nuestra amplia selección de productos tecnológicos y gadgets en Ecuador. Encuentra dispositivos electrónicos, accesorios y más al mejor precio.",
+  openGraph: {
+    title: "Productos Tecnológicos | Easy Store",
+    description: "Catálogo completo de productos tecnológicos, gadgets y dispositivos electrónicos en Ecuador.",
+    url: `${siteUrl}/products`,
+  },
+  alternates: {
+    canonical: `${siteUrl}/products`,
+  },
+};
 
 export const dynamic = "force-dynamic";
 

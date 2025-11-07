@@ -2,15 +2,33 @@ import WhatsAppFab from "@/components/home/WhatsAppFab";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
 
 const whatsappNumber = "+593958720950";
 const whatsappLink = `https://wa.me/${whatsappNumber.replace(/\D/g, "")}`;
 const quoteHref = "/services/software/quote";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
 
-export const metadata = {
-  title: "Servicios de software | Easy Store",
+export const metadata: Metadata = {
+  title: "Desarrollo de Software a Medida",
   description:
-    "Desarrollo de software a medida con tecnologías de punta, seguridad avanzada, aplicaciones web y bases de datos. Transformamos tu idea en realidad digital.",
+    "Desarrollo de software a medida en Ecuador con tecnologías de punta, seguridad avanzada, aplicaciones web y bases de datos. Transformamos tu idea en realidad digital.",
+  keywords: [
+    "desarrollo software Ecuador",
+    "software a medida Ecuador",
+    "aplicaciones web Ecuador",
+    "desarrollo web Ecuador",
+    "programación Ecuador",
+    "sistemas empresariales Ecuador",
+  ],
+  openGraph: {
+    title: "Desarrollo de Software a Medida | Easy Store",
+    description: "Desarrollo de software a medida con tecnologías modernas, seguridad avanzada y arquitecturas escalables en Ecuador.",
+    url: `${siteUrl}/services/software`,
+  },
+  alternates: {
+    canonical: `${siteUrl}/services/software`,
+  },
 };
 
 export default function SoftwareServicesPage() {
