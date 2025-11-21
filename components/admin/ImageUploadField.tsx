@@ -66,7 +66,7 @@ export default function ImageUploadField({
     );
 
     if (invalidFiles.length > 0) {
-      setUploadError("Solo se permiten imágenes en formato JPG o PNG");
+      setUploadError("Solo se permiten imágenes en formato JPG, JPEG o PNG");
       return;
     }
 
@@ -241,7 +241,7 @@ export default function ImageUploadField({
                   o haz clic para seleccionar
                 </Typography>
                 <Typography variant="caption" display="block" color="text.secondary">
-                  Solo JPG o PNG, máximo 5MB
+                  Solo JPG, JPEG o PNG, máximo 5MB
                 </Typography>
               </Box>
             </>

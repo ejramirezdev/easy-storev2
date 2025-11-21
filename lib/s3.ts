@@ -1,4 +1,8 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+} from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 
 // Configuración del cliente S3
@@ -22,14 +26,17 @@ const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 /**
- * Valida que el archivo sea una imagen válida (jpg o png)
+ * Valida que el archivo sea una imagen válida (jpg, jpeg o png)
  * @deprecated Usar validateImageFileAdvanced de @/lib/security/file-validation para validación más robusta
  */
-export function validateImageFile(file: File): { valid: boolean; error?: string } {
+export function validateImageFile(file: File): {
+  valid: boolean;
+  error?: string;
+} {
   if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
     return {
       valid: false,
-      error: "Solo se permiten imágenes en formato JPG o PNG",
+      error: "Solo se permiten imágenes en formato JPG, JPEG o PNG",
     };
   }
 
@@ -55,7 +62,9 @@ export function generateUniqueFileName(
   const random = Math.random().toString(36).substring(2, 8);
   // Sanitizar extensión
   const extension = originalName.split(".").pop()?.toLowerCase() || "jpg";
-  const safeExtension = ["jpg", "jpeg", "png"].includes(extension) ? extension : "jpg";
+  const safeExtension = ["jpg", "jpeg", "png"].includes(extension)
+    ? extension
+    : "jpg";
   return `${prefix}-${timestamp}-${random}.${safeExtension}`;
 }
 
@@ -72,8 +81,11 @@ export async function uploadToS3(
       throw new Error("AWS_S3_BUCKET_NAME no está configurado");
     }
 
-    const buffer = file instanceof File ? Buffer.from(await file.arrayBuffer()) : file;
-    const type = contentType || (file instanceof File ? file.type : "application/octet-stream");
+    const buffer =
+      file instanceof File ? Buffer.from(await file.arrayBuffer()) : file;
+    const type =
+      contentType ||
+      (file instanceof File ? file.type : "application/octet-stream");
 
     const upload = new Upload({
       client: s3Client,
@@ -105,7 +117,9 @@ export async function uploadProductImage(
   productId: string
 ): Promise<string> {
   // Usar validación avanzada con magic bytes
-  const { validateImageFileAdvanced, generateSafeFileName } = await import("@/lib/security/file-validation");
+  const { validateImageFileAdvanced, generateSafeFileName } = await import(
+    "@/lib/security/file-validation"
+  );
   const validation = await validateImageFileAdvanced(file);
   if (!validation.valid) {
     throw new Error(validation.error);
@@ -122,9 +136,14 @@ export async function uploadProductImage(
  * Sube un comprobante de transferencia a S3
  * Los comprobantes se guardan en receipts/[orderId]/ para mejor organización
  */
-export async function uploadReceipt(file: File, orderId: string): Promise<string> {
+export async function uploadReceipt(
+  file: File,
+  orderId: string
+): Promise<string> {
   // Usar validación avanzada con magic bytes
-  const { validateImageFileAdvanced, generateSafeFileName } = await import("@/lib/security/file-validation");
+  const { validateImageFileAdvanced, generateSafeFileName } = await import(
+    "@/lib/security/file-validation"
+  );
   const validation = await validateImageFileAdvanced(file);
   if (!validation.valid) {
     throw new Error(validation.error);
@@ -150,7 +169,7 @@ export async function deleteFromS3(url: string): Promise<void> {
 
     // Extraer la key del URL de diferentes formatos posibles
     let key: string;
-    
+
     if (url.includes(BUCKET_URL)) {
       // Formato: https://bucket-url/path/to/file
       key = url.replace(`${BUCKET_URL}/`, "").split("?")[0]; // Remover query params si existen
@@ -187,7 +206,11 @@ export async function deleteFromS3(url: string): Promise<void> {
  * Verifica si una URL es de S3
  */
 export function isS3Url(url: string): boolean {
-  return url.includes(BUCKET_URL) || url.includes(".s3.") || url.includes(".amazonaws.com");
+  return (
+    url.includes(BUCKET_URL) ||
+    url.includes(".s3.") ||
+    url.includes(".amazonaws.com")
+  );
 }
 
 /**
@@ -257,4 +280,3 @@ export async function migrateImageToS3(
     throw error;
   }
 }
-
