@@ -37,26 +37,40 @@ export default async function AdminPage({ searchParams }: PageProps) {
     redirect("/");
   }
 
-  try {
-    const needsVerification = await requiresTwoFactorVerification(session.user.id);
+  // Verificar si 2FA está habilitado y requiere verificación
+  const needsVerification = await requiresTwoFactorVerification(session.user.id);
+  
+  // Log para debug (solo en desarrollo)
+  if (process.env.NODE_ENV === "development") {
+    console.log("[2FA Debug] User ID:", session.user.id);
+    console.log("[2FA Debug] Needs verification:", needsVerification);
+  }
+  
+  if (needsVerification) {
+    // Verificar si hay un token 2FA válido en la URL
+    const params = await searchParams;
+    const token = params?.["2fa_token"] as string | undefined;
     
-    if (needsVerification) {
-      // Verificar si hay un token 2FA válido en la URL
-      const params = await searchParams;
-      const token = params?.["2fa_token"] as string | undefined;
-      
-      if (!token || !verify2FAToken(token, session.user.id)) {
-        // No hay token válido, redirigir a verificación 2FA
-        const redirectUrl = encodeURIComponent("/admin");
-        redirect(`/admin/verify-2fa?redirect=${redirectUrl}`);
-      }
-      // Token válido, permitir acceso (el token se elimina automáticamente después de usarse)
+    if (process.env.NODE_ENV === "development") {
+      console.log("[2FA Debug] Token in URL:", !!token);
     }
-  } catch (error) {
-    // Si hay error verificando 2FA, permitir acceso por seguridad (para evitar bloquear el acceso)
-    console.error("Error verificando 2FA:", error);
-    // En producción, podrías querer redirigir a verificación 2FA en caso de error
-    // Por ahora, permitimos acceso para evitar bloquear completamente
+    
+    if (!token || !verify2FAToken(token, session.user.id)) {
+      // No hay token válido, redirigir a verificación 2FA
+      if (process.env.NODE_ENV === "development") {
+        console.log("[2FA Debug] Redirecting to 2FA verification");
+      }
+      const redirectUrl = encodeURIComponent("/admin");
+      redirect(`/admin/verify-2fa?redirect=${redirectUrl}`);
+    }
+    // Token válido, permitir acceso (el token se elimina automáticamente después de usarse)
+    if (process.env.NODE_ENV === "development") {
+      console.log("[2FA Debug] Token verified, allowing access");
+    }
+  } else {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[2FA Debug] 2FA not enabled, allowing access without verification");
+    }
   }
 
   const [products, categories] = await Promise.all([

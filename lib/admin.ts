@@ -130,10 +130,23 @@ export async function isTwoFactorEnabled(userId: string): Promise<boolean> {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { twoFactorEnabled: true },
+      select: { 
+        twoFactorEnabled: true,
+        twoFactorSecret: true,
+        email: true,
+      },
     });
 
-    return user?.twoFactorEnabled ?? false;
+    const enabled = user?.twoFactorEnabled ?? false;
+    
+    // Log para debug
+    if (process.env.NODE_ENV === "development") {
+      console.log("[2FA Debug] User:", user?.email);
+      console.log("[2FA Debug] 2FA enabled in DB:", enabled);
+      console.log("[2FA Debug] Has secret:", !!user?.twoFactorSecret);
+    }
+
+    return enabled;
   } catch (error) {
     console.error("Error verificando estado 2FA:", error);
     return false;

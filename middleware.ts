@@ -20,15 +20,19 @@ export default withAuth({
         return false;
       }
 
-      // Permitir acceso a la página de verificación 2FA si está autenticado
-      // La verificación 2FA se hará en la página misma
-      if (pathname === "/admin/verify-2fa") {
-        return isAdminEmail(token.email as string);
+      // Verificar que es admin
+      if (!isAdminEmail(token.email as string)) {
+        return false;
       }
 
-      // Para otras rutas admin, verificar que es admin
-      // La verificación 2FA se hará en la página individualmente
-      return isAdminEmail(token.email as string);
+      // Permitir acceso a la página de configuración 2FA y verificación 2FA
+      // Estas páginas permiten configurar 2FA incluso si no está habilitado
+      if (pathname === "/admin/2fa" || pathname === "/admin/verify-2fa") {
+        return true;
+      }
+
+      // Para otras rutas admin, la verificación 2FA se hará en la página individualmente
+      return true;
     },
   },
 });

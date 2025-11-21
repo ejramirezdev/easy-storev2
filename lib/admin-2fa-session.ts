@@ -63,11 +63,19 @@ export function verify2FAToken(token: string, userId: string): boolean {
 export async function requiresTwoFactorVerification(userId: string): Promise<boolean> {
   try {
     const enabled = await isTwoFactorEnabled(userId);
+    
+    // Log para debug
+    if (process.env.NODE_ENV === "development") {
+      console.log("[2FA Debug] Checking 2FA for user:", userId);
+      console.log("[2FA Debug] 2FA enabled:", enabled);
+    }
+    
     // Si 2FA está habilitado, SIEMPRE requiere verificación
     return enabled;
   } catch (error) {
     console.error("Error verificando necesidad de 2FA:", error);
-    return true; // En caso de error, requerir verificación por seguridad
+    // En caso de error, requerir verificación por seguridad
+    return true;
   }
 }
 
