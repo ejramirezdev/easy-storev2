@@ -13,6 +13,7 @@ import AddToCartButton from "@/components/products/AddToCartButton";
 import FavoriteToggleButton from "@/components/products/FavoriteToggleButton";
 import ProductPageUnlocker from "@/components/products/ProductPageUnlocker";
 import BackToProductsButton from "@/components/products/BackToProductsButton";
+import { BreadcrumbSchema } from "@/lib/structured-data";
 
 export default async function ProductDetailContent({
   product,
@@ -36,6 +37,12 @@ export default async function ProductDetailContent({
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
   const productUrl = `${siteUrl}/products/${product.slug}`;
   const productImage = product.imageUrl || product.images[0]?.url || `${siteUrl}/placeholder.jpg`;
+  
+  const breadcrumbItems = [
+    { name: "Inicio", url: "/" },
+    { name: "Productos", url: "/products" },
+    { name: product.name, url: `/products/${product.slug}` },
+  ];
 
   // Structured Data - Product
   const productSchema = {
@@ -76,6 +83,7 @@ export default async function ProductDetailContent({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
       />
+      <BreadcrumbSchema items={breadcrumbItems} siteUrl={siteUrl} />
       <ProductPageUnlocker />
       <Container sx={{ py: 4 }}>
         {showBackButton && (

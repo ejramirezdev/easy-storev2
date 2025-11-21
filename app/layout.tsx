@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import Providers from "./providers";
 import { UiLockProvider } from "@/lib/ui-lock";
 import UiLockOverlay from "@/components/common/UiLockOverlay";
+import { GoogleAnalytics, GoogleTagManager } from "@/lib/analytics";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
 const siteName = "Easy Store";
@@ -89,10 +90,10 @@ export default function RootLayout({
 }) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
   
-  // Structured Data - Organization
+  // Structured Data - Organization & LocalBusiness
   const organizationSchema = {
     "@context": "https://schema.org",
-    "@type": "Store",
+    "@type": ["Store", "LocalBusiness", "OnlineStore"],
     "name": "Easy Store",
     "description": "Tienda de productos tecnológicos, gadgets y servicios de reparación y desarrollo de software en Ecuador",
     "url": siteUrl,
@@ -101,6 +102,7 @@ export default function RootLayout({
     "address": {
       "@type": "PostalAddress",
       "addressCountry": "EC",
+      "addressRegion": "Ecuador",
       "addressLocality": "Ecuador"
     },
     "contactPoint": {
@@ -108,7 +110,8 @@ export default function RootLayout({
       "telephone": "+593958720950",
       "contactType": "customer service",
       "email": "easystoreecu@gmail.com",
-      "availableLanguage": "Spanish"
+      "availableLanguage": ["Spanish", "es-EC"],
+      "areaServed": "EC"
     },
     "sameAs": [
       // Agregar cuando tengas redes sociales
@@ -117,12 +120,59 @@ export default function RootLayout({
       // "https://twitter.com/easystoreecu"
     ],
     "priceRange": "$$",
-    "paymentAccepted": "Credit Card, Cash, Bank Transfer",
-    "currenciesAccepted": "USD"
+    "paymentAccepted": ["Credit Card", "Cash", "Bank Transfer", "Payphone"],
+    "currenciesAccepted": "USD",
+    "openingHours": "Mo-Su",
+    "hasOfferCatalog": {
+      "@type": "OfferCatalog",
+      "name": "Productos y Servicios Tecnológicos",
+      "itemListElement": [
+        {
+          "@type": "OfferCatalog",
+          "name": "Productos Tecnológicos",
+          "itemListElement": [
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Product",
+                "name": "Gadgets y dispositivos electrónicos"
+              }
+            }
+          ]
+        },
+        {
+          "@type": "OfferCatalog",
+          "name": "Servicios",
+          "itemListElement": [
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Desarrollo de Software a Medida"
+              }
+            },
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Reparación de Hardware"
+              }
+            }
+          ]
+        }
+      ]
+    }
   };
+
+  const gaId = process.env.NEXT_PUBLIC_GA_ID;
+  const gtmId = process.env.NEXT_PUBLIC_GTM_ID;
 
   return (
     <html lang="es" suppressHydrationWarning>
+      <head>
+        {gaId && <GoogleAnalytics gaId={gaId} />}
+        {gtmId && <GoogleTagManager gtmId={gtmId} />}
+      </head>
       <body className="body-bg" suppressHydrationWarning>
         <script
           type="application/ld+json"

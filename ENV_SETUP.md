@@ -7,11 +7,13 @@ Este proyecto requiere varias variables de entorno para funcionar correctamente.
 ## 🚀 Inicio Rápido
 
 1. **Copia el archivo de ejemplo:**
+
    ```bash
    cp .env.example .env
    ```
 
 2. **Para producción, usa como referencia:**
+
    ```bash
    .env.production
    ```
@@ -23,19 +25,23 @@ Este proyecto requiere varias variables de entorno para funcionar correctamente.
 ### 🔴 Críticas (Sin estas, la app no funcionará)
 
 #### Base de Datos
+
 - `DATABASE_URL` - URL de conexión a PostgreSQL (Supabase o similar)
 
 #### NextAuth
+
 - `NEXTAUTH_SECRET` - Secret para NextAuth (genera uno: `openssl rand -base64 32`)
 - `NEXTAUTH_URL` - URL de tu aplicación en producción
 
 #### Google OAuth
+
 - `GOOGLE_CLIENT_ID` - Client ID de Google Cloud Console
 - `GOOGLE_CLIENT_SECRET` - Client Secret de Google Cloud Console
 
 ### 🟡 Importantes (Funcionalidades limitadas sin estas)
 
 #### AWS S3
+
 - `AWS_ACCESS_KEY_ID` - Access Key ID de AWS
 - `AWS_SECRET_ACCESS_KEY` - Secret Access Key de AWS
 - `AWS_REGION` - Región de AWS (ej: us-east-2)
@@ -43,6 +49,7 @@ Este proyecto requiere varias variables de entorno para funcionar correctamente.
 - `AWS_S3_BUCKET_URL` - URL pública del bucket
 
 #### SMTP
+
 - `SMTP_USER` - Usuario SMTP (email)
 - `SMTP_PASS` - Contraseña SMTP (o contraseña de aplicación Gmail)
 - `SMTP_HOST` - Host SMTP (ej: smtp.gmail.com)
@@ -53,6 +60,7 @@ Este proyecto requiere varias variables de entorno para funcionar correctamente.
 ### 🟢 Opcionales (Mejoran funcionalidades)
 
 #### Payphone
+
 - `PAYPHONE_ENVIRONMENT` - sandbox o production
 - `PAYPHONE_TOKEN` - Token de Payphone
 - `PAYPHONE_STORE_ID` - Store ID de Payphone
@@ -62,13 +70,17 @@ Este proyecto requiere varias variables de entorno para funcionar correctamente.
 - `PAYPHONE_CURRENCY` - Moneda (ej: USD)
 - `PAYPHONE_CONFIRM_SECRET` - Secret para confirmación
 
-#### Next.js
-- `NEXT_PUBLIC_SITE_URL` - URL pública del sitio
+#### Next.js y SEO
+
+- `NEXT_PUBLIC_SITE_URL` - URL pública del sitio (IMPORTANTE para SEO)
 - `NEXT_PUBLIC_BASE_URL` - URL base (alternativa)
+- `NEXT_PUBLIC_GA_ID` - Google Analytics Measurement ID (ej: G-XXXXXXXXXX)
+- `NEXT_PUBLIC_GTM_ID` - Google Tag Manager Container ID (ej: GTM-XXXXXXX)
 
 ## 🔧 Cómo Obtener las Credenciales
 
 ### Google OAuth
+
 1. Ve a [Google Cloud Console](https://console.cloud.google.com/)
 2. Crea un nuevo proyecto o selecciona uno existente
 3. Habilita la API de Google+
@@ -79,6 +91,7 @@ Este proyecto requiere varias variables de entorno para funcionar correctamente.
    - Redirect URIs: `https://easy-storev2.vercel.app/api/auth/callback/google`
 
 ### AWS S3
+
 1. Crea una cuenta en AWS
 2. Ve a IAM y crea un usuario con permisos de S3
 3. Genera Access Key y Secret Key
@@ -86,6 +99,7 @@ Este proyecto requiere varias variables de entorno para funcionar correctamente.
 5. Configura CORS y permisos públicos según necesites
 
 ### Gmail SMTP (Contraseña de Aplicación)
+
 1. Ve a tu cuenta de Google
 2. Seguridad > Verificación en 2 pasos (debe estar activada)
 3. Contraseñas de aplicaciones > Generar nueva
@@ -93,10 +107,40 @@ Este proyecto requiere varias variables de entorno para funcionar correctamente.
 5. Copia la contraseña generada (16 caracteres sin espacios)
 
 ### NEXTAUTH_SECRET
+
 Genera un secret seguro:
+
 ```bash
 openssl rand -base64 32
 ```
+
+### Google Analytics y Tag Manager
+
+#### Google Analytics (GA4)
+
+1. Ve a [Google Analytics](https://analytics.google.com/)
+2. Crea una nueva propiedad para tu sitio web
+3. Selecciona "GA4" (Google Analytics 4)
+4. Obtén tu Measurement ID (formato: G-XXXXXXXXXX)
+5. Agrega a tus variables de entorno:
+
+```env
+NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+```
+
+#### Google Tag Manager
+
+1. Ve a [Google Tag Manager](https://tagmanager.google.com/)
+2. Crea un nuevo contenedor
+3. Selecciona "Web" como plataforma
+4. Obtén tu Container ID (formato: GTM-XXXXXXX)
+5. Agrega a tus variables de entorno:
+
+```env
+NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
+```
+
+**Nota:** Estas variables son opcionales pero altamente recomendadas para tracking de analytics y conversiones.
 
 ## 🌐 Configuración para Vercel (Producción)
 
@@ -121,11 +165,13 @@ openssl rand -base64 32
 Después de configurar las variables:
 
 1. **Desarrollo:**
+
    ```bash
    npm run dev
    ```
 
 2. **Producción:**
+
    ```bash
    npm run build
    ```
@@ -138,4 +184,3 @@ Después de configurar las variables:
 - [Google OAuth Setup](https://developers.google.com/identity/protocols/oauth2)
 - [AWS S3 Setup](https://docs.aws.amazon.com/s3/)
 - [Vercel Environment Variables](https://vercel.com/docs/concepts/projects/environment-variables)
-

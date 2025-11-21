@@ -32,8 +32,39 @@ export const metadata: Metadata = {
 };
 
 export default function HardwareServicesPage() {
+  const serviceSchema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "serviceType": "Reparación de Hardware",
+    "name": "Reparación de Hardware y Equipos",
+    "description": "Diagnóstico, reparación y mantenimiento profesional de laptops y equipos informáticos en Ecuador. Componentes de calidad garantizada y servicio especializado.",
+    "provider": {
+      "@type": "Organization",
+      "name": "Easy Store",
+      "url": siteUrl,
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+593958720950",
+        "contactType": "customer service",
+        "email": "easystoreecu@gmail.com"
+      }
+    },
+    "areaServed": {
+      "@type": "Country",
+      "name": "Ecuador"
+    },
+    "offers": {
+      "@type": "Offer",
+      "availability": "https://schema.org/InStock"
+    }
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }}
+      />
       <Box
         component="main"
         sx={{

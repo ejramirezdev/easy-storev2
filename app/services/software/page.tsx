@@ -32,8 +32,39 @@ export const metadata: Metadata = {
 };
 
 export default function SoftwareServicesPage() {
+  const serviceSchema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "serviceType": "Desarrollo de Software",
+    "name": "Desarrollo de Software a Medida",
+    "description": "Desarrollo de software a medida en Ecuador con tecnologías de punta, seguridad avanzada, aplicaciones web y bases de datos. Transformamos tu idea en realidad digital.",
+    "provider": {
+      "@type": "Organization",
+      "name": "Easy Store",
+      "url": siteUrl,
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+593958720950",
+        "contactType": "customer service",
+        "email": "easystoreecu@gmail.com"
+      }
+    },
+    "areaServed": {
+      "@type": "Country",
+      "name": "Ecuador"
+    },
+    "offers": {
+      "@type": "Offer",
+      "availability": "https://schema.org/InStock"
+    }
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }}
+      />
       <Box
         component="main"
         sx={{
