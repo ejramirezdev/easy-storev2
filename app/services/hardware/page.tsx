@@ -143,17 +143,16 @@ export default function HardwareServicesPage() {
                 >
                   Contáctame
                 </Button>
-                <Link href={scheduleHref} passHref legacyBehavior>
-                  <Button
-                    component="a"
-                    variant="outlined"
-                    color="secondary"
-                    size="large"
-                    sx={{ borderWidth: 2 }}
-                  >
-                    Agenda una cita
-                  </Button>
-                </Link>
+                <Button
+                  component={Link}
+                  href={scheduleHref}
+                  variant="outlined"
+                  color="secondary"
+                  size="large"
+                  sx={{ borderWidth: 2 }}
+                >
+                  Agenda una cita
+                </Button>
               </Stack>
             </Stack>
             <Box

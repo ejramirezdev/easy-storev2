@@ -218,17 +218,16 @@ export default function ServicesPage() {
                   </Typography>
                 </Stack>
                 <Box sx={{ pt: 2 }}>
-                  <Link href="/services/software" passHref legacyBehavior>
-                    <Button
-                      component="a"
-                      variant="contained"
-                      color="primary"
-                      size="large"
-                      fullWidth
-                    >
-                      Conocer más
-                    </Button>
-                  </Link>
+                  <Button
+                    component={Link}
+                    href="/services/software"
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                    fullWidth
+                  >
+                    Conocer más
+                  </Button>
                 </Box>
               </Box>
             </Box>
@@ -310,17 +309,16 @@ export default function ServicesPage() {
                   </Typography>
                 </Stack>
                 <Box sx={{ pt: 2 }}>
-                  <Link href="/services/hardware" passHref legacyBehavior>
-                    <Button
-                      component="a"
-                      variant="contained"
-                      color="secondary"
-                      size="large"
-                      fullWidth
-                    >
-                      Conocer más
-                    </Button>
-                  </Link>
+                  <Button
+                    component={Link}
+                    href="/services/hardware"
+                    variant="contained"
+                    color="secondary"
+                    size="large"
+                    fullWidth
+                  >
+                    Conocer más
+                  </Button>
                 </Box>
               </Box>
             </Box>

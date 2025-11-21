@@ -139,16 +139,15 @@ export default function SoftwareServicesPage() {
                 spacing={2}
                 sx={{ pt: 2 }}
               >
-                <Link href={quoteHref} passHref legacyBehavior>
-                  <Button
-                    component="a"
-                    variant="contained"
-                    color="primary"
-                    size="large"
-                  >
-                    Cotiza tu proyecto
-                  </Button>
-                </Link>
+                <Button
+                  component={Link}
+                  href={quoteHref}
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                >
+                  Cotiza tu proyecto
+                </Button>
               </Stack>
             </Stack>
             <Box
@@ -416,16 +415,15 @@ export default function SoftwareServicesPage() {
                 spacing={2}
                 sx={{ pt: 2 }}
               >
-                <Link href={quoteHref} passHref legacyBehavior>
-                  <Button
-                    component="a"
-                    variant="contained"
-                    color="primary"
-                    size="large"
-                  >
-                    Cotiza tu proyecto
-                  </Button>
-                </Link>
+                <Button
+                  component={Link}
+                  href={quoteHref}
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                >
+                  Cotiza tu proyecto
+                </Button>
                 <Button
                   component="a"
                   href={whatsappLink}
