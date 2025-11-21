@@ -143,16 +143,17 @@ export default function HardwareServicesPage() {
                 >
                   Contáctame
                 </Button>
-                <Button
-                  component={Link}
-                  href={scheduleHref}
-                  variant="outlined"
-                  color="secondary"
-                  size="large"
-                  sx={{ borderWidth: 2 }}
-                >
-                  Agenda una cita
-                </Button>
+                <Link href={scheduleHref} style={{ textDecoration: "none" }}>
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    size="large"
+                    fullWidth
+                    sx={{ borderWidth: 2 }}
+                  >
+                    Agenda una cita
+                  </Button>
+                </Link>
               </Stack>
             </Stack>
             <Box
@@ -271,8 +272,8 @@ export default function HardwareServicesPage() {
                   Acompañamiento personalizado, seguimiento continuo y garantías
                   extendidas para tu tranquilidad.
                 </Typography>
-                <Link href={scheduleHref} passHref legacyBehavior>
-                  <Button component="a" variant="contained" color="secondary" size="large">
+                <Link href={scheduleHref} style={{ textDecoration: "none" }}>
+                  <Button variant="contained" color="secondary" size="large" fullWidth>
                     Agenda una cita
                   </Button>
                 </Link>

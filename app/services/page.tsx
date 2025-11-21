@@ -218,16 +218,16 @@ export default function ServicesPage() {
                   </Typography>
                 </Stack>
                 <Box sx={{ pt: 2 }}>
-                  <Button
-                    component={Link}
-                    href="/services/software"
-                    variant="contained"
-                    color="primary"
-                    size="large"
-                    fullWidth
-                  >
-                    Conocer más
-                  </Button>
+                  <Link href="/services/software" style={{ textDecoration: "none" }}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      size="large"
+                      fullWidth
+                    >
+                      Conocer más
+                    </Button>
+                  </Link>
                 </Box>
               </Box>
             </Box>
@@ -309,16 +309,16 @@ export default function ServicesPage() {
                   </Typography>
                 </Stack>
                 <Box sx={{ pt: 2 }}>
-                  <Button
-                    component={Link}
-                    href="/services/hardware"
-                    variant="contained"
-                    color="secondary"
-                    size="large"
-                    fullWidth
-                  >
-                    Conocer más
-                  </Button>
+                  <Link href="/services/hardware" style={{ textDecoration: "none" }}>
+                    <Button
+                      variant="contained"
+                      color="secondary"
+                      size="large"
+                      fullWidth
+                    >
+                      Conocer más
+                    </Button>
+                  </Link>
                 </Box>
               </Box>
             </Box>

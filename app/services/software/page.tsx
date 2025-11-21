@@ -139,15 +139,15 @@ export default function SoftwareServicesPage() {
                 spacing={2}
                 sx={{ pt: 2 }}
               >
-                <Button
-                  component={Link}
-                  href={quoteHref}
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                >
-                  Cotiza tu proyecto
-                </Button>
+                <Link href={quoteHref} style={{ textDecoration: "none" }}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                  >
+                    Cotiza tu proyecto
+                  </Button>
+                </Link>
               </Stack>
             </Stack>
             <Box
@@ -415,15 +415,15 @@ export default function SoftwareServicesPage() {
                 spacing={2}
                 sx={{ pt: 2 }}
               >
-                <Button
-                  component={Link}
-                  href={quoteHref}
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                >
-                  Cotiza tu proyecto
-                </Button>
+                <Link href={quoteHref} style={{ textDecoration: "none" }}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                  >
+                    Cotiza tu proyecto
+                  </Button>
+                </Link>
                 <Button
                   component="a"
                   href={whatsappLink}
