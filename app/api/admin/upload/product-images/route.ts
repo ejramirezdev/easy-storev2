@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { isAdminEmail } from "@/lib/admin";
-import { uploadProductImage, validateImageFile } from "@/lib/s3";
+import { isAdminEmail } from "@/lib/admin-utils";
+import { uploadProductImage } from "@/lib/s3";
 
 export async function POST(req: NextRequest) {
   try {
     // Verificar autenticación y permisos de admin
     const session = await getServerSession(authOptions);
     if (!session || !isAdminEmail(session.user?.email ?? null)) {
-      return NextResponse.json(
-        { error: "No autorizado" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
     // Obtener archivos del FormData
@@ -33,8 +30,11 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
 
-      // Validar archivo
-      const validation = validateImageFile(file);
+      // Validar archivo con validación avanzada
+      const { validateImageFileAdvanced } = await import(
+        "@/lib/security/file-validation"
+      );
+      const validation = await validateImageFileAdvanced(file);
       if (!validation.valid) {
         errors.push(`Archivo ${i + 1} (${file.name}): ${validation.error}`);
         continue;
@@ -86,4 +86,3 @@ export const config = {
     bodyParser: false,
   },
 };
-

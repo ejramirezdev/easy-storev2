@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { isAdminEmail } from "@/lib/admin";
+import { isAdminEmail } from "@/lib/admin-utils";
 import {
   ProductInputSchema,
   type ProductInput,
@@ -206,8 +206,9 @@ export async function PUT(
     }
 
     console.error(`PUT /api/products/${productId} error`, error);
+    // No exponer detalles del error al cliente
     return NextResponse.json(
-      { error: error?.message ?? "No se pudo actualizar el producto" },
+      { error: "Error al procesar la solicitud. Por favor intenta más tarde." },
       { status: 500 }
     );
   }

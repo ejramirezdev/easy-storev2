@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { isAdminEmail } from "@/lib/admin";
+import { isAdminEmail } from "@/lib/admin-utils";
 import { prisma } from "@/lib/prisma";
 import {
   CategoryInputSchema,
@@ -58,8 +58,9 @@ export async function POST(req: Request) {
     return NextResponse.json(created, { status: 201 });
   } catch (error: any) {
     console.error("POST /api/categories error", error);
+    // No exponer detalles del error al cliente
     return NextResponse.json(
-      { error: error?.message ?? "No se pudo crear la categoría" },
+      { error: "Error al procesar la solicitud. Por favor intenta más tarde." },
       { status: 500 }
     );
   }

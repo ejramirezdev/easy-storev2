@@ -51,7 +51,8 @@ export const ProductInputSchema = z.object({
   name: z
     .string({ required_error: "Ingresa un título" })
     .trim()
-    .min(3, "Debe tener al menos 3 caracteres"),
+    .min(3, "Debe tener al menos 3 caracteres")
+    .max(200, "Máximo 200 caracteres"),
   slug: z
     .string()
     .trim()

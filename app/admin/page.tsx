@@ -1,5 +1,6 @@
 import { authOptions } from "@/lib/auth";
-import { isAdminEmail } from "@/lib/admin";
+import { isAdminEmail } from "@/lib/admin-utils";
+import { requiresTwoFactorVerification } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
 import {
   adminProductInclude,
@@ -24,6 +25,14 @@ export default async function AdminPage() {
 
   if (!session || !isAdminEmail(email)) {
     redirect("/");
+  }
+
+  // Verificar si necesita verificación 2FA
+  if (session.user?.id) {
+    const needsVerification = await requiresTwoFactorVerification(session.user.id);
+    if (needsVerification) {
+      redirect("/admin/verify-2fa?redirect=/admin");
+    }
   }
 
   const [products, categories] = await Promise.all([
@@ -64,11 +73,18 @@ export default async function AdminPage() {
               </Typography>
             </Box>
 
-            <Link href="/" legacyBehavior passHref>
-              <Button component="a" variant="outlined" color="secondary">
-                Volver a la tienda
-              </Button>
-            </Link>
+            <Stack direction="row" spacing={2}>
+              <Link href="/admin/2fa" legacyBehavior passHref>
+                <Button component="a" variant="outlined">
+                  Configurar 2FA
+                </Button>
+              </Link>
+              <Link href="/" legacyBehavior passHref>
+                <Button component="a" variant="outlined" color="secondary">
+                  Volver a la tienda
+                </Button>
+              </Link>
+            </Stack>
           </Stack>
         </Box>
 

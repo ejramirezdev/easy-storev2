@@ -48,6 +48,11 @@ model User {
 
   emailVerified DateTime?
   image         String?
+  
+  // 2FA (Two-Factor Authentication)
+  twoFactorSecret   String?  // Secret TOTP encriptado
+  twoFactorEnabled  Boolean @default(false)
+  twoFactorBackupCodes String? // Códigos de respaldo (JSON array, encriptado)
 }
 
 model Account {

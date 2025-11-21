@@ -19,7 +19,7 @@ import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import PersonIcon from "@mui/icons-material/Person";
 import HistoryIcon from "@mui/icons-material/History";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
-import { isAdminEmail } from "@/lib/admin";
+import { isAdminEmail } from "@/lib/admin-utils";
 
 type Props = {
   mode?: "desktop" | "mobile";

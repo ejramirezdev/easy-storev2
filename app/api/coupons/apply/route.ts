@@ -6,13 +6,23 @@ import { getOrCreateCart } from "@/lib/cart";
 import { calcTotals } from "@/lib/totals";
 
 export async function POST(req: Request) {
-  const { code } = await req.json();
-  const session = await getServerSession(authOptions);
+  try {
+    const body = await req.json();
+    const { code } = body;
+    const session = await getServerSession(authOptions);
 
-  if (!code || typeof code !== "string") {
-    return NextResponse.json({ error: "Código inválido" }, { status: 400 });
-  }
-  const norm = code.trim().toUpperCase();
+    // Validar código de cupón
+    if (!code || typeof code !== "string") {
+      return NextResponse.json({ error: "Código inválido" }, { status: 400 });
+    }
+    
+    // Sanitizar y normalizar código
+    const norm = code.trim().toUpperCase().substring(0, 50); // Limitar longitud
+    
+    // Validar formato básico (solo letras, números y guiones)
+    if (!/^[A-Z0-9-_]+$/.test(norm)) {
+      return NextResponse.json({ error: "Código inválido" }, { status: 400 });
+    }
 
   // Carrito (logueado o anónimo vía cookie)
   const { cart, setCookieId } = await getOrCreateCart(session?.user?.id);
@@ -109,5 +119,13 @@ export async function POST(req: Request) {
   if (setCookieId) {
     res.cookies.set(setCookieId.name, setCookieId.value, setCookieId.options);
   }
-  return res;
+    return res;
+  } catch (error: any) {
+    console.error("Error applying coupon:", error);
+    // No exponer detalles del error
+    return NextResponse.json(
+      { error: "Error al procesar la solicitud" },
+      { status: 500 }
+    );
+  }
 }

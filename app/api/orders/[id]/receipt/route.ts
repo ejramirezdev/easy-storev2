@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import nodemailer from "nodemailer";
 import { clearCart, getOrCreateCart } from "@/lib/cart";
 import { uploadReceipt } from "@/lib/s3";
+import { escapeHtml } from "@/lib/security/sanitize";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -59,10 +60,12 @@ export async function POST(req: NextRequest, context: RouteContext) {
       );
     }
 
-    // Validar que sea una imagen
-    if (!receiptFile.type.startsWith("image/")) {
+    // Validar archivo con validación avanzada
+    const { validateImageFileAdvanced } = await import("@/lib/security/file-validation");
+    const validation = await validateImageFileAdvanced(receiptFile);
+    if (!validation.valid) {
       return NextResponse.json(
-        { error: "El archivo debe ser una imagen" },
+        { error: validation.error || "El archivo no es válido" },
         { status: 400 }
       );
     }
@@ -149,31 +152,31 @@ export async function POST(req: NextRequest, context: RouteContext) {
             
             <div style="margin: 20px 0;">
               <h3 style="color: #666; margin-bottom: 10px;">Información de la Orden</h3>
-              <p style="color: #666; margin: 5px 0;"><strong>ID de Orden:</strong> ${order.id}</p>
+              <p style="color: #666; margin: 5px 0;"><strong>ID de Orden:</strong> ${escapeHtml(order.id)}</p>
               <p style="color: #666; margin: 5px 0;"><strong>Estado:</strong> EN REVISIÓN</p>
               <p style="color: #666; margin: 5px 0;"><strong>Total:</strong> $${Number(order.total).toFixed(2)}</p>
-              <p style="color: #666; margin: 5px 0;"><strong>Banco:</strong> ${order.selectedBank ? bankNames[order.selectedBank] || order.selectedBank : "No especificado"}</p>
+              <p style="color: #666; margin: 5px 0;"><strong>Banco:</strong> ${order.selectedBank ? escapeHtml(bankNames[order.selectedBank] || order.selectedBank) : "No especificado"}</p>
             </div>
 
             <div style="margin: 20px 0;">
               <h3 style="color: #666; margin-bottom: 10px;">Cliente</h3>
-              <p style="color: #666; margin: 5px 0;"><strong>Nombre:</strong> ${order.user.name || "N/A"}</p>
-              <p style="color: #666; margin: 5px 0;"><strong>Email:</strong> ${order.user.email}</p>
+              <p style="color: #666; margin: 5px 0;"><strong>Nombre:</strong> ${escapeHtml(order.user.name || "N/A")}</p>
+              <p style="color: #666; margin: 5px 0;"><strong>Email:</strong> ${escapeHtml(order.user.email)}</p>
             </div>
 
             <div style="margin: 20px 0;">
               <h3 style="color: #666; margin-bottom: 10px;">Artículos</h3>
-              <pre style="color: #333; background-color: #f9f9f9; padding: 15px; border-radius: 4px; white-space: pre-wrap;">${orderItemsText}</pre>
+              <pre style="color: #333; background-color: #f9f9f9; padding: 15px; border-radius: 4px; white-space: pre-wrap;">${escapeHtml(orderItemsText)}</pre>
             </div>
 
             ${shippingAddress ? `
             <div style="margin: 20px 0;">
               <h3 style="color: #666; margin-bottom: 10px;">Dirección de Envío</h3>
-              <p style="color: #333;">${shippingAddress.firstName} ${shippingAddress.lastName}</p>
-              <p style="color: #333;">${shippingAddress.street}</p>
-              <p style="color: #333;">${shippingAddress.city}, ${shippingAddress.state}</p>
-              <p style="color: #333;">${shippingAddress.country}</p>
-              ${shippingAddress.phone ? `<p style="color: #333;">Tel: ${shippingAddress.phone}</p>` : ""}
+              <p style="color: #333;">${escapeHtml(shippingAddress.firstName)} ${escapeHtml(shippingAddress.lastName)}</p>
+              <p style="color: #333;">${escapeHtml(shippingAddress.street)}</p>
+              <p style="color: #333;">${escapeHtml(shippingAddress.city)}, ${escapeHtml(shippingAddress.state)}</p>
+              <p style="color: #333;">${escapeHtml(shippingAddress.country)}</p>
+              ${shippingAddress.phone ? `<p style="color: #333;">Tel: ${escapeHtml(shippingAddress.phone)}</p>` : ""}
             </div>
             ` : ""}
 
@@ -238,8 +241,9 @@ Fecha: ${new Date().toLocaleString("es-EC", { timeZone: "America/Guayaquil" })}
     return NextResponse.json({ ok: true, receiptUrl });
   } catch (error: any) {
     console.error("Error uploading receipt:", error);
+    // No exponer detalles del error al cliente
     return NextResponse.json(
-      { error: error.message || "Error al subir el comprobante" },
+      { error: "Error al procesar la solicitud. Por favor intenta más tarde." },
       { status: 500 }
     );
   }

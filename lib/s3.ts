@@ -23,6 +23,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 /**
  * Valida que el archivo sea una imagen válida (jpg o png)
+ * @deprecated Usar validateImageFileAdvanced de @/lib/security/file-validation para validación más robusta
  */
 export function validateImageFile(file: File): { valid: boolean; error?: string } {
   if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
@@ -44,6 +45,7 @@ export function validateImageFile(file: File): { valid: boolean; error?: string 
 
 /**
  * Genera un nombre único para el archivo
+ * @deprecated Usar generateSafeFileName de @/lib/security/file-validation para nombres más seguros
  */
 export function generateUniqueFileName(
   prefix: string,
@@ -51,8 +53,10 @@ export function generateUniqueFileName(
 ): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
+  // Sanitizar extensión
   const extension = originalName.split(".").pop()?.toLowerCase() || "jpg";
-  return `${prefix}-${timestamp}-${random}.${extension}`;
+  const safeExtension = ["jpg", "jpeg", "png"].includes(extension) ? extension : "jpg";
+  return `${prefix}-${timestamp}-${random}.${safeExtension}`;
 }
 
 /**
@@ -100,12 +104,14 @@ export async function uploadProductImage(
   file: File,
   productId: string
 ): Promise<string> {
-  const validation = validateImageFile(file);
+  // Usar validación avanzada con magic bytes
+  const { validateImageFileAdvanced, generateSafeFileName } = await import("@/lib/security/file-validation");
+  const validation = await validateImageFileAdvanced(file);
   if (!validation.valid) {
     throw new Error(validation.error);
   }
 
-  const fileName = generateUniqueFileName(productId, file.name);
+  const fileName = generateSafeFileName(productId, file.name);
   // Guardar en products/[productId]/ para mejor organización
   const key = `products/${productId}/${fileName}`;
 
@@ -117,14 +123,14 @@ export async function uploadProductImage(
  * Los comprobantes se guardan en receipts/[orderId]/ para mejor organización
  */
 export async function uploadReceipt(file: File, orderId: string): Promise<string> {
-  const validation = validateImageFile(file);
+  // Usar validación avanzada con magic bytes
+  const { validateImageFileAdvanced, generateSafeFileName } = await import("@/lib/security/file-validation");
+  const validation = await validateImageFileAdvanced(file);
   if (!validation.valid) {
     throw new Error(validation.error);
   }
 
-  const timestamp = Date.now();
-  const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
-  const fileName = `receipt-${timestamp}.${extension}`;
+  const fileName = generateSafeFileName(`receipt-${orderId}`, file.name);
   // Guardar en receipts/[orderId]/ para mejor organización
   const key = `receipts/${orderId}/${fileName}`;
 

@@ -1,6 +1,8 @@
 import { withAuth } from "next-auth/middleware";
-import { isAdminEmail } from "@/lib/admin";
+import { isAdminEmail } from "@/lib/admin-utils";
 
+// Middleware de autenticación para rutas admin
+// Los headers de seguridad y rate limiting se aplican en las rutas API individualmente
 export default withAuth({
   pages: {
     signIn: "/",
