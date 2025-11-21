@@ -44,18 +44,29 @@ export default function VerifyTwoFactorPage() {
         // Redirigir a la página original con el token de verificación en la URL
         // Este token solo es válido por 30 segundos y para un solo uso
         if (data.token) {
+          console.log("[2FA Client] Token recibido, redirigiendo a:", redirectTo);
+          // NO establecer loading a false aquí - mantener el estado de carga hasta que la navegación se complete
           router.push(`${redirectTo}?2fa_token=${encodeURIComponent(data.token)}`);
+          // El estado de carga se mantendrá hasta que el componente se desmonte
+          return;
         } else {
+          console.warn("[2FA Client] No se recibió token en la respuesta");
           router.push(redirectTo);
+          // El estado de carga se mantendrá hasta que el componente se desmonte
+          return;
         }
       } else {
         const errorData = await res.json();
+        console.error("[2FA Client] Error en autenticación:", errorData);
         setError(errorData.error || "Código inválido");
         setCode("");
+        // Solo resetear loading si hay un error
+        setLoading(false);
       }
     } catch (err) {
+      console.error("[2FA Client] Error de conexión:", err);
       setError("Error al conectar con el servidor");
-    } finally {
+      // Solo resetear loading si hay un error
       setLoading(false);
     }
   };
@@ -94,6 +105,7 @@ export default function VerifyTwoFactorPage() {
             inputProps={{ maxLength: 6, style: { textAlign: "center", fontSize: "1.5rem", letterSpacing: "0.5rem" } }}
             fullWidth
             autoFocus
+            disabled={loading}
           />
 
           <Button
@@ -102,8 +114,19 @@ export default function VerifyTwoFactorPage() {
             onClick={handleVerify}
             disabled={loading || code.length !== 6}
             fullWidth
+            sx={{
+              minHeight: "48px",
+              position: "relative",
+            }}
           >
-            {loading ? <CircularProgress size={24} /> : "Verificar"}
+            {loading ? (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <CircularProgress size={20} sx={{ color: "inherit" }} />
+                <Typography component="span">Verificando...</Typography>
+              </Box>
+            ) : (
+              "Verificar"
+            )}
           </Button>
 
           <Typography variant="body2" color="text.secondary" textAlign="center">

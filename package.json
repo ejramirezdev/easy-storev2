@@ -9,7 +9,10 @@
     "lint": "eslint",
     "seed": "tsx prisma/seed.ts",
     "fix:images": "tsx scripts/refresh-product-images.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:setup": "prisma generate && prisma migrate dev"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.922.0",

@@ -55,7 +55,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
       console.log("[2FA Debug] Token in URL:", !!token);
     }
     
-    if (!token || !verify2FAToken(token, session.user.id)) {
+    if (!token || !(await verify2FAToken(token, session.user.id))) {
       // No hay token válido, redirigir a verificación 2FA
       if (process.env.NODE_ENV === "development") {
         console.log("[2FA Debug] Redirecting to 2FA verification");

@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       });
 
       // Generar token temporal de verificación (válido por 30 segundos, un solo uso)
-      const token = generate2FAToken(session.user.id);
+      const token = await generate2FAToken(session.user.id);
 
       return NextResponse.json({
         success: true,
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
       });
 
       // Generar token temporal de verificación (válido por 30 segundos, un solo uso)
-      const token = generate2FAToken(session.user.id);
+      const token = await generate2FAToken(session.user.id);
 
       return NextResponse.json({
         success: true,
