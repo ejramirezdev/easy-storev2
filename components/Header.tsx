@@ -20,6 +20,7 @@ const nav = [
   { label: "Inicio", href: "/" },
   { label: "Productos", href: "/products" },
   { label: "Servicios", href: "/services" },
+  { label: "FAQ", href: "/faq" },
   // { label: "Sobre mí", href: "/sobre-mi" }, // Oculto temporalmente
   { label: "Contacto", href: "/contact" },
 ];

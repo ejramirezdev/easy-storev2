@@ -5,9 +5,11 @@ import { UiLockProvider } from "@/lib/ui-lock";
 import UiLockOverlay from "@/components/common/UiLockOverlay";
 import { GoogleAnalytics, GoogleTagManager } from "@/lib/analytics";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
 const siteName = "Easy Store";
-const defaultDescription = "Tienda de productos tecnológicos, gadgets y servicios de reparación y desarrollo de software en Ecuador. Encuentra los mejores dispositivos y soluciones tecnológicas.";
+const defaultDescription =
+  "Tienda de productos tecnológicos, gadgets y servicios de reparación y desarrollo de software en Ecuador. Encuentra los mejores dispositivos y soluciones tecnológicas.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -88,80 +90,69 @@ export default function RootLayout({
   children: React.ReactNode;
   modal: React.ReactNode;
 }) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
-  
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+
   // Structured Data - Organization & LocalBusiness
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": ["Store", "LocalBusiness", "OnlineStore"],
-    "name": "Easy Store",
-    "description": "Tienda de productos tecnológicos, gadgets y servicios de reparación y desarrollo de software en Ecuador",
-    "url": siteUrl,
-    "logo": `${siteUrl}/logo.png`,
-    "image": `${siteUrl}/og-image.png`,
-    "address": {
+    name: "Easy Store",
+    description:
+      "Tienda de productos tecnológicos, gadgets y servicios de reparación y desarrollo de software en Ecuador",
+    url: siteUrl,
+    logo: `${siteUrl}/logo.png`,
+    image: `${siteUrl}/og-image.png`,
+    address: {
       "@type": "PostalAddress",
-      "addressCountry": "EC",
-      "addressRegion": "Ecuador",
-      "addressLocality": "Ecuador"
+      addressCountry: "EC",
+      addressRegion: "Ecuador",
+      addressLocality: "Ecuador",
     },
-    "contactPoint": {
+    contactPoint: {
       "@type": "ContactPoint",
-      "telephone": "+593958720950",
-      "contactType": "customer service",
-      "email": "easystoreecu@gmail.com",
-      "availableLanguage": ["Spanish", "es-EC"],
-      "areaServed": "EC"
+      telephone: "+593958720950",
+      contactType: "customer service",
+      email: "easystoreecu@gmail.com",
+      availableLanguage: ["Spanish", "es-EC"],
+      areaServed: "EC",
     },
-    "sameAs": [
-      // Agregar cuando tengas redes sociales
+    sameAs: [
+      "https://www.instagram.com/easystoreecu/",
+      // Agregar cuando tengas más redes sociales
       // "https://www.facebook.com/easystoreecu",
-      // "https://www.instagram.com/easystoreecu",
       // "https://twitter.com/easystoreecu"
     ],
-    "priceRange": "$$",
-    "paymentAccepted": ["Credit Card", "Cash", "Bank Transfer", "Payphone"],
-    "currenciesAccepted": "USD",
-    "openingHours": "Mo-Su",
-    "hasOfferCatalog": {
+    priceRange: "$$",
+    paymentAccepted: ["Credit Card", "Cash", "Bank Transfer", "Payphone"],
+    currenciesAccepted: "USD",
+    openingHours: "Mo-Su",
+    hasOfferCatalog: {
       "@type": "OfferCatalog",
-      "name": "Productos y Servicios Tecnológicos",
-      "itemListElement": [
+      name: "Productos y Servicios Tecnológicos",
+      itemListElement: [
         {
           "@type": "OfferCatalog",
-          "name": "Productos Tecnológicos",
-          "itemListElement": [
+          name: "Servicios",
+          itemListElement: [
             {
               "@type": "Offer",
-              "itemOffered": {
-                "@type": "Product",
-                "name": "Gadgets y dispositivos electrónicos"
-              }
-            }
-          ]
-        },
-        {
-          "@type": "OfferCatalog",
-          "name": "Servicios",
-          "itemListElement": [
-            {
-              "@type": "Offer",
-              "itemOffered": {
+              itemOffered: {
                 "@type": "Service",
-                "name": "Desarrollo de Software a Medida"
-              }
+                name: "Desarrollo de Software a Medida",
+              },
             },
             {
               "@type": "Offer",
-              "itemOffered": {
+              itemOffered: {
                 "@type": "Service",
-                "name": "Reparación de Hardware"
-              }
-            }
-          ]
-        }
-      ]
-    }
+                name: "Reparación de Hardware",
+              },
+            },
+          ],
+        },
+      ],
+    },
   };
 
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
@@ -176,7 +167,9 @@ export default function RootLayout({
       <body className="body-bg" suppressHydrationWarning>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationSchema),
+          }}
         />
         <UiLockProvider>
           <UiLockOverlay />

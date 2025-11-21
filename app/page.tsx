@@ -1,5 +1,6 @@
 import HeroCarousel from "@/components/home/Carousel";
 import WhatsAppFab from "@/components/home/WhatsAppFab";
+import InstagramFab from "@/components/home/InstagramFab";
 import ProductCard, { UiProduct } from "@/components/products/ProductCard";
 import Grid from "@mui/material/GridLegacy";
 import { Box, Container, Typography } from "@mui/material";
@@ -190,6 +191,7 @@ export default async function Page() {
       </Box>
 
       <WhatsAppFab phone="+593958720950" />
+      <InstagramFab url="https://www.instagram.com/easystoreecu/" />
     </>
   );
 }
