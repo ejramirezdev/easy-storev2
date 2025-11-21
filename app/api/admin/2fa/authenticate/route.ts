@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin-utils";
 import { verifyTwoFactorCode, verifyBackupCode } from "@/lib/admin";
+import { generate2FAToken } from "@/lib/admin-2fa-session";
 import { logAdminAction, getClientIP, getClientUserAgent } from "@/lib/admin-logging";
 import { z } from "zod";
 
@@ -38,22 +39,14 @@ export async function POST(req: Request) {
         userAgent: getClientUserAgent(req),
       });
 
-      // Establecer cookie de verificación 2FA (válida por 1 hora)
-      const response = NextResponse.json({
+      // Generar token temporal de verificación (válido por 30 segundos, un solo uso)
+      const token = generate2FAToken(session.user.id);
+
+      return NextResponse.json({
         success: true,
         message: "Código verificado correctamente",
+        token, // Token temporal para acceder al panel admin
       });
-
-      const expires = new Date();
-      expires.setHours(expires.getHours() + 1);
-      response.cookies.set("twoFactorVerified", "true", {
-        expires,
-        path: "/",
-        sameSite: "strict",
-        secure: process.env.NODE_ENV === "production",
-      });
-
-      return response;
     }
 
     // Si no es TOTP, intentar como código de respaldo
@@ -70,22 +63,14 @@ export async function POST(req: Request) {
         userAgent: getClientUserAgent(req),
       });
 
-      // Establecer cookie de verificación 2FA (válida por 1 hora)
-      const response = NextResponse.json({
+      // Generar token temporal de verificación (válido por 30 segundos, un solo uso)
+      const token = generate2FAToken(session.user.id);
+
+      return NextResponse.json({
         success: true,
         message: "Código de respaldo verificado correctamente",
+        token, // Token temporal para acceder al panel admin
       });
-
-      const expires = new Date();
-      expires.setHours(expires.getHours() + 1);
-      response.cookies.set("twoFactorVerified", "true", {
-        expires,
-        path: "/",
-        sameSite: "strict",
-        secure: process.env.NODE_ENV === "production",
-      });
-
-      return response;
     }
 
     // Log de intento fallido

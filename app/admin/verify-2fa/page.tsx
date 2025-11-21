@@ -40,9 +40,14 @@ export default function VerifyTwoFactorPage() {
       });
 
       if (res.ok) {
-        // La cookie ya fue establecida por el servidor
-        // Redirigir a la página original
-        router.push(redirectTo);
+        const data = await res.json();
+        // Redirigir a la página original con el token de verificación en la URL
+        // Este token solo es válido por 30 segundos y para un solo uso
+        if (data.token) {
+          router.push(`${redirectTo}?2fa_token=${encodeURIComponent(data.token)}`);
+        } else {
+          router.push(redirectTo);
+        }
       } else {
         const errorData = await res.json();
         setError(errorData.error || "Código inválido");

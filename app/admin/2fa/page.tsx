@@ -15,7 +15,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Grid,
   Divider,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
@@ -336,24 +335,30 @@ function TwoFactorPageContent() {
                 dispositivo autenticador. Cada código solo se puede usar una vez.
               </Typography>
             </Alert>
-            <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)" },
+                gap: 2,
+                mt: 1,
+              }}
+            >
               {backupCodes?.map((code, index) => (
-                <Grid item xs={6} sm={4} key={index}>
-                  <Paper
-                    sx={{
-                      p: 1.5,
-                      textAlign: "center",
-                      bgcolor: "background.default",
-                      fontFamily: "monospace",
-                      fontSize: "1.1rem",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {code}
-                  </Paper>
-                </Grid>
+                <Paper
+                  key={index}
+                  sx={{
+                    p: 1.5,
+                    textAlign: "center",
+                    bgcolor: "background.default",
+                    fontFamily: "monospace",
+                    fontSize: "1.1rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {code}
+                </Paper>
               ))}
-            </Grid>
+            </Box>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setShowBackupCodes(false)} variant="contained">

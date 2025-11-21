@@ -1,6 +1,6 @@
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin-utils";
-import { requiresTwoFactorVerification } from "@/lib/admin-session";
+import { requiresTwoFactorVerification, verify2FAToken } from "@/lib/admin-2fa-session";
 import { prisma } from "@/lib/prisma";
 import {
   adminProductInclude,
@@ -19,7 +19,11 @@ import {
 import Link from "next/link";
 import AdminTabs from "@/components/admin/AdminTabs";
 
-export default async function AdminPage() {
+type PageProps = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
+
+export default async function AdminPage({ searchParams }: PageProps) {
   const session = await getServerSession(authOptions);
   const email = session?.user?.email ?? null;
 
@@ -31,7 +35,15 @@ export default async function AdminPage() {
   if (session.user?.id) {
     const needsVerification = await requiresTwoFactorVerification(session.user.id);
     if (needsVerification) {
-      redirect("/admin/verify-2fa?redirect=/admin");
+      // Verificar si hay un token 2FA válido en la URL
+      const params = await searchParams;
+      const token = params?.["2fa_token"] as string | undefined;
+      
+      if (!token || !verify2FAToken(token, session.user.id)) {
+        // No hay token válido, redirigir a verificación 2FA
+        redirect("/admin/verify-2fa?redirect=/admin");
+      }
+      // Token válido, permitir acceso (el token se elimina automáticamente después de usarse)
     }
   }
 
