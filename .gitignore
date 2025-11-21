@@ -37,6 +37,10 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# Permitir archivos de ejemplo y producción (templates sin datos sensibles)
+!.env.example
+!.env.production
+
 # vercel
 .vercel
 
