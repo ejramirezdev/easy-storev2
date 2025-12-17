@@ -66,6 +66,7 @@ export async function POST(req: Request) {
         stock: input.stock,
         imageUrl: input.imageUrl ?? null,
         categoryId: input.categoryId ?? null,
+        isFeatured: input.isFeatured ?? false,
         images: gallery.length
           ? {
               create: gallery.map((img) => ({

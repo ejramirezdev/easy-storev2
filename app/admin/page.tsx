@@ -1,6 +1,6 @@
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin-utils";
-import { requiresTwoFactorVerification, verify2FAToken } from "@/lib/admin-2fa-session";
+import { requiresTwoFactorVerification } from "@/lib/admin-2fa-session";
 import { prisma } from "@/lib/prisma";
 import {
   adminProductInclude,
@@ -9,6 +9,7 @@ import {
 import type { AdminCategory, AdminProduct } from "@/lib/products/types";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import {
   Container,
   Box,
@@ -37,39 +38,30 @@ export default async function AdminPage({ searchParams }: PageProps) {
     redirect("/");
   }
 
+  // Obtener token de sesión 2FA desde la cookie
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get("admin_2fa_session")?.value || null;
+
   // Verificar si 2FA está habilitado y requiere verificación
-  const needsVerification = await requiresTwoFactorVerification(session.user.id);
+  const needsVerification = await requiresTwoFactorVerification(session.user.id, sessionToken);
   
   // Log para debug (solo en desarrollo)
   if (process.env.NODE_ENV === "development") {
     console.log("[2FA Debug] User ID:", session.user.id);
+    console.log("[2FA Debug] Has session token:", !!sessionToken);
     console.log("[2FA Debug] Needs verification:", needsVerification);
   }
   
   if (needsVerification) {
-    // Verificar si hay un token 2FA válido en la URL
-    const params = await searchParams;
-    const token = params?.["2fa_token"] as string | undefined;
-    
+    // No hay sesión 2FA válida, redirigir a verificación
     if (process.env.NODE_ENV === "development") {
-      console.log("[2FA Debug] Token in URL:", !!token);
+      console.log("[2FA Debug] Redirecting to 2FA verification");
     }
-    
-    if (!token || !(await verify2FAToken(token, session.user.id))) {
-      // No hay token válido, redirigir a verificación 2FA
-      if (process.env.NODE_ENV === "development") {
-        console.log("[2FA Debug] Redirecting to 2FA verification");
-      }
-      const redirectUrl = encodeURIComponent("/admin");
-      redirect(`/admin/verify-2fa?redirect=${redirectUrl}`);
-    }
-    // Token válido, permitir acceso (el token se elimina automáticamente después de usarse)
-    if (process.env.NODE_ENV === "development") {
-      console.log("[2FA Debug] Token verified, allowing access");
-    }
+    const redirectUrl = encodeURIComponent("/admin");
+    redirect(`/admin/verify-2fa?redirect=${redirectUrl}`);
   } else {
     if (process.env.NODE_ENV === "development") {
-      console.log("[2FA Debug] 2FA not enabled, allowing access without verification");
+      console.log("[2FA Debug] 2FA session valid or not enabled, allowing access");
     }
   }
 

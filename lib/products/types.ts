@@ -13,6 +13,7 @@ export type AdminProduct = {
   price: number;
   stock: number;
   imageUrl: string | null;
+  isFeatured: boolean;
   images: AdminProductImage[];
   category: { id: string; name: string; slug: string } | null;
   createdAt: string;

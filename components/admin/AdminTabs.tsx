@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Box,
   Paper,
@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import AdminProductManager from "./AdminProductManager";
 import AdminPayphoneSettings from "./AdminPayphoneSettings";
+import AdminBankAccountsManager from "./AdminBankAccountsManager";
 import type { AdminCategory, AdminProduct } from "@/lib/products/types";
 
 type AdminTabsProps = {
@@ -20,7 +21,7 @@ type AdminTabsProps = {
   adminName: string;
 };
 
-type TabValue = "create" | "edit" | "categories" | "orders" | "payphone";
+type TabValue = "create" | "edit" | "categories" | "orders" | "payphone" | "bank-accounts";
 
 export default function AdminTabs({
   products,
@@ -28,6 +29,13 @@ export default function AdminTabs({
   adminName,
 }: AdminTabsProps) {
   const [currentTab, setCurrentTab] = useState<TabValue>("create");
+  // Estado compartido de categorías para que se actualice en todos los tabs
+  const [sharedCategories, setSharedCategories] = useState<AdminCategory[]>(categories);
+
+  // Callback para actualizar las categorías desde cualquier instancia de AdminProductManager
+  const handleCategoriesUpdate = useCallback((updatedCategories: AdminCategory[]) => {
+    setSharedCategories(updatedCategories);
+  }, []);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: TabValue) => {
     setCurrentTab(newValue);
@@ -54,6 +62,7 @@ export default function AdminTabs({
           <Tab label="Editar categorías" value="categories" />
           <Tab label="Órdenes" value="orders" />
           <Tab label="Configuración de Payphone" value="payphone" />
+          <Tab label="Cuentas Bancarias" value="bank-accounts" />
         </Tabs>
       </Box>
 
@@ -61,9 +70,10 @@ export default function AdminTabs({
         {currentTab === "create" && (
           <AdminProductManager
             initialProducts={products}
-            categories={categories}
+            categories={sharedCategories}
             adminName={adminName}
             initialTab="create"
+            onCategoriesUpdate={handleCategoriesUpdate}
           />
         )}
 
@@ -77,9 +87,10 @@ export default function AdminTabs({
             </Typography>
             <AdminProductManager
               initialProducts={products}
-              categories={categories}
+              categories={sharedCategories}
               adminName={adminName}
               initialTab="edit"
+              onCategoriesUpdate={handleCategoriesUpdate}
             />
           </Box>
         )}
@@ -95,9 +106,10 @@ export default function AdminTabs({
             </Typography>
             <AdminProductManager
               initialProducts={products}
-              categories={categories}
+              categories={sharedCategories}
               adminName={adminName}
               initialTab="categories"
+              onCategoriesUpdate={handleCategoriesUpdate}
             />
           </Box>
         )}
@@ -134,6 +146,10 @@ export default function AdminTabs({
             </Typography>
             <AdminPayphoneSettings />
           </Box>
+        )}
+
+        {currentTab === "bank-accounts" && (
+          <AdminBankAccountsManager />
         )}
       </Box>
     </Paper>

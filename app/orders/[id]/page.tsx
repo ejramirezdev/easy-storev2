@@ -88,31 +88,49 @@ export default async function OrderDetailPage({
     (it: any) => it.type === "BILLING"
   );
 
-  // Verificar si TODOS los productos son digitales (categoría "Productos Digitales")
-  // Si hay al menos un producto que NO es digital, se debe cobrar shipping
-  const allProductsAreDigital =
-    order.items.length > 0 &&
-    order.items.every(
-      (item) => item.product?.category?.name === "Productos Digitales"
+  // Usar los totales guardados en la orden (que incluyen el cupón aplicado)
+  // Si no existen (órdenes antiguas), calcularlos desde los items
+  let subtotal: number;
+  let discount: number;
+  let shipping: number;
+  let tax: number;
+  let total: number;
+
+  if (order.subtotal != null && order.shipping != null) {
+    // Usar valores guardados en la orden (incluye cupón aplicado)
+    subtotal = Number(order.subtotal);
+    discount = order.couponDiscount ? Number(order.couponDiscount) : 0;
+    shipping = Number(order.shipping);
+    total = Number(order.total);
+    
+    // Calcular tax desde el subtotal (el precio ya incluye IVA)
+    const subtotalAfterDiscount = Math.max(0, subtotal - discount);
+    const basePrice = subtotalAfterDiscount / 1.15;
+    tax = subtotalAfterDiscount - basePrice;
+  } else {
+    // Fallback para órdenes antiguas: calcular desde los items
+    const allProductsAreDigital =
+      order.items.length > 0 &&
+      order.items.every(
+        (item) => item.product?.category?.name === "Productos Digitales"
+      );
+
+    const { calcTotals } = await import("@/lib/totals");
+    const calculatedTotals = calcTotals(
+      order.items.map((it) => ({
+        price: Number(it.unitPrice),
+        quantity: it.quantity,
+      })),
+      undefined,
+      { hasOnlyDigitalProducts: allProductsAreDigital }
     );
 
-  // Totales (calcular desde los items usando calcTotals para consistencia)
-  const { calcTotals } = await import("@/lib/totals");
-  const calculatedTotals = calcTotals(
-    order.items.map((it) => ({
-      price: Number(it.unitPrice),
-      quantity: it.quantity,
-    })),
-    undefined, // No hay cupón en la orden por ahora
-    { hasOnlyDigitalProducts: allProductsAreDigital }
-  );
-
-  const subtotal = calculatedTotals.subtotal;
-  const discount = calculatedTotals.discount;
-  const shipping = calculatedTotals.shipping;
-  const tax = calculatedTotals.tax;
-  // Usar el total calculado (que incluye shipping) o el total guardado en la orden
-  const total = order.total ? Number(order.total) : calculatedTotals.total;
+    subtotal = calculatedTotals.subtotal;
+    discount = calculatedTotals.discount;
+    shipping = calculatedTotals.shipping;
+    tax = calculatedTotals.tax;
+    total = calculatedTotals.total;
+  }
 
   const payphoneBillingAddress = billingAddress
     ? mapAddressToPayphone(billingAddress)

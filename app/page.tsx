@@ -58,6 +58,9 @@ async function getFeaturedProducts(): Promise<UiProduct[]> {
     }
 
     const products = await prisma.product.findMany({
+      where: {
+        isFeatured: true,
+      },
       orderBy: { createdAt: "desc" },
       take: 6,
       select: {
@@ -67,6 +70,7 @@ async function getFeaturedProducts(): Promise<UiProduct[]> {
         description: true,
         price: true,
         imageUrl: true,
+        isFeatured: true,
         images: {
           orderBy: { sortOrder: "asc" },
           select: { url: true },
@@ -74,6 +78,21 @@ async function getFeaturedProducts(): Promise<UiProduct[]> {
         stock: true,
       },
     });
+
+    // Log para debugging en desarrollo
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[Featured Products] Encontrados ${products.length} productos destacados`);
+      if (products.length > 0) {
+        console.log("[Featured Products] Productos:", products.map(p => ({ name: p.name, isFeatured: p.isFeatured })));
+      } else {
+        // Verificar si hay productos con isFeatured en la BD
+        const allProducts = await prisma.product.findMany({
+          select: { id: true, name: true, isFeatured: true },
+          take: 10,
+        });
+        console.log("[Featured Products] Primeros 10 productos en BD:", allProducts.map(p => ({ name: p.name, isFeatured: p.isFeatured })));
+      }
+    }
 
     if (!products || products.length === 0) {
       return [];

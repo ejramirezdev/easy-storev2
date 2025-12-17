@@ -138,7 +138,26 @@ export default async function ProductDetailContent({
               {product.description && (
                 <Typography
                   color="text.secondary"
-                  sx={{ whiteSpace: "pre-line" }}
+                  sx={{ 
+                    whiteSpace: "pre-line",
+                    maxHeight: { xs: "200px", md: "none" },
+                    overflow: { xs: "auto", md: "visible" },
+                    pr: { xs: 1, md: 0 },
+                    "&::-webkit-scrollbar": {
+                      width: "6px",
+                    },
+                    "&::-webkit-scrollbar-track": {
+                      bgcolor: "rgba(255,255,255,0.05)",
+                      borderRadius: "3px",
+                    },
+                    "&::-webkit-scrollbar-thumb": {
+                      bgcolor: "rgba(255,255,255,0.2)",
+                      borderRadius: "3px",
+                      "&:hover": {
+                        bgcolor: "rgba(255,255,255,0.3)",
+                      },
+                    },
+                  }}
                 >
                   {product.description}
                 </Typography>

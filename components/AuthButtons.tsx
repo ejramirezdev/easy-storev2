@@ -79,32 +79,24 @@ export default function AuthButtons({ mode = "desktop", onClickAfter }: Props) {
       );
     }
 
-    // Móvil: botón full width dentro del menú
+    // Móvil: MenuItem consistente con el resto del menú
     return (
-      <Box sx={{ display: { xs: "block", md: "none" }, p: 1.5 }}>
-        <Button
-          fullWidth
-          variant="outlined"
-          color="inherit"
-          startIcon={<LoginIcon />}
+      <Box sx={{ display: { xs: "block", md: "none" } }}>
+        <Divider sx={{ borderColor: "rgba(255,255,255,0.1)", my: 0.5 }} />
+        <MenuItem
           onClick={() => {
             onClickAfter?.();
             signIn("google");
           }}
           sx={{
-            borderColor: "rgba(255,255,255,0.3)",
-            textTransform: "none",
-            fontWeight: 600,
-            px: 2,
-            py: 0.8,
+            py: 1.5,
             "&:hover": {
-              borderColor: "#fff",
-              backgroundColor: "rgba(255,255,255,0.05)",
+              bgcolor: "rgba(255,255,255,0.08)",
             },
           }}
         >
-          Iniciar sesión
-        </Button>
+          <LoginIcon sx={{ fontSize: 18, mr: 1.5 }} /> Iniciar sesión
+        </MenuItem>
       </Box>
     );
   }
@@ -187,128 +179,84 @@ export default function AuthButtons({ mode = "desktop", onClickAfter }: Props) {
     );
   }
 
-  // Móvil: avatar + nombre + botón Cerrar sesión (full width)
+  // Móvil: MenuItem estilo consistente con el resto del menú
   return (
-    <Box sx={{ display: { xs: "block", md: "none" }, px: 1.5, py: 1 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
-          <Avatar
-            src={session.user?.image || ""}
-            alt={session.user?.name || ""}
-            sx={{
-              width: 36,
-              height: 36,
-              border: "2px solid rgba(255,255,255,0.3)",
-            }}
-          />
-          <Typography variant="body2">{session.user?.name}</Typography>
-        </Box>
-
-        <Button
-          fullWidth
-          variant="outlined"
-          color="inherit"
-          component={Link}
-          href="/account/profile"
-          onClick={() => {
-            onClickAfter?.();
-            setAnchorEl(null);
-          }}
-          startIcon={<PersonIcon />}
+    <Box sx={{ display: { xs: "block", md: "none" } }}>
+      <Divider sx={{ borderColor: "rgba(255,255,255,0.1)", my: 0.5 }} />
+      <MenuItem disabled sx={{ opacity: 0.7, py: 1.5 }}>
+        <Avatar
+          src={session.user?.image || ""}
+          alt={session.user?.name || ""}
           sx={{
-            mb: 1,
-            textTransform: "none",
-            fontWeight: 600,
-            borderColor: "rgba(255,255,255,0.3)",
+            width: 32,
+            height: 32,
+            mr: 1.5,
+            border: "2px solid rgba(255,255,255,0.3)",
           }}
-        >
-          Mi perfil
-        </Button>
-        <Button
-          fullWidth
-          variant="outlined"
-          color="inherit"
-          component={Link}
-          href="/account/orders"
-          onClick={() => {
-            onClickAfter?.();
-            setAnchorEl(null);
-          }}
-          startIcon={<HistoryIcon />}
-          sx={{
-            mb: 1,
-            textTransform: "none",
-            fontWeight: 600,
-            borderColor: "rgba(255,255,255,0.3)",
-          }}
-        >
-          Historial de compras
-        </Button>
-        <Button
-          fullWidth
-          variant="outlined"
-          color="inherit"
-          component={Link}
-          href="/account/favorites"
-          onClick={() => {
-            onClickAfter?.();
-            setAnchorEl(null);
-          }}
-          startIcon={<FavoriteBorderIcon />}
-          sx={{
-            mb: 1,
-            textTransform: "none",
-            fontWeight: 600,
-            borderColor: "rgba(255,255,255,0.3)",
-          }}
-        >
-          Favoritos
-        </Button>
+        />
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          {session.user?.name}
+        </Typography>
+      </MenuItem>
+      <Divider sx={{ borderColor: "rgba(255,255,255,0.1)", my: 0.5 }} />
+      
+      <MenuItem
+        component={Link}
+        href="/account/profile"
+        onClick={() => onClickAfter?.()}
+      >
+        <PersonIcon sx={{ fontSize: 18, mr: 1.5 }} /> Mi perfil
+      </MenuItem>
+      
+      <MenuItem
+        component={Link}
+        href="/account/orders"
+        onClick={() => onClickAfter?.()}
+      >
+        <HistoryIcon sx={{ fontSize: 18, mr: 1.5 }} /> Historial de compras
+      </MenuItem>
+      
+      <MenuItem
+        component={Link}
+        href="/account/favorites"
+        onClick={() => onClickAfter?.()}
+      >
+        <FavoriteBorderIcon sx={{ fontSize: 18, mr: 1.5 }} /> Favoritos
+      </MenuItem>
 
       {isAdmin && (
-        <Button
-          fullWidth
-          variant="contained"
-          color="secondary"
+        <MenuItem
           component={Link}
           href="/admin"
-          onClick={() => {
-            onClickAfter?.();
-            setAnchorEl(null);
-          }}
-          startIcon={<AdminPanelSettingsIcon />}
+          onClick={() => onClickAfter?.()}
           sx={{
-            mb: 1,
-            textTransform: "none",
-            fontWeight: 700,
+            bgcolor: "rgba(216, 27, 156, 0.1)",
+            "&:hover": {
+              bgcolor: "rgba(216, 27, 156, 0.2)",
+            },
           }}
         >
+          <AdminPanelSettingsIcon sx={{ fontSize: 18, mr: 1.5, color: "#D81B9C" }} /> 
           Panel admin
-        </Button>
+        </MenuItem>
       )}
 
-      <Button
-        fullWidth
-        variant="outlined"
-        color="inherit"
-        startIcon={<LogoutIcon />}
+      <Divider sx={{ borderColor: "rgba(255,255,255,0.1)", my: 0.5 }} />
+      
+      <MenuItem
         onClick={() => {
           onClickAfter?.();
           signOut();
         }}
         sx={{
-          borderColor: "rgba(255,255,255,0.3)",
-          textTransform: "none",
-          fontWeight: 600,
-          px: 2,
-          py: 0.8,
+          color: "rgba(255, 100, 100, 0.9)",
           "&:hover": {
-            borderColor: "#fff",
-            backgroundColor: "rgba(255,255,255,0.05)",
+            bgcolor: "rgba(255, 100, 100, 0.1)",
           },
         }}
       >
-        Cerrar sesión
-      </Button>
+        <LogoutIcon sx={{ fontSize: 18, mr: 1.5 }} /> Cerrar sesión
+      </MenuItem>
     </Box>
   );
 }

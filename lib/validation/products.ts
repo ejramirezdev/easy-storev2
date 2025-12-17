@@ -83,6 +83,7 @@ export const ProductInputSchema = z.object({
     .optional()
     .nullable(),
   images: z.array(ProductImageInputSchema).optional(),
+  isFeatured: z.boolean().optional().default(false),
 });
 
 export type ProductInput = z.infer<typeof ProductInputSchema>;

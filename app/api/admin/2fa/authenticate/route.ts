@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin-utils";
 import { verifyTwoFactorCode, verifyBackupCode } from "@/lib/admin";
-import { generate2FAToken } from "@/lib/admin-2fa-session";
+import { generate2FASessionToken } from "@/lib/admin-2fa-session";
 import { logAdminAction, getClientIP, getClientUserAgent } from "@/lib/admin-logging";
 import { z } from "zod";
 
@@ -39,14 +39,25 @@ export async function POST(req: Request) {
         userAgent: getClientUserAgent(req),
       });
 
-      // Generar token temporal de verificación (válido por 30 segundos, un solo uso)
-      const token = await generate2FAToken(session.user.id);
+      // Generar token de sesión 2FA (válido por 1 hora)
+      const sessionToken = await generate2FASessionToken(session.user.id);
 
-      return NextResponse.json({
+      // Crear respuesta con cookie
+      const response = NextResponse.json({
         success: true,
         message: "Código verificado correctamente",
-        token, // Token temporal para acceder al panel admin
       });
+
+      // Establecer cookie con el token de sesión (httpOnly, secure, 1 hora)
+      response.cookies.set("admin_2fa_session", sessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60, // 1 hora
+        path: "/admin",
+      });
+
+      return response;
     }
 
     // Si no es TOTP, intentar como código de respaldo
@@ -63,14 +74,25 @@ export async function POST(req: Request) {
         userAgent: getClientUserAgent(req),
       });
 
-      // Generar token temporal de verificación (válido por 30 segundos, un solo uso)
-      const token = await generate2FAToken(session.user.id);
+      // Generar token de sesión 2FA (válido por 1 hora)
+      const sessionToken = await generate2FASessionToken(session.user.id);
 
-      return NextResponse.json({
+      // Crear respuesta con cookie
+      const response = NextResponse.json({
         success: true,
         message: "Código de respaldo verificado correctamente",
-        token, // Token temporal para acceder al panel admin
       });
+
+      // Establecer cookie con el token de sesión (httpOnly, secure, 1 hora)
+      response.cookies.set("admin_2fa_session", sessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60, // 1 hora
+        path: "/admin",
+      });
+
+      return response;
     }
 
     // Log de intento fallido

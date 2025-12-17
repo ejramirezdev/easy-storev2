@@ -1,8 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Box, Chip, Container, Typography, Pagination, PaginationItem } from "@mui/material";
+import { 
+  Box, 
+  Container, 
+  Typography, 
+  Pagination, 
+  PaginationItem,
+} from "@mui/material";
 import Grid from "@mui/material/GridLegacy";
 import ProductCard, { UiProduct } from "@/components/products/ProductCard";
+import ProductsFilters from "@/components/products/ProductsFilters";
 import type { Metadata } from "next";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
@@ -22,7 +29,14 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = { cat?: string; page?: string };
+type SearchParams = { 
+  cat?: string; 
+  page?: string; 
+  search?: string;
+  sort?: string;
+  minPrice?: string;
+  maxPrice?: string;
+};
 
 export default async function ProductsPage({
   searchParams,
@@ -31,6 +45,10 @@ export default async function ProductsPage({
 }) {
   const sp = await searchParams;
   const activeCat = (sp?.cat ?? "").trim();
+  const searchQuery = (sp?.search ?? "").trim();
+  const sortBy = (sp?.sort ?? "newest").trim();
+  const minPrice = sp?.minPrice ? parseFloat(sp.minPrice) : undefined;
+  const maxPrice = sp?.maxPrice ? parseFloat(sp.maxPrice) : undefined;
   const rawPage = Number.parseInt((sp?.page ?? "").toString(), 10);
   const requestedPage = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
   const pageSize = 24;
@@ -59,19 +77,56 @@ export default async function ProductsPage({
       select: { id: true, name: true, slug: true },
     }).catch(() => []);
 
-    const where =
-      activeCat && activeCat !== "all"
-        ? { category: { slug: activeCat } }
-        : undefined;
+    // Construir where clause con múltiples filtros
+    const where: any = {};
+    
+    // Filtro por categoría
+    if (activeCat && activeCat !== "all") {
+      where.category = { slug: activeCat };
+    }
+    
+    // Filtro por búsqueda (nombre)
+    if (searchQuery) {
+      where.name = { contains: searchQuery, mode: "insensitive" };
+    }
+    
+    // Filtro por rango de precio
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      where.price = {};
+      if (minPrice !== undefined) where.price.gte = minPrice;
+      if (maxPrice !== undefined) where.price.lte = maxPrice;
+    }
 
     totalProducts = await prisma.product.count({ where }).catch(() => 0);
     const totalPages = Math.max(1, Math.ceil(totalProducts / pageSize));
     const page = Math.min(requestedPage, totalPages);
     const skip = (page - 1) * pageSize;
 
+    // Construir orderBy según el tipo de ordenamiento
+    let orderBy: any = { createdAt: "desc" }; // Por defecto: más recientes
+    switch (sortBy) {
+      case "price_asc":
+        orderBy = { price: "asc" };
+        break;
+      case "price_desc":
+        orderBy = { price: "desc" };
+        break;
+      case "name_asc":
+        orderBy = { name: "asc" };
+        break;
+      case "name_desc":
+        orderBy = { name: "desc" };
+        break;
+      case "featured":
+        orderBy = [{ isFeatured: "desc" }, { createdAt: "desc" }];
+        break;
+      default:
+        orderBy = { createdAt: "desc" };
+    }
+
     products = await prisma.product.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy,
       take: pageSize,
       skip,
       select: {
@@ -79,8 +134,9 @@ export default async function ProductsPage({
         name: true,
         slug: true,
         description: true,
-        price: true, // Decimal
-        imageUrl: true, // string | null
+        price: true,
+        imageUrl: true,
+        isFeatured: true,
         images: {
           orderBy: { sortOrder: "asc" },
           select: { url: true },
@@ -111,6 +167,10 @@ export default async function ProductsPage({
     if (activeCat && activeCat !== "all") {
       params.set("cat", activeCat);
     }
+    if (searchQuery) params.set("search", searchQuery);
+    if (sortBy && sortBy !== "newest") params.set("sort", sortBy);
+    if (minPrice !== undefined) params.set("minPrice", minPrice.toString());
+    if (maxPrice !== undefined) params.set("maxPrice", maxPrice.toString());
     if (targetPage > 1) {
       params.set("page", String(targetPage));
     }
@@ -120,62 +180,12 @@ export default async function ProductsPage({
 
   return (
     <Container sx={{ py: 4 }}>
-      {/* Filtros */}
-      <Box
-        sx={{
-          mb: 2.5,
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          flexWrap: "wrap",
-        }}
-      >
-        <Typography variant="h4" fontWeight={900} sx={{ mr: 1 }}>
-          Productos
-        </Typography>
+      <Typography variant="h4" fontWeight={900} sx={{ mb: 3 }}>
+        Productos
+      </Typography>
 
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-          <Link href="/products" style={{ textDecoration: "none" }}>
-            <Chip
-              label="Todos"
-              clickable
-              variant={
-                !activeCat || activeCat === "all" ? "filled" : "outlined"
-              }
-              sx={{
-                bgcolor:
-                  !activeCat || activeCat === "all"
-                    ? "rgba(216,27,156,0.2)"
-                    : "transparent",
-                color: "#fff",
-                borderColor: "rgba(255,255,255,0.2)",
-              }}
-            />
-          </Link>
-
-          {categories.map((c) => {
-            const selected = activeCat === c.slug;
-            return (
-              <Link
-                key={c.id}
-                href={`/products?cat=${encodeURIComponent(c.slug)}`}
-                style={{ textDecoration: "none" }}
-              >
-                <Chip
-                  label={c.name}
-                  clickable
-                  variant={selected ? "filled" : "outlined"}
-                  sx={{
-                    bgcolor: selected ? "rgba(216,27,156,0.2)" : "transparent",
-                    color: "#fff",
-                    borderColor: "rgba(255,255,255,0.2)",
-                  }}
-                />
-              </Link>
-            );
-          })}
-        </Box>
-      </Box>
+      {/* Filtros y búsqueda */}
+      <ProductsFilters categories={categories} />
 
       {/* Grid */}
       {uiProducts.length === 0 ? (
@@ -187,7 +197,7 @@ export default async function ProductsPage({
       ) : (
         <Grid container spacing={{ xs: 1.5, sm: 2, md: 2.5 }}>
           {uiProducts.map((p) => (
-            <Grid key={p.id} item xs={4} sm={6} md={3} lg={3} xl={3}>
+            <Grid key={p.id} item xs={6} sm={6} md={3} lg={3} xl={3}>
               <ProductCard product={p} />
             </Grid>
           ))}

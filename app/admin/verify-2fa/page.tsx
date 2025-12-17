@@ -40,21 +40,11 @@ export default function VerifyTwoFactorPage() {
       });
 
       if (res.ok) {
-        const data = await res.json();
-        // Redirigir a la página original con el token de verificación en la URL
-        // Este token solo es válido por 30 segundos y para un solo uso
-        if (data.token) {
-          console.log("[2FA Client] Token recibido, redirigiendo a:", redirectTo);
-          // NO establecer loading a false aquí - mantener el estado de carga hasta que la navegación se complete
-          router.push(`${redirectTo}?2fa_token=${encodeURIComponent(data.token)}`);
-          // El estado de carga se mantendrá hasta que el componente se desmonte
-          return;
-        } else {
-          console.warn("[2FA Client] No se recibió token en la respuesta");
-          router.push(redirectTo);
-          // El estado de carga se mantendrá hasta que el componente se desmonte
-          return;
-        }
+        // La sesión 2FA se estableció en una cookie, simplemente redirigir
+        console.log("[2FA Client] Autenticación exitosa, redirigiendo a:", redirectTo);
+        router.push(redirectTo);
+        // El estado de carga se mantendrá hasta que el componente se desmonte
+        return;
       } else {
         const errorData = await res.json();
         console.error("[2FA Client] Error en autenticación:", errorData);

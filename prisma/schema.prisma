@@ -125,6 +125,7 @@ model Product {
   price       Decimal  @db.Decimal(10, 2)
   stock       Int      @default(0)
   imageUrl    String?
+  isFeatured  Boolean  @default(false) // Producto destacado para mostrar en página principal
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -138,6 +139,7 @@ model Product {
 
   @@index([createdAt])
   @@index([name])
+  @@index([isFeatured])
 }
 
 model ProductImage {
@@ -193,6 +195,14 @@ model Order {
   payphoneClientTransactionId String? // clientTransactionId enviado a Payphone
   payphonePaymentStartedAt    DateTime? // Fecha/hora cuando se inició el pago
   payphoneConfirmedAt         DateTime? // Fecha/hora cuando se confirmó exitosamente
+
+  // Información del cupón aplicado (snapshot para mostrar en detalles de orden)
+  couponCode     String? // Código del cupón aplicado
+  couponType     String? // Tipo: PERCENT, FIXED, FREESHIP
+  couponValue    Decimal? @db.Decimal(10, 2) // Valor del cupón
+  couponDiscount Decimal? @db.Decimal(10, 2) // Descuento real aplicado
+  subtotal       Decimal? @db.Decimal(10, 2) // Subtotal antes de descuento
+  shipping       Decimal? @db.Decimal(10, 2) // Costo de envío
 
   items OrderItem[]
   addresses Address[]
@@ -365,4 +375,21 @@ model PayphoneSettings {
   merchantEmail               String?
   merchantName                String?
   responseUrl                 String?  // URL de respuesta después del pago
+}
+
+/// Cuentas bancarias para transferencias
+model BankAccount {
+  id            String   @id @default(uuid())
+  bankName      String   // Nombre del banco (ej: "Banco Guayaquil")
+  accountType   String   // Tipo de cuenta: "SAVINGS" | "CHECKING"
+  accountNumber String   // Número de cuenta
+  accountHolder String   // Nombre del titular
+  idNumber      String?  // Cédula/RUC del titular
+  email         String?  // Email de contacto
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0) // Para ordenar las cuentas
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
 }

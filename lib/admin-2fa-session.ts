@@ -72,6 +72,87 @@ export async function generate2FAToken(userId: string): Promise<string> {
 }
 
 /**
+ * Genera un token de sesión 2FA (válido por 1 hora)
+ * Este token se usa para mantener la sesión después de verificar el código 2FA
+ */
+export async function generate2FASessionToken(userId: string): Promise<string> {
+  const sessionToken = `2fa-session-${userId}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+  try {
+    if (!prisma) {
+      throw new Error("Prisma Client no está inicializado");
+    }
+
+    // Limpiar sesiones anteriores del usuario
+    await prisma.twoFactorToken.deleteMany({
+      where: {
+        userId,
+        token: {
+          startsWith: "2fa-session-",
+        },
+      },
+    });
+
+    // Crear nueva sesión
+    await prisma.twoFactorToken.create({
+      data: {
+        userId,
+        token: sessionToken,
+        expires,
+      },
+    });
+
+    if (process.env.NODE_ENV === "development") {
+      console.log("[2FA Debug] Sesión 2FA creada, válida por 1 hora");
+    }
+
+    return sessionToken;
+  } catch (error: any) {
+    console.error("Error generando sesión 2FA:", error);
+    throw new Error("Error al generar sesión de verificación");
+  }
+}
+
+/**
+ * Verifica si existe una sesión 2FA válida
+ */
+export async function verify2FASession(sessionToken: string, userId: string): Promise<boolean> {
+  try {
+    if (!prisma || !sessionToken) {
+      return false;
+    }
+
+    const tokenRecord = await prisma.twoFactorToken.findUnique({
+      where: { token: sessionToken },
+    });
+
+    if (!tokenRecord) {
+      return false;
+    }
+
+    // Verificar que el token pertenece al usuario
+    if (tokenRecord.userId !== userId) {
+      return false;
+    }
+
+    // Verificar que no ha expirado
+    if (tokenRecord.expires < new Date()) {
+      // Eliminar sesión expirada
+      await prisma.twoFactorToken.delete({
+        where: { token: sessionToken },
+      }).catch(() => {});
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error verificando sesión 2FA:", error);
+    return false;
+  }
+}
+
+/**
  * Verifica un token 2FA temporal
  * Elimina el token después de verificar (un solo uso)
  */
@@ -139,12 +220,17 @@ export async function verify2FAToken(token: string, userId: string): Promise<boo
 }
 
 /**
- * Verifica si el usuario necesita verificar 2FA en cada acceso
+ * Verifica si el usuario necesita verificar 2FA
+ * Ahora verifica si existe una sesión válida (1 hora) antes de requerir nueva verificación
  * 
- * IMPORTANTE: Siempre requiere verificación si 2FA está habilitado.
- * El código 2FA se debe ingresar en cada acceso al panel admin.
+ * @param userId - ID del usuario
+ * @param sessionToken - Token de sesión 2FA (opcional)
+ * @returns true si necesita verificar 2FA, false si tiene sesión válida
  */
-export async function requiresTwoFactorVerification(userId: string): Promise<boolean> {
+export async function requiresTwoFactorVerification(
+  userId: string,
+  sessionToken?: string | null
+): Promise<boolean> {
   try {
     const enabled = await isTwoFactorEnabled(userId);
     
@@ -154,8 +240,24 @@ export async function requiresTwoFactorVerification(userId: string): Promise<boo
       console.log("[2FA Debug] 2FA enabled:", enabled);
     }
     
-    // Si 2FA está habilitado, SIEMPRE requiere verificación
-    return enabled;
+    // Si 2FA no está habilitado, no requiere verificación
+    if (!enabled) {
+      return false;
+    }
+
+    // Si 2FA está habilitado pero tiene un token de sesión válido, no requiere verificación
+    if (sessionToken) {
+      const hasValidSession = await verify2FASession(sessionToken, userId);
+      if (hasValidSession) {
+        if (process.env.NODE_ENV === "development") {
+          console.log("[2FA Debug] Sesión 2FA válida encontrada");
+        }
+        return false;
+      }
+    }
+    
+    // Si 2FA está habilitado y no tiene sesión válida, requiere verificación
+    return true;
   } catch (error) {
     console.error("Error verificando necesidad de 2FA:", error);
     // En caso de error, requerir verificación por seguridad

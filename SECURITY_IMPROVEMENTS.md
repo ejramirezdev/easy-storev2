@@ -230,3 +230,6 @@ SMTP_SECURE=false
 - La validación de archivos ahora usa magic bytes, lo que es más seguro que confiar solo en MIME types.
 - Todos los emails HTML ahora sanitizan datos del usuario para prevenir XSS.
 - Las URLs de productos ahora validan contra SSRF bloqueando localhost e IPs privadas.
+
+
+

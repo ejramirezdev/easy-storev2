@@ -117,6 +117,13 @@ export async function POST(req: Request) {
         userId: session.user.id,
         status: "PENDING",
         total: String(totals.total), // Decimal(10,2)
+        // Guardar información del cupón y totales para mostrar correctamente en detalles
+        subtotal: String(totals.subtotal),
+        shipping: String(totals.shipping),
+        couponCode: redemption?.coupon?.code ?? null,
+        couponType: redemption?.coupon?.type ?? null,
+        couponValue: redemption?.coupon?.value ? String(redemption.coupon.value) : null,
+        couponDiscount: totals.discount > 0 ? String(totals.discount) : null,
         items: {
           create: items.map((it) => ({
             productId: it.productId,

@@ -142,19 +142,8 @@ export default function PayphoneButton({
     return Math.round(subtotal * 100);
   }, [totals.subtotal]);
 
-  // Calcular impuestos: el precio ya incluye IVA, así que calculamos el impuesto desde el precio final
-  // Si el precio es $100 con 15% IVA incluido:
-  // - Precio base = $100 / 1.15 ≈ $86.96
-  // - Impuesto = $100 - $86.96 ≈ $13.04
-  const taxInCents = useMemo(() => {
-    // El subtotal ya incluye el 15% de IVA
-    // Calculamos el precio base sin IVA y luego el impuesto
-    const subtotalAfterDiscount = Math.max(0, subtotalInCents - Math.round((totals.discount || 0) * 100));
-    const basePrice = Math.round(subtotalAfterDiscount / 1.15); // Precio base sin IVA
-    const tax = subtotalAfterDiscount - basePrice; // Impuesto incluido en el precio
-    return tax;
-  }, [subtotalInCents, totals.discount]);
-
+  // Los impuestos se calculan dentro de initializePaymentBox porque
+  // necesitamos el descuento aplicado antes de calcular el tax
   const serviceInCents = 0;
   const tipInCents = 0;
 
@@ -354,68 +343,84 @@ export default function PayphoneButton({
         container.innerHTML = "";
       }
 
-      // Calcular amount correctamente según la documentación
+      // Calcular amount correctamente según la documentación de Payphone
+      // IMPORTANTE: Payphone valida que amount = amountWithTax + tax + service + tip
       // El precio ya incluye IVA, así que:
-      // - amountWithTax = precio base sin IVA (subtotal / 1.15)
-      // - tax = impuesto calculado desde el precio que ya incluye IVA
-      // - amount = subtotal + shipping + service + tip (el total que el usuario paga)
-      const subtotalAfterDiscount = Math.max(0, subtotalInCents - Math.round((totals.discount || 0) * 100));
+      // - amountWithTax = precio base sin IVA (subtotal / 1.15) + shipping base sin IVA
+      // - tax = impuesto calculado desde el precio que ya incluye IVA + IVA del shipping
+      // - amount = amountWithTax + tax + service + tip (INCLUYENDO shipping para cobrar el total completo)
+      const discountInCents = Math.round((totals.discount || 0) * 100);
+      const subtotalAfterDiscount = Math.max(0, subtotalInCents - discountInCents);
       const basePriceInCents = Math.round(subtotalAfterDiscount / 1.15); // Precio base sin IVA
+      const taxInCentsFromBase = subtotalAfterDiscount - basePriceInCents; // Impuesto calculado
       const shippingInCents = Math.round((totals.shipping || 0) * 100);
-      const calculatedAmount = subtotalInCents + serviceInCents + tipInCents + shippingInCents;
       
-      console.log("Payphone: Cálculos de montos (precio ya incluye IVA)", {
+      // Calcular shipping base sin IVA y IVA del shipping
+      // El shipping también tiene IVA del 15%
+      const shippingBaseInCents = Math.round(shippingInCents / 1.15); // Shipping base sin IVA
+      const shippingTaxInCents = shippingInCents - shippingBaseInCents; // IVA del shipping
+      
+      // CRÍTICO: amount debe ser igual a amountWithTax + tax + service + tip
+      // Incluimos el shipping en amountWithTax y tax para que la ecuación sea válida
+      // y el usuario pague el total completo (incluyendo shipping)
+      const amountWithTaxIncludingShipping = basePriceInCents + shippingBaseInCents;
+      const taxIncludingShipping = taxInCentsFromBase + shippingTaxInCents;
+      const calculatedAmount = amountWithTaxIncludingShipping + taxIncludingShipping + serviceInCents + tipInCents;
+      
+      console.log("Payphone: Cálculos de montos (precio ya incluye IVA, shipping incluido)", {
         subtotalInCents,
+        discountInCents,
         subtotalAfterDiscount,
         basePriceInCents,
-        taxInCents,
-        taxPercentage: subtotalAfterDiscount > 0 ? ((taxInCents / subtotalAfterDiscount) * 100).toFixed(2) + "%" : "0%",
+        taxInCentsFromBase,
+        shippingInCents,
+        shippingBaseInCents,
+        shippingTaxInCents,
+        amountWithTaxIncludingShipping,
+        taxIncludingShipping,
         serviceInCents,
         tipInCents,
-        shippingInCents,
         calculatedAmount,
         amountInCents,
         diferencia: Math.abs(calculatedAmount - amountInCents),
+        validacion: `${calculatedAmount} = ${amountWithTaxIncludingShipping} + ${taxIncludingShipping} + ${serviceInCents} + ${tipInCents}`,
       });
       
-      // Usar el calculatedAmount que incluye shipping correctamente
-      // El amountInCents viene de totals.total que ya debería incluir shipping
-      // pero usamos calculatedAmount para estar seguros de que incluye todo
+      // Usar calculatedAmount (CON shipping incluido) para cobrar el total completo
       const finalAmount = calculatedAmount;
       
-      // Verificar que el amount calculado coincida con el total
+      // Verificar coherencia (el total calculado debe coincidir con amountInCents)
       if (Math.abs(calculatedAmount - amountInCents) > 1) {
         console.warn(
-          "Payphone: Discrepancia en cálculos de amount. Usando calculatedAmount que incluye shipping.",
+          "Payphone: Discrepancia en cálculos de totales.",
           {
             calculatedAmount,
             amountInCents,
+            shippingInCents,
             subtotalInCents,
-            taxInCents,
+            taxInCentsFromBase,
             serviceInCents,
             tipInCents,
-            shippingInCents,
           }
         );
       }
 
       // Crear instancia de PPaymentButtonBox según la documentación
       // IMPORTANTE: El precio ya incluye IVA, así que calculamos:
-      // - amountWithTax = precio base sin IVA (subtotal / 1.15)
-      // - tax = impuesto calculado desde el precio que ya incluye IVA
-      // - amount = total que el usuario paga (subtotal + shipping + service + tip)
+      // - amountWithTax = precio base sin IVA (subtotal / 1.15) + shipping base sin IVA
+      // - tax = impuesto calculado desde el precio que ya incluye IVA + IVA del shipping
+      // - amount = amountWithTax + tax + service + tip (INCLUYENDO shipping para cobrar el total completo)
       const config: PPaymentButtonBoxConfig = {
         token: payphoneConfig.token,
         clientTransactionId: currentClientTransactionId, // ID único para este intento de pago
-        amount: finalAmount, // Total que el usuario paga (incluye subtotal + shipping + service + tip)
-        amountWithTax: basePriceInCents, // Precio base sin IVA (sobre el cual se calcula el impuesto)
+        amount: finalAmount, // Debe cumplir: amount = amountWithTax + tax + service + tip (CON shipping incluido)
+        amountWithTax: amountWithTaxIncludingShipping, // Precio base sin IVA + shipping base sin IVA
         // NO enviar amountWithoutTax cuando usamos amountWithTax + tax
-        tax: taxInCents, // Impuesto calculado desde el precio que ya incluye IVA
+        tax: taxIncludingShipping, // Impuesto calculado desde el precio que ya incluye IVA + IVA del shipping
         service: serviceInCents,
         tip: tipInCents,
         currency: currency,
-        // Nota: Payphone no tiene un campo separado para "shipping" en el config
-        // El shipping ya está incluido en el campo "amount" (calculatedAmount)
+        // Nota: El shipping está incluido en amountWithTax y tax para que el usuario pague el total completo
         storeId: payphoneConfig.storeId,
         reference: reference,
         lang: "es",
@@ -480,7 +485,8 @@ export default function PayphoneButton({
     payphoneConfig.storeId,
     amountInCents,
     subtotalInCents,
-    taxInCents,
+    totals.discount,
+    totals.shipping,
     serviceInCents,
     tipInCents,
     currency,
@@ -489,6 +495,7 @@ export default function PayphoneButton({
     containerId,
     billingAddress,
     shippingAddress,
+    generateClientTransactionId,
   ]);
 
   // Verificar que PPaymentButtonBox esté disponible

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Box, IconButton } from "@mui/material";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Img = { id: string; url: string; alt?: string | null };
@@ -57,7 +57,9 @@ export default function ProductGallery({
   }, [images, imageUrl, name]);
 
   const [index, setIndex] = useState(0);
+  const [direction, setDirection] = useState(0); // -1 para izquierda, 1 para derecha
   const total = normalized.length;
+  
   useEffect(() => {
     setIndex((prev) => {
       if (total === 0) return 0;
@@ -66,10 +68,31 @@ export default function ProductGallery({
       return prev;
     });
   }, [total]);
+  
   const current = normalized[index] ?? normalized[0]; // 👈 siempre definido
 
-  const next = () => setIndex((i) => (((i + 1) % total) + total) % total);
-  const prev = () => setIndex((i) => (((i - 1) % total) + total) % total);
+  const next = () => {
+    setDirection(1);
+    setIndex((i) => (((i + 1) % total) + total) % total);
+  };
+  
+  const prev = () => {
+    setDirection(-1);
+    setIndex((i) => (((i - 1) % total) + total) % total);
+  };
+
+  // Manejar deslizamiento táctil
+  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const swipeThreshold = 50;
+    
+    if (info.offset.x > swipeThreshold) {
+      // Deslizar a la derecha (imagen anterior)
+      prev();
+    } else if (info.offset.x < -swipeThreshold) {
+      // Deslizar a la izquierda (siguiente imagen)
+      next();
+    }
+  };
 
   if (!current) return null; // seguridad extra (no debería ocurrir)
 
@@ -84,33 +107,41 @@ export default function ProductGallery({
           border: "1px solid rgba(255,255,255,0.06)",
           bgcolor: "rgba(255,255,255,0.04)",
           aspectRatio: "16 / 10",
+          touchAction: "pan-y", // Permitir scroll vertical pero capturar horizontal
         }}
       >
-        <AnimatePresence mode="popLayout" initial={false}>
+        <AnimatePresence mode="popLayout" initial={false} custom={direction}>
           <motion.img
             key={current.id}
             src={current.url}
             alt={current.alt ?? name}
-            initial={{ opacity: 0, x: 40 }}
+            custom={direction}
+            initial={{ opacity: 0, x: direction > 0 ? 100 : -100 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -40 }}
-            transition={{ duration: 0.25 }}
+            exit={{ opacity: 0, x: direction > 0 ? -100 : 100 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragEnd={handleDragEnd}
             style={{
               width: "100%",
               height: "100%",
-              objectFit: "cover",
+              objectFit: "contain",
               display: "block",
+              cursor: total > 1 ? "grab" : "default",
             }}
           />
         </AnimatePresence>
 
-        {/* Controles */}
+        {/* Controles - Solo en desktop */}
         {total > 1 && (
           <>
             <IconButton
               onClick={prev}
               size="small"
               sx={{
+                display: { xs: "none", sm: "flex" },
                 position: "absolute",
                 top: "50%",
                 left: 8,
@@ -125,6 +156,7 @@ export default function ProductGallery({
               onClick={next}
               size="small"
               sx={{
+                display: { xs: "none", sm: "flex" },
                 position: "absolute",
                 top: "50%",
                 right: 8,
@@ -136,6 +168,39 @@ export default function ProductGallery({
               <ChevronRight size={18} />
             </IconButton>
           </>
+        )}
+
+        {/* Indicadores de puntos - Solo en móvil */}
+        {total > 1 && (
+          <Box
+            sx={{
+              display: { xs: "flex", sm: "none" },
+              position: "absolute",
+              bottom: 12,
+              left: "50%",
+              transform: "translateX(-50%)",
+              gap: 1,
+              bgcolor: "rgba(0,0,0,0.5)",
+              borderRadius: "12px",
+              px: 1.5,
+              py: 0.75,
+            }}
+          >
+            {normalized.map((_, i) => (
+              <Box
+                key={i}
+                onClick={() => setIndex(i)}
+                sx={{
+                  width: i === index ? 24 : 8,
+                  height: 8,
+                  borderRadius: "4px",
+                  bgcolor: i === index ? "#D81B9C" : "rgba(255,255,255,0.5)",
+                  transition: "all 0.3s ease",
+                  cursor: "pointer",
+                }}
+              />
+            ))}
+          </Box>
         )}
       </Box>
 

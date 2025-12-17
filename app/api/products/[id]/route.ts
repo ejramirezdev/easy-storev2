@@ -95,6 +95,7 @@ export async function PUT(
           stock: input.stock,
           imageUrl: input.imageUrl ?? null,
           categoryId: input.categoryId ?? null,
+          isFeatured: input.isFeatured ?? false,
         },
       });
 

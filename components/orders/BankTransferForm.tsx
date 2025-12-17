@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -12,8 +12,7 @@ import {
   Typography,
   Stack,
   Alert,
-  TextField,
-  InputLabelProps,
+  CircularProgress,
 } from "@mui/material";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -28,29 +27,15 @@ type BankTransferFormProps = {
   onReceiptUploaded: () => void;
 };
 
-const BANKS = [
-  { value: "GUAYAQUIL", label: "Banco Guayaquil" },
-  { value: "PICHINCHA", label: "Banco Pichincha" },
-  { value: "PACIFICO", label: "Banco del Pacífico" },
-];
-
-// Información de cuentas bancarias (esto debería venir de configuración)
-const BANK_ACCOUNTS: Record<string, { account: string; type: string; name: string }> = {
-  GUAYAQUIL: {
-    account: "1234567890",
-    type: "Ahorros",
-    name: "Easy Store Ecuador",
-  },
-  PICHINCHA: {
-    account: "0987654321",
-    type: "Corriente",
-    name: "Easy Store Ecuador",
-  },
-  PACIFICO: {
-    account: "1122334455",
-    type: "Ahorros",
-    name: "Easy Store Ecuador",
-  },
+type BankAccount = {
+  id: string;
+  bankName: string;
+  accountType: string;
+  accountNumber: string;
+  accountHolder: string;
+  idNumber: string | null;
+  email: string | null;
+  isActive: boolean;
 };
 
 export default function BankTransferForm({
@@ -60,6 +45,8 @@ export default function BankTransferForm({
   receiptUrl,
   onReceiptUploaded,
 }: BankTransferFormProps) {
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(true);
   const [selectedBank, setSelectedBank] = useState<string>(
     currentBank || ""
   );
@@ -70,6 +57,25 @@ export default function BankTransferForm({
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // Cargar cuentas bancarias desde la API
+  useEffect(() => {
+    const loadBankAccounts = async () => {
+      try {
+        const res = await fetch("/api/admin/bank-accounts");
+        if (res.ok) {
+          const data = await res.json();
+          const activeAccounts = data.accounts.filter((acc: BankAccount) => acc.isActive);
+          setBankAccounts(activeAccounts);
+        }
+      } catch (err) {
+        console.error("Error cargando cuentas bancarias:", err);
+      } finally {
+        setLoadingAccounts(false);
+      }
+    };
+    loadBankAccounts();
+  }, []);
 
   const handleBankChange = async (bank: string) => {
     setSelectedBank(bank);
@@ -162,7 +168,27 @@ export default function BankTransferForm({
     }
   };
 
-  const bankInfo = selectedBank ? BANK_ACCOUNTS[selectedBank] : null;
+  const selectedAccount = bankAccounts.find((acc) => acc.id === selectedBank);
+
+  if (loadingAccounts) {
+    return (
+      <Paper sx={{ p: 3 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 4 }}>
+          <CircularProgress />
+        </Box>
+      </Paper>
+    );
+  }
+
+  if (bankAccounts.length === 0) {
+    return (
+      <Paper sx={{ p: 3 }}>
+        <Alert severity="warning">
+          No hay cuentas bancarias configuradas. Por favor, contacta al administrador.
+        </Alert>
+      </Paper>
+    );
+  }
 
   return (
     <Paper sx={{ p: 3 }}>
@@ -172,27 +198,27 @@ export default function BankTransferForm({
             Transferencia bancaria
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Selecciona el banco desde el cual realizarás la transferencia
+            Selecciona la cuenta bancaria a la que realizarás la transferencia
           </Typography>
         </Box>
 
         <FormControl fullWidth>
-          <InputLabel id="bank-select-label">Banco</InputLabel>
+          <InputLabel id="bank-select-label">Cuenta Bancaria</InputLabel>
           <Select
             labelId="bank-select-label"
             value={selectedBank}
-            label="Banco"
+            label="Cuenta Bancaria"
             onChange={(e) => handleBankChange(e.target.value)}
           >
-            {BANKS.map((bank) => (
-              <MenuItem key={bank.value} value={bank.value}>
-                {bank.label}
+            {bankAccounts.map((account) => (
+              <MenuItem key={account.id} value={account.id}>
+                {account.bankName} - {account.accountType === "SAVINGS" ? "Ahorros" : "Corriente"} - {account.accountNumber}
               </MenuItem>
             ))}
           </Select>
         </FormControl>
 
-        {bankInfo && (
+        {selectedAccount && (
           <Box
             sx={{
               p: 2,
@@ -207,17 +233,27 @@ export default function BankTransferForm({
             </Typography>
             <Stack spacing={0.5} sx={{ mt: 1 }}>
               <Typography variant="body2">
-                <strong>Banco:</strong> {BANKS.find((b) => b.value === selectedBank)?.label}
+                <strong>Banco:</strong> {selectedAccount.bankName}
               </Typography>
               <Typography variant="body2">
-                <strong>Tipo de cuenta:</strong> {bankInfo.type}
+                <strong>Tipo de cuenta:</strong> {selectedAccount.accountType === "SAVINGS" ? "Ahorros" : "Corriente"}
               </Typography>
               <Typography variant="body2">
-                <strong>Número de cuenta:</strong> {bankInfo.account}
+                <strong>Número de cuenta:</strong> {selectedAccount.accountNumber}
               </Typography>
               <Typography variant="body2">
-                <strong>Titular:</strong> {bankInfo.name}
+                <strong>Titular:</strong> {selectedAccount.accountHolder}
               </Typography>
+              {selectedAccount.idNumber && (
+                <Typography variant="body2">
+                  <strong>Cédula/RUC:</strong> {selectedAccount.idNumber}
+                </Typography>
+              )}
+              {selectedAccount.email && (
+                <Typography variant="body2">
+                  <strong>Email:</strong> {selectedAccount.email}
+                </Typography>
+              )}
               <Typography variant="body2" sx={{ mt: 1, fontWeight: 600 }}>
                 <strong>Monto a transferir:</strong> ${total.toFixed(2)}
               </Typography>

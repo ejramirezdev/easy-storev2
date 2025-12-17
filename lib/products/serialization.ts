@@ -35,6 +35,7 @@ export function toAdminProduct(
     price: Number(product.price),
     stock: product.stock,
     imageUrl: resolveProductImageUrl(product),
+    isFeatured: product.isFeatured ?? false,
     images: (product.images ?? []).map((img) => ({
       id: img.id,
       url: img.url,

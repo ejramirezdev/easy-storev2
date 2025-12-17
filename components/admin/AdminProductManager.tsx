@@ -56,6 +56,7 @@ const formDefaults = (): ProductInput => ({
   imageUrl: "",
   images: [],
   categoryId: null,
+  isFeatured: false,
 });
 
 type FormValues = ProductInput;
@@ -68,6 +69,7 @@ type Props = {
   adminName: string;
   categories: AdminCategory[];
   initialTab?: "create" | "edit" | "categories";
+  onCategoriesUpdate?: (categories: AdminCategory[]) => void;
 };
 
 const categoryDefaults = (): CategoryFormValues => ({
@@ -95,6 +97,7 @@ function toFormValues(product: AdminProduct): FormValues {
     stock: product.stock,
     imageUrl: product.imageUrl ?? "",
     categoryId: product.category?.id ?? null,
+    isFeatured: product.isFeatured ?? false,
     images: product.images.map((img, index) => ({
       id: img.id,
       url: img.url,
@@ -148,15 +151,14 @@ export default function AdminProductManager({
   adminName,
   categories,
   initialTab,
+  onCategoriesUpdate,
 }: Props) {
   const [products, setProducts] = useState<AdminProduct[]>(initialProducts);
   const [createStatus, setCreateStatus] = useState<StatusMessage>(null);
   const [updateStatus, setUpdateStatus] = useState<StatusMessage>(null);
   const [deleteStatus, setDeleteStatus] = useState<StatusMessage>(null);
   const [categoryStatus, setCategoryStatus] = useState<StatusMessage>(null);
-  const [categoryList, setCategoryList] = useState<AdminCategory[]>(() => [
-    ...categories,
-  ]);
+  const [categoryList, setCategoryList] = useState<AdminCategory[]>(categories);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Estado para Snackbar (mensajes flotantes)
@@ -188,6 +190,11 @@ export default function AdminProductManager({
 
   // Estado para el buscador de productos
   const [productSearchQuery, setProductSearchQuery] = useState("");
+
+  // Sincronizar categorías cuando cambien desde el padre
+  useEffect(() => {
+    setCategoryList(categories);
+  }, [categories]);
 
   const selectedProduct = useMemo(
     () => products.find((p) => p.id === selectedId) ?? null,
@@ -651,9 +658,12 @@ export default function AdminProductManager({
       }
 
       const created = json as AdminCategory;
-      setCategoryList((prev) =>
-        [...prev, created].sort((a, b) => a.name.localeCompare(b.name))
-      );
+      const updatedCategories = [...categoryList, created].sort((a, b) => a.name.localeCompare(b.name));
+      setCategoryList(updatedCategories);
+      // Notificar al componente padre para que actualice el estado compartido
+      if (onCategoriesUpdate) {
+        onCategoriesUpdate(updatedCategories);
+      }
       categoryForm.reset(categoryDefaults());
       createForm.setValue("categoryId", created.id, {
         shouldDirty: true,
@@ -1156,6 +1166,25 @@ export default function AdminProductManager({
                                 />
                               </Grid>
                             </Grid>
+
+                            <Controller
+                              control={createForm.control}
+                              name="isFeatured"
+                              render={({ field }) => (
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                  <input
+                                    type="checkbox"
+                                    id="create-featured"
+                                    checked={field.value ?? false}
+                                    onChange={(e) => field.onChange(e.target.checked)}
+                                    style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                                  />
+                                  <label htmlFor="create-featured" style={{ cursor: "pointer", fontSize: "0.875rem" }}>
+                                    Producto destacado (se mostrará en la página principal)
+                                  </label>
+                                </Box>
+                              )}
+                            />
 
                             <TextField
                               label="Descripción"
@@ -1894,6 +1923,25 @@ export default function AdminProductManager({
                             />
                           </Grid>
                         </Grid>
+
+                        <Controller
+                          control={editForm.control}
+                          name="isFeatured"
+                          render={({ field }) => (
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                              <input
+                                type="checkbox"
+                                id="edit-featured"
+                                checked={field.value ?? false}
+                                onChange={(e) => field.onChange(e.target.checked)}
+                                style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                              />
+                              <label htmlFor="edit-featured" style={{ cursor: "pointer", fontSize: "0.875rem" }}>
+                                Producto destacado (se mostrará en la página principal)
+                              </label>
+                            </Box>
+                          )}
+                        />
 
                         <TextField
                           label="Descripción"
