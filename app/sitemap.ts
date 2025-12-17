@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easystoreecu.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // URLs base estáticas - siempre se incluyen
   const baseUrls: MetadataRoute.Sitemap = [
     {
       url: siteUrl,
@@ -54,17 +55,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let categoryUrls: MetadataRoute.Sitemap = [];
   
   try {
-    if (prisma) {
-      // Productos
-      const products = await prisma.product.findMany({
-        select: {
-          slug: true,
-          updatedAt: true,
-        },
-        orderBy: {
-          updatedAt: "desc",
-        },
-      });
+    // Verificar que no estemos en build time
+    if (process.env.NEXT_PHASE === "phase-production-build") {
+      console.log("Sitemap: Build time, retornando solo URLs base");
+      return baseUrls;
+    }
+
+    if (!prisma) {
+      console.warn("Sitemap: Prisma no disponible, retornando solo URLs base");
+      return baseUrls;
+    }
+
+    // Productos con timeout para evitar que el sitemap se cuelgue
+    try {
+      const products = await Promise.race([
+        prisma.product.findMany({
+          select: {
+            slug: true,
+            updatedAt: true,
+          },
+          orderBy: {
+            updatedAt: "desc",
+          },
+        }),
+        new Promise<[]>((resolve) => 
+          setTimeout(() => {
+            console.warn("Sitemap: Timeout obteniendo productos");
+            resolve([]);
+          }, 5000)
+        ),
+      ]) as Array<{ slug: string; updatedAt: Date | null }>;
 
       productUrls = products.map((product) => ({
         url: `${siteUrl}/products/${product.slug}`,
@@ -72,17 +92,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: "weekly" as const,
         priority: 0.7,
       }));
+    } catch (productError) {
+      console.error("Sitemap: Error obteniendo productos:", productError);
+      // Continuar sin productos si hay error
+    }
 
-      // Categorías (si tienes páginas de categorías)
-      const categories = await prisma.category.findMany({
-        select: {
-          slug: true,
-          updatedAt: true,
-        },
-        orderBy: {
-          updatedAt: "desc",
-        },
-      });
+    // Categorías con timeout
+    try {
+      const categories = await Promise.race([
+        prisma.category.findMany({
+          select: {
+            slug: true,
+            updatedAt: true,
+          },
+          orderBy: {
+            updatedAt: "desc",
+          },
+        }),
+        new Promise<[]>((resolve) => 
+          setTimeout(() => {
+            console.warn("Sitemap: Timeout obteniendo categorías");
+            resolve([]);
+          }, 5000)
+        ),
+      ]) as Array<{ slug: string; updatedAt: Date | null }>;
 
       categoryUrls = categories.map((category) => ({
         url: `${siteUrl}/products?cat=${category.slug}`,
@@ -90,11 +123,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: "weekly" as const,
         priority: 0.6,
       }));
+    } catch (categoryError) {
+      console.error("Sitemap: Error obteniendo categorías:", categoryError);
+      // Continuar sin categorías si hay error
     }
   } catch (error) {
-    console.error("Error generando sitemap:", error);
+    console.error("Sitemap: Error general:", error);
+    // Si hay error general, retornar al menos las URLs base
+    return baseUrls;
   }
 
+  // Siempre retornar al menos las URLs base, incluso si hay errores
   return [...baseUrls, ...productUrls, ...categoryUrls];
 }
 
