@@ -8,6 +8,9 @@ import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 export function securityMiddleware(req: NextRequest) {
   const response = NextResponse.next();
   
+  // Eliminar X-Powered-By header para seguridad
+  response.headers.delete("X-Powered-By");
+  
   // Aplicar headers de seguridad
   const securityHeaders = getSecurityHeaders();
   Object.entries(securityHeaders).forEach(([key, value]) => {

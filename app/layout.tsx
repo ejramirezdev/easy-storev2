@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     description: defaultDescription,
     images: [
       {
-        url: `${siteUrl}/og-image.png`,
+        url: `${siteUrl}/api/og-image?type=default`,
         width: 1200,
         height: 630,
         alt: siteName,
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `${siteName} - Productos Tecnológicos y Servicios en Ecuador`,
     description: defaultDescription,
-    images: [`${siteUrl}/og-image.png`],
+    images: [`${siteUrl}/api/og-image?type=default`],
     creator: "@easystoreecu",
   },
   robots: {
@@ -112,7 +112,7 @@ export default function RootLayout({
       "Tienda de productos tecnológicos, gadgets y servicios de reparación y desarrollo de software en Ecuador",
     url: siteUrl,
     logo: `${siteUrl}/logo.png`,
-    image: `${siteUrl}/og-image.png`,
+    image: `${siteUrl}/api/og-image?type=default`,
     address: {
       "@type": "PostalAddress",
       addressCountry: "EC",
@@ -171,6 +171,17 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        {/* Apple Touch Icon */}
+        <link rel="apple-touch-icon" sizes="180x180" href="/icon-192.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/icon-192.png" />
+        <link rel="apple-touch-icon" sizes="144x144" href="/icon-192.png" />
+        <link rel="apple-touch-icon" sizes="120x120" href="/icon-192.png" />
+        <link rel="apple-touch-icon" sizes="114x114" href="/icon-192.png" />
+        <link rel="apple-touch-icon" sizes="76x76" href="/icon-192.png" />
+        <link rel="apple-touch-icon" sizes="72x72" href="/icon-192.png" />
+        <link rel="apple-touch-icon" sizes="60x60" href="/icon-192.png" />
+        <link rel="apple-touch-icon" sizes="57x57" href="/icon-192.png" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
         {gaId && <GoogleAnalytics gaId={gaId} />}
         {gtmId && <GoogleTagManager gtmId={gtmId} />}
       </head>

@@ -62,6 +62,11 @@ const nextConfig: NextConfig = {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
           },
+          // Ocultar X-Powered-By para seguridad
+          {
+            key: "X-Powered-By",
+            value: "",
+          },
         ],
       },
     ];

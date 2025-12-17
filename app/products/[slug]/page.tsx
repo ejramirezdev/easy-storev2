@@ -20,23 +20,33 @@ export async function generateMetadata({
   try {
     if (!prisma) return {};
 
-    const product = await prisma.product.findFirst({
-      where: { slug: { equals: slug, mode: "insensitive" } },
-      select: { 
-        name: true, 
-        description: true, 
-        imageUrl: true,
-        price: true,
-        stock: true,
-        category: { select: { name: true } }
-      },
-    }).catch(() => null);
-    
+    const product = await prisma.product
+      .findFirst({
+        where: { slug: { equals: slug, mode: "insensitive" } },
+        select: {
+          name: true,
+          description: true,
+          imageUrl: true,
+          price: true,
+          stock: true,
+          category: { select: { name: true } },
+        },
+      })
+      .catch(() => null);
+
     if (!product) return {};
 
     const productUrl = `${siteUrl}/products/${slug}`;
     const productImage = product.imageUrl || `${siteUrl}/placeholder.jpg`;
-    const productDescription = product.description || `${product.name} - Disponible en Easy Store Ecuador`;
+    const price = Number(product.price);
+    const priceFormatted = `$${price.toFixed(2)}`;
+    const productDescription =
+      product.description ||
+      `${product.name} - Disponible en Easy Store Ecuador`;
+    // Descripción para Open Graph que incluye el precio
+    const ogDescription = `${productDescription} | Precio: ${priceFormatted}${
+      product.stock > 0 ? " | En stock" : " | Agotado"
+    }`;
 
     return {
       title: `${product.name} | Easy Store`,
@@ -46,14 +56,26 @@ export async function generateMetadata({
         product.category?.name || "producto tecnológico",
         "Ecuador",
         "gadgets",
-        "tecnología"
+        "tecnología",
       ],
       openGraph: {
         type: "website",
         title: product.name,
-        description: productDescription,
+        description: ogDescription, // Incluye precio en la descripción
         url: productUrl,
         images: [
+          {
+            // Generar imagen OG dinámica con precio, o usar imagen del producto como fallback
+            url: `${siteUrl}/api/og-image?type=product&name=${encodeURIComponent(
+              product.name
+            )}&price=${encodeURIComponent(priceFormatted)}${
+              productImage ? `&image=${encodeURIComponent(productImage)}` : ""
+            }`,
+            width: 1200,
+            height: 630,
+            alt: product.name,
+          },
+          // Fallback: imagen del producto
           {
             url: productImage,
             width: 1200,
@@ -65,7 +87,7 @@ export async function generateMetadata({
       twitter: {
         card: "summary_large_image",
         title: product.name,
-        description: productDescription,
+        description: ogDescription, // Incluye precio en la descripción
         images: [productImage],
       },
       alternates: {
@@ -93,24 +115,26 @@ export default async function ProductDetailPage({
       notFound();
     }
 
-    const product = await prisma.product.findFirst({
-      where: { slug: { equals: slug, mode: "insensitive" } },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        price: true,
-        stock: true,
-        imageUrl: true,
-        images: {
-          select: { id: true, url: true, alt: true, sortOrder: true },
-          orderBy: { sortOrder: "asc" },
+    const product = await prisma.product
+      .findFirst({
+        where: { slug: { equals: slug, mode: "insensitive" } },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          price: true,
+          stock: true,
+          imageUrl: true,
+          images: {
+            select: { id: true, url: true, alt: true, sortOrder: true },
+            orderBy: { sortOrder: "asc" },
+          },
+          category: { select: { name: true, slug: true } },
+          createdAt: true,
         },
-        category: { select: { name: true, slug: true } },
-        createdAt: true,
-      },
-    }).catch(() => null);
+      })
+      .catch(() => null);
 
     if (!product) notFound();
 

@@ -11,8 +11,8 @@ import type { Metadata } from "next";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easystoreecu.com";
 
 export const metadata: Metadata = {
-  title: "Inicio",
-  description: "Easy Store - Tu tienda de productos tecnológicos, gadgets y servicios en Ecuador. Encuentra los mejores dispositivos electrónicos, reparación de laptops y desarrollo de software a medida. Envío a todo el país.",
+  title: "Easy Store - Productos Tecnológicos y Servicios en Ecuador | Tienda Online",
+  description: "Tienda de productos tecnológicos, gadgets y servicios en Ecuador. Encuentra dispositivos electrónicos, reparación de laptops y desarrollo de software.",
   keywords: [
     "tienda tecnología Ecuador",
     "productos tecnológicos Ecuador",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     siteName: "Easy Store",
     images: [
       {
-        url: `${siteUrl}/og-image.png`,
+        url: `${siteUrl}/api/og-image?type=default`,
         width: 1200,
         height: 630,
         alt: "Easy Store - Productos Tecnológicos",
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Easy Store - Productos Tecnológicos y Servicios en Ecuador",
     description: "Tienda de productos tecnológicos, gadgets y servicios en Ecuador.",
-    images: [`${siteUrl}/og-image.png`],
+    images: [`${siteUrl}/api/og-image?type=default`],
   },
   alternates: {
     canonical: siteUrl,
@@ -216,11 +216,99 @@ export default async function Page() {
       
       <HeroCarousel />
 
-      {/* Sección de destacados (opcional por ahora) */}
+      {/* Sección principal con H1 y contenido SEO - Oculto visualmente pero presente para SEO */}
+      <Box 
+        component="main" 
+        sx={{ 
+          position: "absolute",
+          width: "1px",
+          height: "1px",
+          padding: 0,
+          margin: "-1px",
+          overflow: "hidden",
+          clip: "rect(0, 0, 0, 0)",
+          whiteSpace: "nowrap",
+          border: 0,
+          opacity: 0,
+          pointerEvents: "none",
+        }}
+        aria-hidden="true"
+      >
+        <Container maxWidth="lg">
+          <Typography 
+            component="h1" 
+            variant="h2" 
+            sx={{ 
+              mb: 4, 
+              fontWeight: 900,
+              fontSize: { xs: "2rem", md: "3rem" },
+              textAlign: "center",
+              color: "#FFFFFF"
+            }}
+          >
+            Easy Store - Tu Tienda de Productos Tecnológicos en Ecuador
+          </Typography>
+          
+          <Box sx={{ mb: 6, color: "#CCCCCC", lineHeight: 1.8 }}>
+            <Typography variant="body1" component="p" sx={{ mb: 3, fontSize: "1.1rem" }}>
+              Bienvenido a Easy Store. Somos tu destino principal para productos tecnológicos, gadgets y servicios especializados en Ecuador. 
+              Ofrecemos una amplia selección de dispositivos electrónicos de última generación. Incluimos smartphones, tablets, 
+              accesorios y componentes de computadoras. Nuestro catálogo incluye las mejores marcas del mercado. Garantizamos calidad 
+              y rendimiento en cada compra.
+            </Typography>
+            
+            <Typography variant="h3" component="h2" sx={{ mb: 3, mt: 5, fontWeight: 800, color: "#FFFFFF", fontSize: { xs: "1.5rem", md: "2rem" } }}>
+              Productos Tecnológicos de Calidad
+            </Typography>
+            
+            <Typography variant="body1" component="p" sx={{ mb: 3, fontSize: "1.1rem" }}>
+              En Easy Store encontrarás una extensa variedad de productos tecnológicos. Están cuidadosamente seleccionados para satisfacer 
+              todas tus necesidades. Trabajamos con proveedores confiables. Ofrecemos dispositivos electrónicos de alta calidad 
+              a precios competitivos. Nuestro inventario incluye memorias RAM, discos duros SSD, tarjetas gráficas y procesadores. 
+              Todos nuestros productos cuentan con garantía y soporte técnico especializado.
+            </Typography>
+            
+            <Typography variant="h3" component="h2" sx={{ mb: 3, mt: 5, fontWeight: 800, color: "#FFFFFF", fontSize: { xs: "1.5rem", md: "2rem" } }}>
+              Servicios de Reparación y Desarrollo
+            </Typography>
+            
+            <Typography variant="body1" component="p" sx={{ mb: 3, fontSize: "1.1rem" }}>
+              Además de nuestra tienda online, ofrecemos servicios profesionales. Incluimos reparación de hardware y desarrollo de software 
+              a medida. Nuestro equipo de técnicos especializados puede diagnosticar y reparar laptops y computadoras de escritorio. 
+              Utilizamos componentes de calidad garantizada. Ofrecemos servicio rápido y confiable. 
+              También desarrollamos aplicaciones y sistemas de software personalizados. Están adaptados a las necesidades específicas de cada empresa.
+            </Typography>
+            
+            <Typography variant="h3" component="h2" sx={{ mb: 3, mt: 5, fontWeight: 800, color: "#FFFFFF", fontSize: { xs: "1.5rem", md: "2rem" } }}>
+              Envío a Todo Ecuador
+            </Typography>
+            
+            <Typography variant="body1" component="p" sx={{ mb: 3, fontSize: "1.1rem" }}>
+              Realizamos envíos a todo el territorio ecuatoriano. Aseguramos que recibas tus productos de forma rápida y segura. 
+              Nuestro proceso de compra es sencillo y transparente. Ofrecemos múltiples métodos de pago. Incluimos tarjetas 
+              de crédito, transferencias bancarias y Payphone. Ofrecemos atención al cliente personalizada. Estamos comprometidos 
+              con tu satisfacción. Si tienes alguna pregunta o necesitas asesoría, nuestro equipo está disponible para ayudarte.
+            </Typography>
+            
+            <Typography variant="h3" component="h2" sx={{ mb: 3, mt: 5, fontWeight: 800, color: "#FFFFFF", fontSize: { xs: "1.5rem", md: "2rem" } }}>
+              Compromiso con la Calidad
+            </Typography>
+            
+            <Typography variant="body1" component="p" sx={{ mb: 3, fontSize: "1.1rem" }}>
+              En Easy Store, la calidad es nuestra prioridad. Todos los productos que vendemos son originales. Cuentan con garantía 
+              del fabricante. Trabajamos únicamente con marcas reconocidas y proveedores autorizados. Aseguramos que recibas productos 
+              auténticos y de primera calidad. Nuestro compromiso es brindarte la mejor experiencia de compra posible. Incluimos desde la 
+              selección del producto hasta la entrega y el soporte post-venta.
+            </Typography>
+          </Box>
+        </Container>
+      </Box>
+
+      {/* Sección de destacados */}
       <Box component="section" sx={{ py: 8, bgcolor: "#0A0A0B" }}>
         <Container maxWidth="lg">
-          <Typography variant="h4" sx={{ mb: 4, fontWeight: 800 }}>
-            Nuestros productos destacados
+          <Typography variant="h2" component="h2" sx={{ mb: 4, fontWeight: 800, color: "#FFFFFF", fontSize: { xs: "1.75rem", md: "2.25rem" } }}>
+            Nuestros Productos Destacados
           </Typography>
           {featured.length === 0 ? (
             <Typography color="text.secondary">
