@@ -106,7 +106,14 @@ export default async function ProductDetailContent({
             />
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} sx={{ 
+            display: "flex", 
+            flexDirection: "column",
+            // En móvil, hacer que el contenido sea más compacto para dar más espacio a la galería
+            "& > *": {
+              flexShrink: 0,
+            }
+          }}>
             <Stack spacing={2}>
               <Typography variant="h4" fontWeight={900}>
                 {product.name}

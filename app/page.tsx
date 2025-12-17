@@ -12,11 +12,24 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easystoreecu.com";
 
 export const metadata: Metadata = {
   title: "Inicio",
-  description: "Easy Store - Tu tienda de productos tecnológicos, gadgets y servicios en Ecuador. Encuentra los mejores dispositivos electrónicos, reparación de laptops y desarrollo de software a medida.",
+  description: "Easy Store - Tu tienda de productos tecnológicos, gadgets y servicios en Ecuador. Encuentra los mejores dispositivos electrónicos, reparación de laptops y desarrollo de software a medida. Envío a todo el país.",
+  keywords: [
+    "tienda tecnología Ecuador",
+    "productos tecnológicos Ecuador",
+    "gadgets Ecuador",
+    "reparación laptops Ecuador",
+    "desarrollo software Ecuador",
+    "comprar tecnología Ecuador",
+    "tienda online Ecuador",
+    "ecommerce Ecuador",
+  ],
   openGraph: {
     title: "Easy Store - Productos Tecnológicos y Servicios en Ecuador",
     description: "Tienda de productos tecnológicos, gadgets y servicios de reparación y desarrollo de software en Ecuador. Innovación al alcance de tus manos.",
     url: siteUrl,
+    type: "website",
+    locale: "es_EC",
+    siteName: "Easy Store",
     images: [
       {
         url: `${siteUrl}/og-image.png`,
@@ -26,8 +39,24 @@ export const metadata: Metadata = {
       },
     ],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Easy Store - Productos Tecnológicos y Servicios en Ecuador",
+    description: "Tienda de productos tecnológicos, gadgets y servicios en Ecuador.",
+    images: [`${siteUrl}/og-image.png`],
+  },
   alternates: {
     canonical: siteUrl,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 

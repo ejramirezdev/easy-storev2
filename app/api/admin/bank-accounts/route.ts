@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdminEmail } from "@/lib/admin-utils";
 
 // GET - Listar todas las cuentas bancarias
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || session.user.role !== "ADMIN") {
+    if (!session?.user?.email || !isAdminEmail(session.user.email)) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
@@ -15,7 +16,8 @@ export async function GET() {
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     });
 
-    return NextResponse.json({ accounts });
+    // Siempre devolver un array, incluso si está vacío
+    return NextResponse.json({ accounts: accounts || [] });
   } catch (error: any) {
     console.error("Error obteniendo cuentas bancarias:", error);
     return NextResponse.json(
@@ -29,7 +31,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || session.user.role !== "ADMIN") {
+    if (!session?.user?.email || !isAdminEmail(session.user.email)) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 

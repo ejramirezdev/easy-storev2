@@ -49,11 +49,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Agregar productos dinámicamente
+  // Agregar productos y categorías dinámicamente
   let productUrls: MetadataRoute.Sitemap = [];
+  let categoryUrls: MetadataRoute.Sitemap = [];
   
   try {
     if (prisma) {
+      // Productos
       const products = await prisma.product.findMany({
         select: {
           slug: true,
@@ -70,11 +72,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: "weekly" as const,
         priority: 0.7,
       }));
+
+      // Categorías (si tienes páginas de categorías)
+      const categories = await prisma.category.findMany({
+        select: {
+          slug: true,
+          updatedAt: true,
+        },
+        orderBy: {
+          updatedAt: "desc",
+        },
+      });
+
+      categoryUrls = categories.map((category) => ({
+        url: `${siteUrl}/products?cat=${category.slug}`,
+        lastModified: category.updatedAt || new Date(),
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+      }));
     }
   } catch (error) {
-    console.error("Error generando sitemap de productos:", error);
+    console.error("Error generando sitemap:", error);
   }
 
-  return [...baseUrls, ...productUrls];
+  return [...baseUrls, ...productUrls, ...categoryUrls];
 }
 

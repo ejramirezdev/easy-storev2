@@ -66,11 +66,27 @@ export default function AdminBankAccountsManager() {
   const loadAccounts = async () => {
     try {
       setLoading(true);
+      setError(null); // Limpiar errores previos
       const res = await fetch("/api/admin/bank-accounts");
-      if (!res.ok) throw new Error("Error cargando cuentas");
+      
+      if (!res.ok) {
+        // Intentar obtener el mensaje de error del servidor
+        let errorMessage = "Error cargando cuentas";
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          // Si no se puede parsear el error, usar el mensaje por defecto
+        }
+        throw new Error(errorMessage);
+      }
+      
       const data = await res.json();
       setAccounts(data.accounts || []);
+      setError(null); // Limpiar errores si la carga fue exitosa
     } catch (err: any) {
+      // Solo mostrar error si realmente hay un problema
+      // Un array vacío no es un error
       setError(err.message);
     } finally {
       setLoading(false);
@@ -188,7 +204,7 @@ export default function AdminBankAccountsManager() {
         </Alert>
       )}
 
-      {accounts.length === 0 ? (
+      {!error && accounts.length === 0 ? (
         <Card>
           <CardContent>
             <Typography color="text.secondary" align="center">

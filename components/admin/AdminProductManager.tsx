@@ -33,6 +33,14 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import LinkIcon from "@mui/icons-material/Link";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import SearchIcon from "@mui/icons-material/Search";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import ListItem from "@mui/material/ListItem";
+import ListItemSecondaryAction from "@mui/material/ListItemSecondaryAction";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { slugify } from "@/lib/slug";
@@ -120,6 +128,112 @@ function shouldShowImagePreview(url: string | null | undefined): boolean {
   // URLs que terminan en extensiones de imagen comunes
   if (/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(url)) return true;
   return false;
+}
+
+// Componente para mostrar cada categoría en la lista
+function CategoryListItem({
+  category,
+  onUpdate,
+  onDelete,
+}: {
+  category: AdminCategory;
+  onUpdate: (id: string, name: string, slug?: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(category.name);
+  const [editSlug, setEditSlug] = useState(category.slug);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSave = async () => {
+    if (!editName.trim()) return;
+    setIsSubmitting(true);
+    try {
+      await onUpdate(category.id, editName.trim(), editSlug.trim() || undefined);
+      setEditing(false);
+    } catch (error) {
+      // El error ya se maneja en el callback
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditName(category.name);
+    setEditSlug(category.slug);
+    setEditing(false);
+  };
+
+  return (
+    <ListItem
+      sx={{
+        border: "1px solid rgba(255,255,255,0.1)",
+        borderRadius: 1,
+        mb: 1,
+        bgcolor: "rgba(255,255,255,0.02)",
+      }}
+    >
+      {editing ? (
+        <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 1 }}>
+          <TextField
+            size="small"
+            label="Nombre"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            fullWidth
+          />
+          <TextField
+            size="small"
+            label="Slug"
+            value={editSlug}
+            onChange={(e) => setEditSlug(e.target.value)}
+            fullWidth
+          />
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button size="small" onClick={handleCancel} disabled={isSubmitting}>
+              Cancelar
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              onClick={handleSave}
+              disabled={isSubmitting || !editName.trim()}
+              startIcon={isSubmitting ? <CircularProgress size={16} /> : <SaveIcon />}
+            >
+              Guardar
+            </Button>
+          </Stack>
+        </Box>
+      ) : (
+        <>
+          <ListItemText
+            primary={category.name}
+            secondary={`Slug: ${category.slug}`}
+          />
+          <ListItemSecondaryAction>
+            <Stack direction="row" spacing={1}>
+              <IconButton
+                edge="end"
+                size="small"
+                onClick={() => setEditing(true)}
+                color="primary"
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+              <IconButton
+                edge="end"
+                size="small"
+                onClick={() => onDelete(category.id)}
+                color="error"
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Stack>
+          </ListItemSecondaryAction>
+        </>
+      )}
+    </ListItem>
+  );
 }
 
 function normalizePayload(values: FormValues): FormValues {
@@ -1604,6 +1718,89 @@ export default function AdminProductManager({
                     </Button>
                   </Stack>
                 </Paper>
+                  </Grid>
+                  
+                  {/* Lista de categorías existentes */}
+                  <Grid item xs={12} lg={initialTab ? 12 : 7}>
+                    <Paper sx={{ p: 3 }} elevation={3}>
+                      <Typography variant="h6" fontWeight={800} gutterBottom>
+                        Categorías existentes
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        Edita o elimina las categorías existentes. No puedes eliminar categorías que tienen productos asociados.
+                      </Typography>
+                      
+                      {categoryList.length === 0 ? (
+                        <Typography color="text.secondary" sx={{ py: 2, textAlign: "center" }}>
+                          No hay categorías creadas aún.
+                        </Typography>
+                      ) : (
+                        <List dense>
+                          {categoryList.map((category) => (
+                            <CategoryListItem
+                              key={category.id}
+                              category={category}
+                              onUpdate={async (id, name, slug) => {
+                                try {
+                                  const res = await fetch(`/api/categories/${id}`, {
+                                    method: "PUT",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ name, slug }),
+                                  });
+                                  const json = await res.json();
+                                  if (!res.ok) {
+                                    throw new Error(json?.error ?? "Error al actualizar");
+                                  }
+                                  const updated = json as AdminCategory;
+                                  const updatedList = categoryList.map(c => 
+                                    c.id === id ? updated : c
+                                  ).sort((a, b) => a.name.localeCompare(b.name));
+                                  setCategoryList(updatedList);
+                                  if (onCategoriesUpdate) {
+                                    onCategoriesUpdate(updatedList);
+                                  }
+                                  setCategoryStatus({
+                                    type: "success",
+                                    text: "Categoría actualizada correctamente.",
+                                  });
+                                } catch (error: any) {
+                                  setCategoryStatus({
+                                    type: "error",
+                                    text: error?.message ?? "Error al actualizar la categoría.",
+                                  });
+                                }
+                              }}
+                              onDelete={async (id) => {
+                                if (!confirm(`¿Eliminar la categoría "${category.name}"?`)) return;
+                                try {
+                                  const res = await fetch(`/api/categories/${id}`, {
+                                    method: "DELETE",
+                                  });
+                                  const json = await res.json();
+                                  if (!res.ok) {
+                                    throw new Error(json?.error ?? "Error al eliminar");
+                                  }
+                                  const updatedList = categoryList.filter(c => c.id !== id);
+                                  setCategoryList(updatedList);
+                                  if (onCategoriesUpdate) {
+                                    onCategoriesUpdate(updatedList);
+                                  }
+                                  setCategoryStatus({
+                                    type: "success",
+                                    text: "Categoría eliminada correctamente.",
+                                  });
+                                } catch (error: any) {
+                                  setCategoryStatus({
+                                    type: "error",
+                                    text: error?.message ?? "Error al eliminar la categoría.",
+                                  });
+                                }
+                              }}
+                            />
+                          ))}
+                        </List>
+                      )}
+                    </Paper>
                   </Grid>
                 </Grid>
               )}

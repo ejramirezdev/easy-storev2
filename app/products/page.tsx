@@ -15,15 +15,51 @@ import type { Metadata } from "next";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easystoreecu.com";
 
 export const metadata: Metadata = {
-  title: "Productos",
-  description: "Explora nuestra amplia selección de productos tecnológicos y gadgets en Ecuador. Encuentra dispositivos electrónicos, accesorios y más al mejor precio.",
+  title: "Productos Tecnológicos",
+  description: "Explora nuestra amplia selección de productos tecnológicos y gadgets en Ecuador. Encuentra dispositivos electrónicos, accesorios, memorias, discos duros, tablets y más al mejor precio. Envío a todo el país.",
+  keywords: [
+    "productos tecnológicos Ecuador",
+    "gadgets Ecuador",
+    "dispositivos electrónicos Ecuador",
+    "memorias RAM Ecuador",
+    "discos duros Ecuador",
+    "tablets Ecuador",
+    "accesorios tecnología Ecuador",
+    "comprar tecnología Ecuador",
+  ],
   openGraph: {
-    title: "Productos Tecnológicos | Easy Store",
-    description: "Catálogo completo de productos tecnológicos, gadgets y dispositivos electrónicos en Ecuador.",
+    title: "Productos Tecnológicos | Easy Store Ecuador",
+    description: "Catálogo completo de productos tecnológicos, gadgets y dispositivos electrónicos en Ecuador. Envío a todo el país.",
     url: `${siteUrl}/products`,
+    type: "website",
+    locale: "es_EC",
+    siteName: "Easy Store",
+    images: [
+      {
+        url: `${siteUrl}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "Productos Tecnológicos - Easy Store",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Productos Tecnológicos | Easy Store",
+    description: "Catálogo completo de productos tecnológicos en Ecuador.",
+    images: [`${siteUrl}/og-image.png`],
   },
   alternates: {
     canonical: `${siteUrl}/products`,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+    },
   },
 };
 

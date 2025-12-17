@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdminEmail } from "@/lib/admin-utils";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -11,7 +12,7 @@ type RouteContext = {
 export async function PUT(req: Request, context: RouteContext) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || session.user.role !== "ADMIN") {
+    if (!session?.user?.email || !isAdminEmail(session.user.email)) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
@@ -64,7 +65,7 @@ export async function PUT(req: Request, context: RouteContext) {
 export async function DELETE(req: Request, context: RouteContext) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || session.user.role !== "ADMIN") {
+    if (!session?.user?.email || !isAdminEmail(session.user.email)) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 

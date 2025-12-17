@@ -106,7 +106,10 @@ export default function ProductGallery({
           overflow: "hidden",
           border: "1px solid rgba(255,255,255,0.06)",
           bgcolor: "rgba(255,255,255,0.04)",
-          aspectRatio: "16 / 10",
+          // En móvil, hacer la galería más grande (aspect ratio más cuadrado)
+          aspectRatio: { xs: "1 / 1", md: "16 / 10" },
+          // En móvil, aumentar el tamaño mínimo
+          minHeight: { xs: "400px", md: "auto" },
           touchAction: "pan-y", // Permitir scroll vertical pero capturar horizontal
         }}
       >
