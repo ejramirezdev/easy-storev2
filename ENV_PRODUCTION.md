@@ -29,8 +29,8 @@ DATABASE_URL=postgresql://postgres.[PROJECT]:[PASSWORD]@aws-0-us-east-1.pooler.s
 # NEXT.JS Y NEXT AUTH
 # ============================================
 # URL base de tu aplicación (DEBE coincidir exactamente con tu dominio en Vercel)
-NEXT_PUBLIC_SITE_URL=https://easy-storev2.vercel.app
-NEXT_PUBLIC_BASE_URL=https://easy-storev2.vercel.app
+NEXT_PUBLIC_SITE_URL=https://easystoreecu.com
+NEXT_PUBLIC_BASE_URL=https://easystoreecu.com
 
 # Secret para NextAuth (genera uno nuevo: openssl rand -base64 32)
 # IMPORTANTE: Este debe ser diferente al de desarrollo
@@ -38,15 +38,15 @@ NEXTAUTH_SECRET=[GENERA-UN-SECRETO-ALEATORIO-MUY-LARGO-MINIMO-32-CARACTERES]
 
 # URL donde está desplegada tu aplicación (para NextAuth)
 # IMPORTANTE: Debe coincidir exactamente con tu dominio (sin barra final)
-NEXTAUTH_URL=https://easy-storev2.vercel.app
+NEXTAUTH_URL=https://easystoreecu.com
 
 # ============================================
 # GOOGLE OAUTH
 # ============================================
 # Obtén estas credenciales de: https://console.cloud.google.com/apis/credentials
 # IMPORTANTE: Configura en Google Cloud Console:
-# - Orígenes autorizados: https://easy-storev2.vercel.app
-# - Redirect URIs: https://easy-storev2.vercel.app/api/auth/callback/google
+# - Orígenes autorizados: https://easystoreecu.com
+# - Redirect URIs: https://easystoreecu.com/api/auth/callback/google
 GOOGLE_CLIENT_ID=[TU-GOOGLE-CLIENT-ID].apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=[TU-GOOGLE-CLIENT-SECRET]
 ```
@@ -104,7 +104,7 @@ PAYPHONE_TOKEN=[TU-PAYPHONE-TOKEN]
 PAYPHONE_STORE_ID=[TU-PAYPHONE-STORE-ID]
 
 # URL de respuesta después del pago
-PAYPHONE_RESPONSE_URL=https://easy-storev2.vercel.app/api/payphone/callback
+PAYPHONE_RESPONSE_URL=https://easystoreecu.com/api/payphone/callback
 
 # Información del comerciante
 PAYPHONE_MERCHANT_NAME=Easy Store
@@ -127,10 +127,10 @@ Copia y pega cada una de estas líneas en Vercel, reemplazando los valores entre
 ```
 NODE_ENV=production
 DATABASE_URL=postgresql://postgres.[PROJECT]:[PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&connect_timeout=30
-NEXT_PUBLIC_SITE_URL=https://easy-storev2.vercel.app
-NEXT_PUBLIC_BASE_URL=https://easy-storev2.vercel.app
+NEXT_PUBLIC_SITE_URL=https://easystoreecu.com
+NEXT_PUBLIC_BASE_URL=https://easystoreecu.com
 NEXTAUTH_SECRET=[GENERA-UN-SECRETO-ALEATORIO-MUY-LARGO-MINIMO-32-CARACTERES]
-NEXTAUTH_URL=https://easy-storev2.vercel.app
+NEXTAUTH_URL=https://easystoreecu.com
 GOOGLE_CLIENT_ID=[TU-GOOGLE-CLIENT-ID].apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=[TU-GOOGLE-CLIENT-SECRET]
 AWS_ACCESS_KEY_ID=[TU-AWS-ACCESS-KEY-ID]
@@ -149,7 +149,7 @@ EMAIL_PASSWORD=[TU-CONTRASEÑA-DE-APLICACIÓN-GMAIL-16-CARACTERES]
 PAYPHONE_ENVIRONMENT=sandbox
 PAYPHONE_TOKEN=[TU-PAYPHONE-TOKEN]
 PAYPHONE_STORE_ID=[TU-PAYPHONE-STORE-ID]
-PAYPHONE_RESPONSE_URL=https://easy-storev2.vercel.app/api/payphone/callback
+PAYPHONE_RESPONSE_URL=https://easystoreecu.com/api/payphone/callback
 PAYPHONE_MERCHANT_NAME=Easy Store
 PAYPHONE_MERCHANT_EMAIL=easystoreecu@gmail.com
 PAYPHONE_CURRENCY=USD
@@ -164,7 +164,7 @@ PAYPHONE_CONFIRM_SECRET=[SECRET-ALEATORIO-PARA-CONFIRMACION-PAGOS-PENDIENTES]
 
 Las siguientes variables son **especialmente críticas** para que el panel admin funcione en producción:
 
-1. **`NEXTAUTH_URL`** - DEBE ser exactamente: `https://easy-storev2.vercel.app` (sin barra final)
+1. **`NEXTAUTH_URL`** - DEBE ser exactamente: `https://easystoreecu.com` (sin barra final)
 2. **`NEXTAUTH_SECRET`** - Debe ser diferente al de desarrollo, genera uno nuevo
 3. **`GOOGLE_CLIENT_ID`** y **`GOOGLE_CLIENT_SECRET`** - Con las URLs correctas configuradas en Google Cloud Console
 
@@ -173,14 +173,16 @@ Las siguientes variables son **especialmente críticas** para que el panel admin
 Asegúrate de que en [Google Cloud Console](https://console.cloud.google.com/apis/credentials) tengas configurado:
 
 - **Orígenes autorizados:**
-  - `https://easy-storev2.vercel.app`
+
+  - `https://easystoreecu.com`
 
 - **URI de redirección autorizadas:**
-  - `https://easy-storev2.vercel.app/api/auth/callback/google`
+  - `https://easystoreecu.com/api/auth/callback/google`
 
 ### Payphone
 
 Las configuraciones de Payphone se pueden guardar de dos formas:
+
 1. **En la base de datos** (recomendado) - Desde el panel admin en `/admin` > pestaña "Payphone"
 2. **Variables de entorno** - Como fallback si no están en la base de datos
 
@@ -203,7 +205,8 @@ Después de agregar las variables en Vercel:
 ### Problema: No puedo acceder al panel admin en producción
 
 **Solución:**
-1. Verifica que `NEXTAUTH_URL` sea exactamente `https://easy-storev2.vercel.app` (sin barra final)
+
+1. Verifica que `NEXTAUTH_URL` sea exactamente `https://easystoreecu.com` (sin barra final)
 2. Verifica que `NEXTAUTH_SECRET` esté configurado y sea diferente al de desarrollo
 3. Verifica que las URLs en Google Cloud Console coincidan con tu dominio
 4. Revisa los logs de Vercel para ver errores específicos
@@ -211,6 +214,7 @@ Después de agregar las variables en Vercel:
 ### Problema: Error de conexión a la base de datos
 
 **Solución:**
+
 1. Verifica que `DATABASE_URL` use el pooler de Supabase (puerto 6543)
 2. Asegúrate de incluir `?pgbouncer=true&connection_limit=1` en la URL
 3. Verifica que la contraseña sea correcta
@@ -218,7 +222,7 @@ Después de agregar las variables en Vercel:
 ### Problema: No se envían emails
 
 **Solución:**
+
 1. Verifica que uses una contraseña de aplicación de Gmail, no tu contraseña normal
 2. Asegúrate de que la verificación en 2 pasos esté activada en tu cuenta de Google
 3. Verifica que `SMTP_USER` y `SMTP_PASS` sean correctos
-

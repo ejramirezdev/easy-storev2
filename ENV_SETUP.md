@@ -87,8 +87,8 @@ Este proyecto requiere varias variables de entorno para funcionar correctamente.
 4. Ve a "Credenciales" > "Crear credenciales" > "ID de cliente OAuth"
 5. Configura:
    - Tipo: Aplicación web
-   - Orígenes autorizados: `https://easy-storev2.vercel.app`
-   - Redirect URIs: `https://easy-storev2.vercel.app/api/auth/callback/google`
+   - Orígenes autorizados: `https://easystoreecu.com`
+   - Redirect URIs: `https://easystoreecu.com/api/auth/callback/google`
 
 ### AWS S3
 

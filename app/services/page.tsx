@@ -7,7 +7,7 @@ const whatsappNumber = "+593958720950";
 
 import type { Metadata } from "next";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easystoreecu.com";
 
 export const metadata: Metadata = {
   title: "Servicios",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 };
 
 export default function ServicesPage() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easystoreecu.com";
   
   // Structured Data - Service
   const serviceSchema = {

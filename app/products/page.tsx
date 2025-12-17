@@ -12,7 +12,7 @@ import ProductCard, { UiProduct } from "@/components/products/ProductCard";
 import ProductsFilters from "@/components/products/ProductsFilters";
 import type { Metadata } from "next";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easystoreecu.com";
 
 export const metadata: Metadata = {
   title: "Productos",

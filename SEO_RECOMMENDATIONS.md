@@ -24,9 +24,8 @@
 ### 1. Variables de Entorno
 Agrega a tu archivo `.env` o `.env.local`:
 ```env
-NEXT_PUBLIC_SITE_URL=https://easy-storev2.vercel.app
+NEXT_PUBLIC_SITE_URL=https://easystoreecu.com
 ```
-Cuando cambies al dominio `easystoreecu.com`, actualiza esta variable.
 
 ### 2. Imágenes Open Graph
 Crea una imagen Open Graph (`public/og-image.png`) con dimensiones 1200x630px que incluya:
@@ -36,7 +35,7 @@ Crea una imagen Open Graph (`public/og-image.png`) con dimensiones 1200x630px qu
 
 ### 3. Google Search Console
 1. Ve a [Google Search Console](https://search.google.com/search-console)
-2. Agrega tu propiedad (primero `easy-storev2.vercel.app`, luego `easystoreecu.com`)
+2. Agrega tu propiedad: `easystoreecu.com`
 3. Verifica la propiedad usando uno de estos métodos:
    - Meta tag (agregar código en `app/layout.tsx` en la sección `verification`)
    - Archivo HTML
@@ -154,5 +153,5 @@ Las siguientes palabras clave están optimizadas en el sitio:
 
 - El sitemap se genera dinámicamente, así que se actualizará automáticamente cuando agregues nuevos productos
 - El robots.txt permite indexar todas las páginas públicas pero bloquea áreas privadas (admin, account, cart, checkout)
-- Cuando cambies al dominio `easystoreecu.com`, actualiza `NEXT_PUBLIC_SITE_URL` y reenvía el sitemap en Google Search Console
+- Asegúrate de que `NEXT_PUBLIC_SITE_URL` esté configurado como `https://easystoreecu.com` y reenvía el sitemap en Google Search Console
 

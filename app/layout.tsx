@@ -6,7 +6,7 @@ import UiLockOverlay from "@/components/common/UiLockOverlay";
 import { GoogleAnalytics, GoogleTagManager } from "@/lib/analytics";
 
 const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://easystoreecu.com";
 const siteName = "Easy Store";
 const defaultDescription =
   "Tienda de productos tecnológicos, gadgets y servicios de reparación y desarrollo de software en Ecuador. Encuentra los mejores dispositivos y soluciones tecnológicas.";
@@ -91,7 +91,7 @@ export default function RootLayout({
   modal: React.ReactNode;
 }) {
   const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+    process.env.NEXT_PUBLIC_SITE_URL || "https://easystoreecu.com";
 
   // Structured Data - Organization & LocalBusiness
   const organizationSchema = {

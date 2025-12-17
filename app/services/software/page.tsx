@@ -7,7 +7,7 @@ import type { Metadata } from "next";
 const whatsappNumber = "+593958720950";
 const whatsappLink = `https://wa.me/${whatsappNumber.replace(/\D/g, "")}`;
 const quoteHref = "/services/software/quote";
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easystoreecu.com";
 
 export const metadata: Metadata = {
   title: "Desarrollo de Software a Medida",

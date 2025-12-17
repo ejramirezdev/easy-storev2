@@ -34,7 +34,7 @@ export default async function ProductDetailContent({
   showBackButton?: boolean;
 }) {
   const price = Number(product.price);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easystoreecu.com";
   const productUrl = `${siteUrl}/products/${product.slug}`;
   const productImage = product.imageUrl || product.images[0]?.url || `${siteUrl}/placeholder.jpg`;
   

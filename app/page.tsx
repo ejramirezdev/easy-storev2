@@ -8,7 +8,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easystoreecu.com";
 
 export const metadata: Metadata = {
   title: "Inicio",
@@ -131,7 +131,7 @@ async function getFeaturedProducts(): Promise<UiProduct[]> {
 
 export default async function Page() {
   const featured = await getFeaturedProducts();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easystoreecu.com";
   
   // Structured Data - WebSite with SearchAction
   const websiteSchema = {

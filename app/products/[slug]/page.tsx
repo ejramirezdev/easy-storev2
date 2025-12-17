@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import ProductDetailContent from "./ProductDetailContent";
 import type { Metadata } from "next";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easy-storev2.vercel.app";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easystoreecu.com";
 
 export const dynamic = "force-dynamic";
 
