@@ -13,6 +13,7 @@ import Link from "next/link";
 import AdminProductManager from "./AdminProductManager";
 import AdminPayphoneSettings from "./AdminPayphoneSettings";
 import AdminBankAccountsManager from "./AdminBankAccountsManager";
+import AdminCouponsManager from "./AdminCouponsManager";
 import type { AdminCategory, AdminProduct } from "@/lib/products/types";
 
 type AdminTabsProps = {
@@ -21,7 +22,7 @@ type AdminTabsProps = {
   adminName: string;
 };
 
-type TabValue = "create" | "edit" | "categories" | "orders" | "payphone" | "bank-accounts";
+type TabValue = "create" | "edit" | "categories" | "orders" | "payphone" | "bank-accounts" | "coupons";
 
 export default function AdminTabs({
   products,
@@ -63,6 +64,7 @@ export default function AdminTabs({
           <Tab label="Órdenes" value="orders" />
           <Tab label="Configuración de Payphone" value="payphone" />
           <Tab label="Cuentas Bancarias" value="bank-accounts" />
+          <Tab label="Cupones" value="coupons" />
         </Tabs>
       </Box>
 
@@ -150,6 +152,10 @@ export default function AdminTabs({
 
         {currentTab === "bank-accounts" && (
           <AdminBankAccountsManager />
+        )}
+
+        {currentTab === "coupons" && (
+          <AdminCouponsManager />
         )}
       </Box>
     </Paper>
