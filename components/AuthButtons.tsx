@@ -29,28 +29,28 @@ export default function AuthButtons({ mode = "desktop", onClickAfter }: Props) {
   const { data: session, status } = useSession();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [checkingAdmin, setCheckingAdmin] = useState(false);
+  const [adminChecked, setAdminChecked] = useState(false);
 
   const isDesktop = mode === "desktop";
 
-  // Verificar si el usuario es admin desde la API
+  // Verificar si el usuario es admin desde la API (solo una vez por sesión)
   useEffect(() => {
-    if (session?.user?.id && !checkingAdmin) {
-      setCheckingAdmin(true);
+    if (session?.user?.id && !adminChecked) {
       fetch("/api/auth/check-admin")
         .then((res) => res.json())
         .then((data) => {
           setIsAdmin(data.isAdmin ?? false);
-          setCheckingAdmin(false);
+          setAdminChecked(true);
         })
         .catch(() => {
           setIsAdmin(false);
-          setCheckingAdmin(false);
+          setAdminChecked(true);
         });
     } else if (!session?.user?.id) {
       setIsAdmin(false);
+      setAdminChecked(false);
     }
-  }, [session?.user?.id, checkingAdmin]);
+  }, [session?.user?.id, adminChecked]);
 
   if (status === "loading") {
     return (
@@ -218,7 +218,7 @@ export default function AuthButtons({ mode = "desktop", onClickAfter }: Props) {
         </Typography>
       </MenuItem>
       <Divider sx={{ borderColor: "rgba(255,255,255,0.1)", my: 0.5 }} />
-      
+
       <MenuItem
         component={Link}
         href="/account/profile"
@@ -226,7 +226,7 @@ export default function AuthButtons({ mode = "desktop", onClickAfter }: Props) {
       >
         <PersonIcon sx={{ fontSize: 18, mr: 1.5 }} /> Mi perfil
       </MenuItem>
-      
+
       <MenuItem
         component={Link}
         href="/account/orders"
@@ -234,7 +234,7 @@ export default function AuthButtons({ mode = "desktop", onClickAfter }: Props) {
       >
         <HistoryIcon sx={{ fontSize: 18, mr: 1.5 }} /> Historial de compras
       </MenuItem>
-      
+
       <MenuItem
         component={Link}
         href="/account/favorites"
@@ -255,13 +255,15 @@ export default function AuthButtons({ mode = "desktop", onClickAfter }: Props) {
             },
           }}
         >
-          <AdminPanelSettingsIcon sx={{ fontSize: 18, mr: 1.5, color: "#D81B9C" }} /> 
+          <AdminPanelSettingsIcon
+            sx={{ fontSize: 18, mr: 1.5, color: "#D81B9C" }}
+          />
           Panel admin
         </MenuItem>
       )}
 
       <Divider sx={{ borderColor: "rgba(255,255,255,0.1)", my: 0.5 }} />
-      
+
       <MenuItem
         onClick={() => {
           onClickAfter?.();

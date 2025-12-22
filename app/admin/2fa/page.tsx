@@ -18,6 +18,7 @@ import {
   Divider,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 
 type TwoFactorStatus = {
@@ -26,6 +27,7 @@ type TwoFactorStatus = {
 
 function TwoFactorPageContent() {
   const router = useRouter();
+  const { data: session, status: sessionStatus } = useSession();
   const [status, setStatus] = useState<TwoFactorStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [setupLoading, setSetupLoading] = useState(false);
@@ -34,6 +36,13 @@ function TwoFactorPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isRequired, setIsRequired] = useState(false);
+
+  // Verificar autenticación
+  useEffect(() => {
+    if (sessionStatus === "unauthenticated") {
+      router.push("/");
+    }
+  }, [sessionStatus, router]);
 
   // Verificar si 2FA es requerido desde query params
   useEffect(() => {
@@ -172,7 +181,7 @@ function TwoFactorPageContent() {
     setSuccess(null);
   };
 
-  if (loading) {
+  if (sessionStatus === "loading" || loading) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -180,6 +189,10 @@ function TwoFactorPageContent() {
         </Box>
       </Container>
     );
+  }
+
+  if (!session) {
+    return null; // Se redirigirá en el useEffect
   }
 
   return (
