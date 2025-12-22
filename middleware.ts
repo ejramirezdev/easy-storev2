@@ -28,10 +28,26 @@ export default withAuth(
           return true;
         }
 
+        // Debug en desarrollo
+        if (process.env.NODE_ENV === "development") {
+          console.log("[Middleware] Checking admin access:", {
+            pathname,
+            hasToken: !!token,
+            tokenEmail: token?.email,
+            tokenId: token?.id,
+          });
+        }
+
         // Si no hay token, no está autenticado
         // La verificación de roles ADMIN/OWNER se hace en la página admin usando la BD
         // Esto permite que usuarios admin creados desde el panel puedan acceder
-        return !!token;
+        const authorized = !!token;
+        
+        if (process.env.NODE_ENV === "development") {
+          console.log("[Middleware] Authorization result:", authorized);
+        }
+        
+        return authorized;
       },
     },
   }

@@ -39,7 +39,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
     redirect("/");
   }
 
-  // Verificar si el usuario es nuevo admin sin 2FA configurado
+  // Verificar estado de 2FA del usuario
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
@@ -49,36 +49,41 @@ export default async function AdminPage({ searchParams }: PageProps) {
     },
   });
 
-  // Si es ADMIN (no OWNER) y no tiene 2FA configurado, redirigir a configuración
-  // OWNER puede acceder sin 2FA (pero se recomienda configurarlo)
-  if (user && user.role === "ADMIN" && !user.twoFactorEnabled) {
+  // 2FA ES OBLIGATORIO: Si no tiene 2FA configurado, redirigir a configuración
+  if (user && !user.twoFactorEnabled) {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[2FA Debug] Admin sin 2FA, redirigiendo a configuración obligatoria");
+    }
     redirect("/admin/2fa?required=true");
   }
 
-  // Obtener token de sesión 2FA desde la cookie
-  const cookieStore = await cookies();
-  const sessionToken = cookieStore.get("admin_2fa_session")?.value || null;
+  // Si tiene 2FA configurado, verificar sesión
+  if (user && user.twoFactorEnabled) {
+    // Obtener token de sesión 2FA desde la cookie
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get("admin_2fa_session")?.value || null;
 
-  // Verificar si 2FA está habilitado y requiere verificación
-  const needsVerification = await requiresTwoFactorVerification(session.user.id, sessionToken);
-  
-  // Log para debug (solo en desarrollo)
-  if (process.env.NODE_ENV === "development") {
-    console.log("[2FA Debug] User ID:", session.user.id);
-    console.log("[2FA Debug] Has session token:", !!sessionToken);
-    console.log("[2FA Debug] Needs verification:", needsVerification);
-  }
-  
-  if (needsVerification) {
-    // No hay sesión 2FA válida, redirigir a verificación
+    // Verificar si 2FA está habilitado y requiere verificación
+    const needsVerification = await requiresTwoFactorVerification(session.user.id, sessionToken);
+    
+    // Log para debug (solo en desarrollo)
     if (process.env.NODE_ENV === "development") {
-      console.log("[2FA Debug] Redirecting to 2FA verification");
+      console.log("[2FA Debug] User ID:", session.user.id);
+      console.log("[2FA Debug] Has session token:", !!sessionToken);
+      console.log("[2FA Debug] Needs verification:", needsVerification);
     }
-    const redirectUrl = encodeURIComponent("/admin");
-    redirect(`/admin/verify-2fa?redirect=${redirectUrl}`);
-  } else {
-    if (process.env.NODE_ENV === "development") {
-      console.log("[2FA Debug] 2FA session valid or not enabled, allowing access");
+    
+    if (needsVerification) {
+      // No hay sesión 2FA válida, redirigir a verificación
+      if (process.env.NODE_ENV === "development") {
+        console.log("[2FA Debug] Redirecting to 2FA verification");
+      }
+      const redirectUrl = encodeURIComponent("/admin");
+      redirect(`/admin/verify-2fa?redirect=${redirectUrl}`);
+    } else {
+      if (process.env.NODE_ENV === "development") {
+        console.log("[2FA Debug] 2FA session valid, allowing access");
+      }
     }
   }
 

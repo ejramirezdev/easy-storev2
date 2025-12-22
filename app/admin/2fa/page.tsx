@@ -186,16 +186,21 @@ function TwoFactorPageContent() {
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Stack spacing={3}>
         <Box>
-          <Link href="/admin" style={{ textDecoration: "none" }}>
-            <Button variant="text" sx={{ mb: 2 }}>
-              ← Volver al panel admin
-            </Button>
-          </Link>
+          {!isRequired && (
+            <Link href="/admin" style={{ textDecoration: "none" }}>
+              <Button variant="text" sx={{ mb: 2 }}>
+                ← Volver al panel admin
+              </Button>
+            </Link>
+          )}
           <Typography variant="h4" fontWeight={900} gutterBottom>
             Autenticación de Dos Factores (2FA)
           </Typography>
           <Typography color="text.secondary">
-            Protege tu cuenta de administrador con autenticación de dos factores.
+            {isRequired 
+              ? "Debes configurar 2FA antes de acceder al panel de administración."
+              : "Protege tu cuenta de administrador con autenticación de dos factores."
+            }
           </Typography>
         </Box>
 
@@ -212,14 +217,14 @@ function TwoFactorPageContent() {
         )}
 
         {isRequired && !status?.enabled && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
+          <Alert severity="error" sx={{ mb: 2 }}>
             <Typography variant="body1" fontWeight={600} gutterBottom>
-              Configuración de 2FA Requerida
+              ⚠️ Configuración de 2FA Obligatoria
             </Typography>
             <Typography variant="body2">
-              Como nuevo administrador, debes configurar la autenticación de dos factores (2FA)
-              antes de acceder al panel de administración. Esto es obligatorio para la seguridad
-              de la plataforma.
+              Para garantizar la seguridad de la plataforma, todos los administradores deben
+              configurar la autenticación de dos factores (2FA) antes de acceder al panel.
+              No podrás continuar hasta completar este proceso.
             </Typography>
           </Alert>
         )}
@@ -315,25 +320,30 @@ function TwoFactorPageContent() {
                   >
                     {verifying ? <CircularProgress size={24} /> : "Verificar y Activar"}
                   </Button>
-                  <Button variant="outlined" onClick={handleCancelSetup}>
-                    Cancelar
-                  </Button>
+                  {!isRequired && (
+                    <Button variant="outlined" onClick={handleCancelSetup}>
+                      Cancelar
+                    </Button>
+                  )}
                 </Stack>
               </Box>
             </Stack>
           ) : (
             <Stack spacing={2}>
               <Typography variant="body1">
-                2FA no está activado en tu cuenta. Actívalo para añadir una capa adicional de
-                seguridad.
+                {isRequired
+                  ? "Debes activar 2FA para poder acceder al panel de administración."
+                  : "2FA no está activado en tu cuenta. Actívalo para añadir una capa adicional de seguridad."
+                }
               </Typography>
               <Button
                 variant="contained"
+                color={isRequired ? "error" : "primary"}
                 onClick={handleSetup}
                 disabled={setupLoading}
                 sx={{ alignSelf: "flex-start" }}
               >
-                {setupLoading ? <CircularProgress size={24} /> : "Activar 2FA"}
+                {setupLoading ? <CircularProgress size={24} /> : "Activar 2FA Ahora"}
               </Button>
             </Stack>
           )}
@@ -383,7 +393,16 @@ function TwoFactorPageContent() {
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setShowBackupCodes(false)} variant="contained">
+            <Button 
+              onClick={() => {
+                setShowBackupCodes(false);
+                // Si era requerido, redirigir al panel admin después de guardar códigos
+                if (isRequired) {
+                  router.push("/admin");
+                }
+              }} 
+              variant="contained"
+            >
               He guardado los códigos
             </Button>
           </DialogActions>
