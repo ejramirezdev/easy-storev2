@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { isAdminEmail } from "@/lib/admin-utils";
+import { isAdmin } from "@/lib/admin-utils";
 import { uploadProductImage } from "@/lib/s3";
 
 export async function POST(req: NextRequest) {
   try {
     // Verificar autenticación y permisos de admin
     const session = await getServerSession(authOptions);
-    if (!session || !isAdminEmail(session.user?.email ?? null)) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    const isUserAdmin = await isAdmin(session.user.id);
+    if (!isUserAdmin) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
     // Obtener archivos del FormData

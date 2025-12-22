@@ -14,20 +14,25 @@ import AdminProductManager from "./AdminProductManager";
 import AdminPayphoneSettings from "./AdminPayphoneSettings";
 import AdminBankAccountsManager from "./AdminBankAccountsManager";
 import AdminCouponsManager from "./AdminCouponsManager";
+import AdminUsersManager from "./AdminUsersManager";
 import type { AdminCategory, AdminProduct } from "@/lib/products/types";
 
 type AdminTabsProps = {
   products: AdminProduct[];
   categories: AdminCategory[];
   adminName: string;
+  canAccessPayphone: boolean;
+  canManageUsers: boolean;
 };
 
-type TabValue = "create" | "edit" | "categories" | "orders" | "payphone" | "bank-accounts" | "coupons";
+type TabValue = "create" | "edit" | "categories" | "orders" | "payphone" | "bank-accounts" | "coupons" | "users";
 
 export default function AdminTabs({
   products,
   categories,
   adminName,
+  canAccessPayphone,
+  canManageUsers,
 }: AdminTabsProps) {
   const [currentTab, setCurrentTab] = useState<TabValue>("create");
   // Estado compartido de categorías para que se actualice en todos los tabs
@@ -62,9 +67,14 @@ export default function AdminTabs({
           <Tab label="Editar productos" value="edit" />
           <Tab label="Editar categorías" value="categories" />
           <Tab label="Órdenes" value="orders" />
-          <Tab label="Configuración de Payphone" value="payphone" />
+          {canAccessPayphone && (
+            <Tab label="Configuración de Payphone" value="payphone" />
+          )}
           <Tab label="Cuentas Bancarias" value="bank-accounts" />
           <Tab label="Cupones" value="coupons" />
+          {canManageUsers && (
+            <Tab label="Usuarios" value="users" />
+          )}
         </Tabs>
       </Box>
 
@@ -125,9 +135,8 @@ export default function AdminTabs({
               Administra las órdenes de los clientes, cambia estados y revisa
               comprobantes de pago.
             </Typography>
-            <Link href="/admin/orders" legacyBehavior passHref>
+            <Link href="/admin/orders" style={{ textDecoration: "none" }}>
               <Button
-                component="a"
                 variant="contained"
                 color="secondary"
                 sx={{ textTransform: "none", fontWeight: 600 }}
@@ -156,6 +165,10 @@ export default function AdminTabs({
 
         {currentTab === "coupons" && (
           <AdminCouponsManager />
+        )}
+
+        {currentTab === "users" && (
+          <AdminUsersManager />
         )}
       </Box>
     </Paper>

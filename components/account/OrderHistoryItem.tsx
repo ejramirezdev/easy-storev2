@@ -191,49 +191,40 @@ export default function OrderHistoryItem({ order }: OrderHistoryItemProps) {
                   spacing={2}
                   alignItems="center"
                 >
-                  <Link
+                  <Box
+                    component={Link}
                     href={`/products/${productSlug}`}
-                    legacyBehavior
-                    passHref
+                    sx={{
+                      position: "relative",
+                      width: 60,
+                      height: 60,
+                      borderRadius: 1,
+                      overflow: "hidden",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      cursor: "pointer",
+                      flexShrink: 0,
+                      "&:hover": {
+                        opacity: 0.8,
+                      },
+                    }}
                   >
-                    <Box
-                      component="a"
-                      sx={{
-                        position: "relative",
-                        width: 60,
-                        height: 60,
-                        borderRadius: 1,
-                        overflow: "hidden",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        cursor: "pointer",
-                        flexShrink: 0,
-                        "&:hover": {
-                          opacity: 0.8,
-                        },
-                      }}
-                    >
-                      <Image
-                        src={productImageUrl}
-                        alt={label}
-                        fill
-                        style={{ objectFit: "cover" }}
-                      />
-                    </Box>
-                  </Link>
+                    <Image
+                      src={productImageUrl}
+                      alt={label}
+                      fill
+                      style={{ objectFit: "cover" }}
+                    />
+                  </Box>
                   <Box sx={{ flex: 1 }}>
-                    <Link
+                    <MuiLink
+                      component={Link}
                       href={`/products/${productSlug}`}
-                      legacyBehavior
-                      passHref
+                      underline="hover"
+                      color="inherit"
+                      sx={{ fontWeight: 500 }}
                     >
-                      <MuiLink
-                        underline="hover"
-                        color="inherit"
-                        sx={{ fontWeight: 500 }}
-                      >
-                        <Typography variant="body2">{label}</Typography>
-                      </MuiLink>
-                    </Link>
+                      <Typography variant="body2">{label}</Typography>
+                    </MuiLink>
                     <Typography variant="caption" color="text.secondary">
                       Cantidad: {item.quantity}
                     </Typography>
@@ -304,11 +295,9 @@ export default function OrderHistoryItem({ order }: OrderHistoryItemProps) {
         )}
 
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Link href={`/orders/${order.id}`} legacyBehavior passHref>
-            <MuiLink underline="none" color="secondary" fontWeight={600}>
-              Ver detalle
-            </MuiLink>
-          </Link>
+          <MuiLink component={Link} href={`/orders/${order.id}`} underline="none" color="secondary" fontWeight={600}>
+            Ver detalle
+          </MuiLink>
 
           {orderStatus === "PENDING" && (
             <Button

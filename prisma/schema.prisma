@@ -12,6 +12,7 @@ datasource db {
 enum Role {
   CUSTOMER
   ADMIN
+  OWNER  // Rol de propietario/CEO con todos los permisos
 }
 
 /// Estado de una orden
@@ -45,6 +46,7 @@ model User {
   redemptions CouponRedemption[]
   favorites   Favorite[]
   profile     UserProfile?
+  adminPermission AdminPermission?
 
   emailVerified DateTime?
   image         String?
@@ -392,4 +394,22 @@ model BankAccount {
   updatedAt     DateTime @updatedAt
 
   @@index([isActive, sortOrder])
+}
+
+/// Permisos individuales para administradores
+/// Permite personalizar permisos más allá del rol base
+model AdminPermission {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Permisos específicos (solo aplican a ADMIN, OWNER tiene todos siempre)
+  canManagePayphone     Boolean @default(false)
+  canManageUsers        Boolean @default(false)
+  canManageBankAccounts Boolean @default(true)
+  canManageCoupons      Boolean @default(true)
+  canDeleteProducts     Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

@@ -2,13 +2,18 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
-import { isAdminEmail } from "@/lib/admin-utils";
+import { isAdmin } from "@/lib/admin-utils";
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email || !isAdminEmail(session.user.email)) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    const isUserAdmin = await isAdmin(session.user.id);
+    if (!isUserAdmin) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
     const orders = await prisma.order.findMany({

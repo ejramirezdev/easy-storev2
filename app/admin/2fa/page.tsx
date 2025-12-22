@@ -33,6 +33,15 @@ function TwoFactorPageContent() {
   const [disabling, setDisabling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isRequired, setIsRequired] = useState(false);
+
+  // Verificar si 2FA es requerido desde query params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("required") === "true") {
+      setIsRequired(true);
+    }
+  }, []);
 
   // Estados para setup
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -177,8 +186,8 @@ function TwoFactorPageContent() {
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Stack spacing={3}>
         <Box>
-          <Link href="/admin" legacyBehavior passHref>
-            <Button component="a" variant="text" sx={{ mb: 2 }}>
+          <Link href="/admin" style={{ textDecoration: "none" }}>
+            <Button variant="text" sx={{ mb: 2 }}>
               ← Volver al panel admin
             </Button>
           </Link>
@@ -199,6 +208,19 @@ function TwoFactorPageContent() {
         {success && (
           <Alert severity="success" onClose={() => setSuccess(null)}>
             {success}
+          </Alert>
+        )}
+
+        {isRequired && !status?.enabled && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            <Typography variant="body1" fontWeight={600} gutterBottom>
+              Configuración de 2FA Requerida
+            </Typography>
+            <Typography variant="body2">
+              Como nuevo administrador, debes configurar la autenticación de dos factores (2FA)
+              antes de acceder al panel de administración. Esto es obligatorio para la seguridad
+              de la plataforma.
+            </Typography>
           </Alert>
         )}
 

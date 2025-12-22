@@ -6,8 +6,9 @@ import type { NextRequest } from "next/server";
 // Middleware de autenticación para rutas admin
 // Los headers de seguridad y rate limiting se aplican en las rutas API individualmente
 // 
-// IMPORTANTE: El middleware solo verifica autenticación y email admin.
-// La verificación 2FA se hace en cada página admin individualmente.
+// IMPORTANTE: El middleware solo verifica autenticación básica.
+// La verificación de roles y permisos se hace en cada página/API individualmente.
+// La verificación 2FA también se hace en cada página admin individualmente.
 export default withAuth(
   function middleware(req: NextRequest) {
     // Eliminar X-Powered-By para todas las rutas
@@ -33,7 +34,8 @@ export default withAuth(
           return false;
         }
 
-        // Verificar que es admin
+        // Verificación básica de email admin (compatibilidad)
+        // La verificación completa de roles se hace en las páginas/APIs
         if (!isAdminEmail(token.email as string)) {
           return false;
         }
@@ -44,7 +46,7 @@ export default withAuth(
           return true;
         }
 
-        // Para otras rutas admin, la verificación 2FA se hará en la página individualmente
+        // Para otras rutas admin, la verificación de roles y 2FA se hará en la página individualmente
         return true;
       },
     },

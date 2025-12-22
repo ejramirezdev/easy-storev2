@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type") || "default";
 
-    // Para la página principal, generar imagen con logo sobre fondo negro
+    // Para la página principal, generar imagen con logo prominente sobre fondo negro
     if (type === "default" || !type) {
       return new ImageResponse(
         (
@@ -22,29 +22,58 @@ export async function GET(request: NextRequest) {
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              padding: "40px",
+              padding: "60px",
             }}
           >
+            {/* Logo principal - más grande y prominente */}
             <div
               style={{
-                fontSize: 72,
+                fontSize: 120,
                 fontWeight: 900,
                 color: "#FFFFFF",
-                marginBottom: 20,
+                marginBottom: 30,
                 textAlign: "center",
+                letterSpacing: "-2px",
+                lineHeight: 1.1,
               }}
             >
               Easy Store
             </div>
+            {/* Línea decorativa con colores de marca */}
             <div
               style={{
-                fontSize: 32,
+                width: "200px",
+                height: "6px",
+                background:
+                  "linear-gradient(90deg, #D600AA 0%, #9CFF1E 50%, #D600AA 100%)",
+                marginBottom: 30,
+                borderRadius: "3px",
+              }}
+            />
+            {/* Subtítulo */}
+            <div
+              style={{
+                fontSize: 36,
                 color: "#D81B9C",
                 textAlign: "center",
-                maxWidth: "800px",
+                maxWidth: "900px",
+                fontWeight: 600,
+                marginBottom: 20,
               }}
             >
               Productos Tecnológicos y Servicios en Ecuador
+            </div>
+            {/* Texto adicional */}
+            <div
+              style={{
+                fontSize: 24,
+                color: "#CCCCCC",
+                textAlign: "center",
+                maxWidth: "800px",
+                fontWeight: 400,
+              }}
+            >
+              Tecnología al alcance de tus manos
             </div>
           </div>
         ),

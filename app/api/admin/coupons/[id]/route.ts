@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { isAdminEmail } from "@/lib/admin-utils";
+import { isAdmin } from "@/lib/admin-utils";
+import { canManageCoupons } from "@/lib/admin-permissions";
 import { prisma } from "@/lib/prisma";
 import { CouponInputSchema } from "@/lib/validation/coupons";
 
@@ -12,10 +13,19 @@ export async function PUT(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email || !isAdminEmail(session.user.email)) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: "No autorizado" },
         { status: 401 }
+      );
+    }
+
+    const isUserAdmin = await isAdmin(session.user.id);
+    const canManage = await canManageCoupons(session.user.id);
+    if (!isUserAdmin || !canManage) {
+      return NextResponse.json(
+        { error: "No autorizado" },
+        { status: 403 }
       );
     }
 
@@ -119,10 +129,19 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email || !isAdminEmail(session.user.email)) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: "No autorizado" },
         { status: 401 }
+      );
+    }
+
+    const isUserAdmin = await isAdmin(session.user.id);
+    const canManage = await canManageCoupons(session.user.id);
+    if (!isUserAdmin || !canManage) {
+      return NextResponse.json(
+        { error: "No autorizado" },
+        { status: 403 }
       );
     }
 

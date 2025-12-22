@@ -861,9 +861,8 @@ export default function AdminProductManager({
                   </Typography>
                 </Box>
 
-                <Link href="/" legacyBehavior passHref>
+                <Link href="/" style={{ textDecoration: "none" }}>
                   <Button
-                    component="a"
                     variant="outlined"
                     color="secondary"
                   >

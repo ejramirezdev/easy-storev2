@@ -64,20 +64,18 @@ export async function generateMetadata({
         description: ogDescription, // Incluye precio en la descripción
         url: productUrl,
         images: [
+          // Prioridad: imagen del producto (para que Google muestre el preview del producto)
           {
-            // Generar imagen OG dinámica con precio, o usar imagen del producto como fallback
-            url: `${siteUrl}/api/og-image?type=product&name=${encodeURIComponent(
-              product.name
-            )}&price=${encodeURIComponent(priceFormatted)}${
-              productImage ? `&image=${encodeURIComponent(productImage)}` : ""
-            }`,
+            url: productImage,
             width: 1200,
             height: 630,
             alt: product.name,
           },
-          // Fallback: imagen del producto
+          // Fallback: imagen OG dinámica con información del producto
           {
-            url: productImage,
+            url: `${siteUrl}/api/og-image?type=product&name=${encodeURIComponent(
+              product.name
+            )}&price=${encodeURIComponent(priceFormatted)}`,
             width: 1200,
             height: 630,
             alt: product.name,
@@ -88,7 +86,7 @@ export async function generateMetadata({
         card: "summary_large_image",
         title: product.name,
         description: ogDescription, // Incluye precio en la descripción
-        images: [productImage],
+        images: [productImage], // Usar imagen del producto directamente
       },
       alternates: {
         canonical: productUrl,

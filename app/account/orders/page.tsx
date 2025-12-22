@@ -81,11 +81,9 @@ export default async function AccountOrdersPage() {
             <Typography color="text.secondary">
               Explora nuestro catálogo y realiza tu primera compra.
             </Typography>
-            <Link href="/products" legacyBehavior passHref>
-              <MuiLink underline="none" color="secondary" fontWeight={600}>
-                Ver productos
-              </MuiLink>
-            </Link>
+            <MuiLink component={Link} href="/products" underline="none" color="secondary" fontWeight={600}>
+              Ver productos
+            </MuiLink>
           </Stack>
         ) : (
           serializedOrders.map((order) => (

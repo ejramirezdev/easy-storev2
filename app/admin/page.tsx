@@ -1,6 +1,7 @@
 import { authOptions } from "@/lib/auth";
-import { isAdminEmail } from "@/lib/admin-utils";
+import { isAdmin } from "@/lib/admin-utils";
 import { requiresTwoFactorVerification } from "@/lib/admin-2fa-session";
+import { getUserPermissions, canAccessPayphone, canManageUsers } from "@/lib/admin-permissions";
 import { prisma } from "@/lib/prisma";
 import {
   adminProductInclude,
@@ -29,13 +30,29 @@ export default async function AdminPage({ searchParams }: PageProps) {
   const email = session?.user?.email ?? null;
 
   // Verificar autenticación y permisos admin
-  if (!session || !isAdminEmail(email)) {
+  if (!session?.user?.id) {
     redirect("/");
   }
 
-  // Verificar si necesita verificación 2FA
-  if (!session.user?.id) {
+  const isUserAdmin = await isAdmin(session.user.id);
+  if (!isUserAdmin) {
     redirect("/");
+  }
+
+  // Verificar si el usuario es nuevo admin sin 2FA configurado
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      role: true,
+      twoFactorEnabled: true,
+      createdAt: true,
+    },
+  });
+
+  // Si es ADMIN (no OWNER) y no tiene 2FA configurado, redirigir a configuración
+  // OWNER puede acceder sin 2FA (pero se recomienda configurarlo)
+  if (user && user.role === "ADMIN" && !user.twoFactorEnabled) {
+    redirect("/admin/2fa?required=true");
   }
 
   // Obtener token de sesión 2FA desde la cookie
@@ -83,6 +100,11 @@ export default async function AdminPage({ searchParams }: PageProps) {
     slug: category.slug,
   }));
 
+  // Obtener permisos del usuario
+  const permissions = await getUserPermissions(session.user.id);
+  const canAccessPayphoneTab = await canAccessPayphone(session.user.id);
+  const canManageUsersTab = await canManageUsers(session.user.id);
+
   return (
     <Container maxWidth="xl" sx={{ py: 4, px: { xs: 2, sm: 3 } }}>
       <Stack spacing={3}>
@@ -104,13 +126,13 @@ export default async function AdminPage({ searchParams }: PageProps) {
             </Box>
 
             <Stack direction="row" spacing={2}>
-              <Link href="/admin/2fa" legacyBehavior passHref>
-                <Button component="a" variant="outlined">
+              <Link href="/admin/2fa" style={{ textDecoration: "none" }}>
+                <Button variant="outlined">
                   Configurar 2FA
                 </Button>
               </Link>
-              <Link href="/" legacyBehavior passHref>
-                <Button component="a" variant="outlined" color="secondary">
+              <Link href="/" style={{ textDecoration: "none" }}>
+                <Button variant="outlined" color="secondary">
                   Volver a la tienda
                 </Button>
               </Link>
@@ -122,6 +144,8 @@ export default async function AdminPage({ searchParams }: PageProps) {
           products={formatted}
           categories={formattedCategories}
           adminName={session.user?.name ?? email ?? "Administrador"}
+          canAccessPayphone={canAccessPayphoneTab}
+          canManageUsers={canManageUsersTab}
         />
       </Stack>
     </Container>

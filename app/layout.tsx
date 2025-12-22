@@ -171,6 +171,9 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        {/* Favicon - Next.js usa automáticamente app/icon.svg, pero lo especificamos explícitamente */}
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="shortcut icon" href="/favicon.ico" />
         {/* Apple Touch Icon */}
         <link rel="apple-touch-icon" sizes="180x180" href="/icon-192.png" />
         <link rel="apple-touch-icon" sizes="152x152" href="/icon-192.png" />

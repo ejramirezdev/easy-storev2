@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { isAdminEmail } from "@/lib/admin-utils";
+import { isAdmin } from "@/lib/admin-utils";
 import { verifyTwoFactorCode, verifyBackupCode } from "@/lib/admin";
 import { generate2FASessionToken } from "@/lib/admin-2fa-session";
 import { logAdminAction, getClientIP, getClientUserAgent } from "@/lib/admin-logging";
@@ -14,8 +14,13 @@ const authenticateSchema = z.object({
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email || !isAdminEmail(session.user.email)) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    const isUserAdmin = await isAdmin(session.user.id);
+    if (!isUserAdmin) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
     if (!session.user.id) {

@@ -2,19 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdminEmail } from "@/lib/admin-utils";
+import { isAdmin } from "@/lib/admin-utils";
+import { canAccessPayphone } from "@/lib/admin-permissions";
 
-async function requireAdmin() {
+async function requirePayphoneAccess() {
   const session = await getServerSession(authOptions);
-  const email = session?.user?.email ?? null;
-  if (!session || !isAdminEmail(email || undefined)) {
+  if (!session?.user?.id) {
+    return null;
+  }
+  const hasAccess = await canAccessPayphone(session.user.id);
+  if (!hasAccess) {
     return null;
   }
   return session;
 }
 
 export async function GET() {
-  const session = await requireAdmin();
+  const session = await requirePayphoneAccess();
   if (!session) return NextResponse.json({ ok: false, error: "No autorizado" }, { status: 403 });
 
   const settings = await prisma.payphoneSettings.findFirst();
@@ -22,7 +26,7 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requirePayphoneAccess();
   if (!session) return NextResponse.json({ ok: false, error: "No autorizado" }, { status: 403 });
 
   const body = await req.json().catch(() => ({}));
