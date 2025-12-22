@@ -226,7 +226,7 @@ Esta solicitud fue enviada desde el formulario de agendamiento de Easy Store.
         process.env.SMTP_FROM ||
         process.env.EMAIL_USER ||
         "noreply@easystore.com",
-      to: "easystoreecu@gmail.com",
+      to: process.env.EMAIL_NOTIFICATIONS_TO || process.env.NEXT_PUBLIC_COMPANY_EMAIL || "easystoreecu@gmail.com",
       subject: `Nueva Solicitud de Cita - ${
         category === "HARDWARE" ? "Hardware" : "Software"
       }: ${subcategory}`,

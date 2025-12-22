@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const recipientEmail = "easystoreecu@gmail.com";
+    const recipientEmail = process.env.EMAIL_NOTIFICATIONS_TO || process.env.NEXT_PUBLIC_COMPANY_EMAIL || "easystoreecu@gmail.com";
     const fromEmail = process.env.SMTP_FROM || smtpUser;
 
     // Sanitizar todos los datos para prevenir XSS

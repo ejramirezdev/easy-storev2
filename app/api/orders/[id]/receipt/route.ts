@@ -126,7 +126,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
         },
       });
 
-      const recipientEmail = "easystoreecu@gmail.com";
+      const recipientEmail = process.env.EMAIL_NOTIFICATIONS_TO || process.env.NEXT_PUBLIC_COMPANY_EMAIL || "easystoreecu@gmail.com";
       const fromEmail = process.env.SMTP_FROM || smtpUser;
 
       const shippingAddress = order.addresses.find((a) => a.type === "SHIPPING");

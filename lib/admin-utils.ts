@@ -3,8 +3,11 @@
  * Mantiene compatibilidad con funciones basadas en email para migración gradual
  */
 
+import { ADMIN_CONFIG } from "./config";
+
 // Mantener para compatibilidad temporal durante migración
-export const ADMIN_EMAILS = ["ejramirezdev@gmail.com"] as const;
+// Ahora se obtiene desde variables de entorno
+export const ADMIN_EMAILS = ADMIN_CONFIG.defaultAdminEmails;
 
 /**
  * @deprecated Usar isAdmin(userId) en su lugar
