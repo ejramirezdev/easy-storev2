@@ -14,12 +14,11 @@ import {
 } from "@mui/material";
 import LoginIcon from "@mui/icons-material/Login";
 import LogoutIcon from "@mui/icons-material/Logout";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import PersonIcon from "@mui/icons-material/Person";
 import HistoryIcon from "@mui/icons-material/History";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
-import { isAdminEmail } from "@/lib/admin-utils";
 
 type Props = {
   mode?: "desktop" | "mobile";
@@ -29,9 +28,29 @@ type Props = {
 export default function AuthButtons({ mode = "desktop", onClickAfter }: Props) {
   const { data: session, status } = useSession();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [checkingAdmin, setCheckingAdmin] = useState(false);
 
   const isDesktop = mode === "desktop";
-  const isAdmin = isAdminEmail(session?.user?.email ?? null);
+
+  // Verificar si el usuario es admin desde la API
+  useEffect(() => {
+    if (session?.user?.id && !checkingAdmin) {
+      setCheckingAdmin(true);
+      fetch("/api/auth/check-admin")
+        .then((res) => res.json())
+        .then((data) => {
+          setIsAdmin(data.isAdmin ?? false);
+          setCheckingAdmin(false);
+        })
+        .catch(() => {
+          setIsAdmin(false);
+          setCheckingAdmin(false);
+        });
+    } else if (!session?.user?.id) {
+      setIsAdmin(false);
+    }
+  }, [session?.user?.id, checkingAdmin]);
 
   if (status === "loading") {
     return (
