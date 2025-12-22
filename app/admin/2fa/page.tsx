@@ -37,12 +37,16 @@ function TwoFactorPageContent() {
   const [success, setSuccess] = useState<string | null>(null);
   const [isRequired, setIsRequired] = useState(false);
 
-  // Verificar autenticación
+  // Verificar autenticación (solo redirigir si definitivamente no está autenticado)
   useEffect(() => {
+    // Solo redirigir si la sesión ya cargó y definitivamente no hay usuario
     if (sessionStatus === "unauthenticated") {
+      console.log("[2FA Page] No autenticado, redirigiendo a /");
       router.push("/");
+    } else if (sessionStatus === "authenticated" && session) {
+      console.log("[2FA Page] Usuario autenticado:", session.user?.email);
     }
-  }, [sessionStatus, router]);
+  }, [sessionStatus, session, router]);
 
   // Verificar si 2FA es requerido desde query params
   useEffect(() => {

@@ -1,5 +1,5 @@
 import { authOptions } from "@/lib/auth";
-import { isAdminEmail } from "@/lib/admin-utils";
+import { isAdmin } from "@/lib/admin-utils";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
@@ -9,9 +9,15 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const session = await getServerSession(authOptions);
-  const email = session?.user?.email ?? null;
 
-  if (!session || !isAdminEmail(email)) {
+  // Verificar que el usuario esté autenticado
+  if (!session?.user?.id) {
+    redirect("/");
+  }
+
+  // Verificar que el usuario sea admin (ADMIN o OWNER) desde la base de datos
+  const isUserAdmin = await isAdmin(session.user.id);
+  if (!isUserAdmin) {
     redirect("/");
   }
 
