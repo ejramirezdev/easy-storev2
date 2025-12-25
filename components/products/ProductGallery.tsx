@@ -110,7 +110,14 @@ export default function ProductGallery({
           aspectRatio: { xs: "1 / 1", md: "16 / 10" },
           // En móvil, aumentar el tamaño mínimo
           minHeight: { xs: "400px", md: "auto" },
-          touchAction: "pan-y", // Permitir scroll vertical pero capturar horizontal
+          // CRÍTICO: Prevenir scroll/zoom/pan en móvil
+          touchAction: "none", // Deshabilitar todos los gestos táctiles del navegador
+          userSelect: "none", // Prevenir selección de texto
+          WebkitUserSelect: "none",
+          MozUserSelect: "none",
+          msUserSelect: "none",
+          // Prevenir zoom en iOS
+          WebkitTouchCallout: "none",
         }}
       >
         <AnimatePresence mode="popLayout" initial={false} custom={direction}>
@@ -126,6 +133,7 @@ export default function ProductGallery({
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.2}
+            dragDirectionLock={true} // Solo permitir drag horizontal
             onDragEnd={handleDragEnd}
             style={{
               width: "100%",
@@ -133,7 +141,9 @@ export default function ProductGallery({
               objectFit: "contain",
               display: "block",
               cursor: total > 1 ? "grab" : "default",
-            }}
+              userSelect: "none",
+              pointerEvents: total > 1 ? "auto" : "none", // Deshabilitar drag si solo hay 1 imagen
+            } as React.CSSProperties}
           />
         </AnimatePresence>
 

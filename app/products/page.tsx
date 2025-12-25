@@ -4,12 +4,11 @@ import {
   Box, 
   Container, 
   Typography, 
-  Pagination, 
-  PaginationItem,
 } from "@mui/material";
 import Grid from "@mui/material/GridLegacy";
 import ProductCard, { UiProduct } from "@/components/products/ProductCard";
 import ProductsFilters from "@/components/products/ProductsFilters";
+import ProductPagination from "@/components/products/ProductPagination";
 import type { Metadata } from "next";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easystoreecu.com";
@@ -242,19 +241,9 @@ export default async function ProductsPage({
 
       {totalProducts > 0 && Math.ceil(totalProducts / pageSize) > 1 && (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-          <Pagination
+          <ProductPagination
             count={Math.ceil(totalProducts / pageSize)}
             page={Math.min(requestedPage, Math.ceil(totalProducts / pageSize))}
-            color="secondary"
-            siblingCount={0}
-            boundaryCount={1}
-            renderItem={(item) => (
-              <PaginationItem
-                component={Link}
-                href={createPageHref(item.page ?? 1)}
-                {...item}
-              />
-            )}
           />
         </Box>
       )}

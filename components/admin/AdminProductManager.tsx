@@ -423,6 +423,7 @@ export default function AdminProductManager({
             price: payload.price,
             stock: payload.stock,
             categoryId: payload.categoryId,
+            isFeatured: payload.isFeatured ?? false, // IMPORTANTE: Incluir isFeatured
             imageUrl: null, // Dejar null temporalmente (las imágenes blob no se envían)
             images: payload.images?.filter(img => img.url && !img.url.startsWith("blob:")) || [], // Solo mantener URLs no-blob válidas
           };
@@ -520,6 +521,7 @@ export default function AdminProductManager({
               price: payload.price,
               stock: payload.stock,
               categoryId: payload.categoryId,
+              isFeatured: payload.isFeatured ?? false, // IMPORTANTE: Incluir isFeatured
               imageUrl: updatePayload.imageUrl ?? created.imageUrl ?? null,
               images: updatePayload.images ?? created.images?.map(img => ({
                 id: img.id,
