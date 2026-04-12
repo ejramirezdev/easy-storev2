@@ -12,12 +12,15 @@ export default function ProductGallery({
   imageUrl,
   name,
   compact = false,
+  fillColumn = false,
 }: {
   images?: Img[] | null;
   imageUrl?: string | null;
   name: string;
   /** Modal móvil: galería más baja, sin minHeight agresivo, evita doble scroll */
   compact?: boolean;
+  /** Modal escritorio: la columna crece con la derecha; la imagen principal absorbe el alto (sin banda negra) */
+  fillColumn?: boolean;
 }) {
   // Normaliza: imagen principal primero, luego galería, luego placeholder
   const normalized: Img[] = useMemo(() => {
@@ -100,29 +103,79 @@ export default function ProductGallery({
   if (!current) return null; // seguridad extra (no debería ocurrir)
 
   return (
-    <Box>
+    <Box
+      sx={{
+        width: "100%",
+        ...(fillColumn && {
+          display: "flex",
+          flexDirection: "column",
+          flex: { md: 1 },
+          minHeight: { md: 0 },
+          height: { md: "100%" },
+          p: { md: 1.5 },
+          borderRadius: { md: 3 },
+          border: { md: "1px solid rgba(255,255,255,0.14)" },
+          background: {
+            md: "linear-gradient(165deg, rgba(255,255,255,0.08) 0%, rgba(28,28,34,0.98) 38%, rgba(6,6,8,1) 100%)",
+          },
+          boxShadow: {
+            md: "0 14px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(216, 27, 156, 0.14), inset 0 1px 0 rgba(255,255,255,0.06)",
+          },
+        }),
+      }}
+    >
       {/* Imagen principal */}
       <Box
         sx={{
           position: "relative",
           borderRadius: 2,
           overflow: "hidden",
-          border: "1px solid rgba(255,255,255,0.06)",
-          bgcolor: "rgba(255,255,255,0.04)",
-          aspectRatio: compact
-            ? { xs: "4 / 3", md: "16 / 10" }
-            : { xs: "1 / 1", md: "16 / 10" },
-          minHeight: compact ? { xs: "unset", md: "auto" } : { xs: "400px", md: "auto" },
-          maxHeight: compact ? { xs: "min(40dvh, 340px)", md: "none" } : "none",
+          border: fillColumn
+            ? {
+                xs: "1px solid rgba(255,255,255,0.06)",
+                md: "1px solid rgba(255,255,255,0.1)",
+              }
+            : "1px solid rgba(255,255,255,0.06)",
+          bgcolor: fillColumn
+            ? {
+                xs: "rgba(255,255,255,0.04)",
+                md: "rgba(255,255,255,0.06)",
+              }
+            : "rgba(255,255,255,0.04)",
+          ...(fillColumn
+            ? {
+                flex: { md: "1 1 auto" },
+                minHeight: {
+                  xs: compact ? "unset" : "400px",
+                  md: 220,
+                },
+                height: { md: "100%" },
+                aspectRatio: {
+                  xs: compact ? "4 / 3" : "1 / 1",
+                  md: "auto",
+                },
+                maxHeight: compact
+                  ? { xs: "min(40dvh, 340px)", md: "none" }
+                  : { xs: "none", md: "none" },
+              }
+            : {
+                aspectRatio: compact
+                  ? { xs: "4 / 3", md: "16 / 10" }
+                  : { xs: "1 / 1", md: "16 / 10" },
+                minHeight: compact
+                  ? { xs: "unset", md: "auto" }
+                  : { xs: "400px", md: "auto" },
+                maxHeight: compact
+                  ? { xs: "min(40dvh, 340px)", md: "none" }
+                  : "none",
+              }),
           width: "100%",
           maxWidth: "100%",
-          // CRÍTICO: Prevenir scroll/zoom/pan en móvil
-          touchAction: "none", // Deshabilitar todos los gestos táctiles del navegador
-          userSelect: "none", // Prevenir selección de texto
+          touchAction: "none",
+          userSelect: "none",
           WebkitUserSelect: "none",
           MozUserSelect: "none",
           msUserSelect: "none",
-          // Prevenir zoom en iOS
           WebkitTouchCallout: "none",
         }}
       >
@@ -225,7 +278,18 @@ export default function ProductGallery({
 
       {/* Thumbs */}
       {total > 1 && (
-        <Box sx={{ display: "flex", gap: 1, mt: 1.5 }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            mt: { xs: 1.5, md: fillColumn ? 2 : 1.5 },
+            flexShrink: 0,
+            ...(fillColumn && {
+              pt: { md: 0.5 },
+              pb: { md: 0.25 },
+            }),
+          }}
+        >
           {normalized.map((img, i) => {
             const active = i === index;
             return (

@@ -169,26 +169,32 @@ export default function ModalContainer({
       open={open}
       onClose={handleClose}
       fullScreen={fullScreen}
-      fullWidth={!fullScreen}
+      // Escritorio: sin fullWidth para que sea una tarjeta flotante (ancho al contenido, hasta maxWidth)
+      fullWidth={fullScreen}
       maxWidth={fullScreen ? false : "lg"}
       scroll="paper"
       sx={{
         "& .MuiDialog-paper": {
-          backgroundColor: "rgba(10,10,10,0.92)",
-          backdropFilter: "blur(8px)",
+          backgroundColor: "rgba(10,10,10,0.94)",
+          backdropFilter: "blur(10px)",
           borderRadius: fullScreen ? 0 : 3,
-          boxShadow: fullScreen ? "none" : "0 0 40px rgba(0,0,0,0.6)",
-          margin: fullScreen ? 0 : undefined,
-          maxHeight: fullScreen ? "100dvh" : "min(92dvh, 900px)",
-          height: fullScreen ? "100dvh" : "auto",
+          border: fullScreen ? "none" : "1px solid rgba(255,255,255,0.08)",
+          // Tarjeta flotante: sombra marcada y márgenes explícitos al backdrop
+          boxShadow: fullScreen
+            ? "none"
+            : "0 24px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(0,0,0,0.35)",
+          margin: fullScreen ? 0 : { xs: 2, sm: 3 },
+          maxHeight: fullScreen ? "100dvh" : "min(88dvh, 820px)",
+          height: fullScreen
+            ? "100dvh"
+            : "min(max-content, min(88dvh, 820px))",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          maxWidth: fullScreen ? "100%" : undefined,
         },
         "& .MuiBackdrop-root": {
-          backdropFilter: "blur(6px)",
-          backgroundColor: "rgba(0,0,0,0.4)",
+          backdropFilter: "blur(8px)",
+          backgroundColor: "rgba(0,0,0,0.55)",
         },
       }}
     >
@@ -226,16 +232,17 @@ export default function ModalContainer({
           p: 0,
           flex: "1 1 auto",
           minHeight: 0,
-          overflow: "hidden",
+          // Un solo scroll en el contenido: evita que el bloque inferior quede cortado sin poder bajar
+          overflowY: "auto",
+          overflowX: "hidden",
           display: "flex",
           flexDirection: "column",
         }}
       >
         <Box
           sx={{
-            flex: 1,
-            minHeight: 0,
-            overflow: "hidden",
+            flex: fullScreen ? "1 1 auto" : "none",
+            minHeight: fullScreen ? 0 : "auto",
             display: "flex",
             flexDirection: "column",
           }}
