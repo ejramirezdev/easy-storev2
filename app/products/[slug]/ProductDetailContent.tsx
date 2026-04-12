@@ -77,6 +77,8 @@ export default async function ProductDetailContent({
     }
   };
 
+  const inModal = !showBackButton;
+
   return (
     <>
       <script
@@ -85,14 +87,58 @@ export default async function ProductDetailContent({
       />
       <BreadcrumbSchema items={breadcrumbItems} siteUrl={siteUrl} />
       <ProductPageUnlocker />
-      <Container sx={{ py: 4 }}>
+      <Container
+        maxWidth={inModal ? false : "lg"}
+        sx={
+          inModal
+            ? {
+                py: { xs: 1, sm: 1.5 },
+                px: { xs: 1.5, sm: 2 },
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+                width: "100%",
+                maxWidth: "100%",
+              }
+            : { py: 4 }
+        }
+      >
         {showBackButton && (
           <Box sx={{ mb: 2 }}>
             <BackToProductsButton />
           </Box>
         )}
-        <Grid container spacing={4}>
-          <Grid item xs={12} md={6}>
+        <Grid
+          container
+          spacing={inModal ? { xs: 1.5, md: 4 } : 4}
+          sx={
+            inModal
+              ? {
+                  flex: 1,
+                  minHeight: 0,
+                  overflow: "hidden",
+                  width: "100%",
+                  maxWidth: "100%",
+                }
+              : undefined
+          }
+        >
+          <Grid
+            item
+            xs={12}
+            md={6}
+            sx={
+              inModal
+                ? {
+                    flexShrink: 0,
+                    maxHeight: { xs: "min(40dvh, 340px)", md: "none" },
+                    overflow: "hidden",
+                  }
+                : undefined
+            }
+          >
             <ProductGallery
               images={
                 product.images?.map((img) => ({
@@ -103,100 +149,153 @@ export default async function ProductDetailContent({
               }
               imageUrl={product.imageUrl ?? null}
               name={product.name}
+              compact={inModal}
             />
           </Grid>
 
-          <Grid item xs={12} md={6} sx={{ 
-            display: "flex", 
-            flexDirection: "column",
-            // En móvil, hacer que el contenido sea más compacto para dar más espacio a la galería
-            "& > *": {
-              flexShrink: 0,
-            }
-          }}>
-            <Stack spacing={2}>
-              <Typography variant="h4" fontWeight={900}>
-                {product.name}
-              </Typography>
-
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Typography variant="h5" fontWeight={800} color="secondary">
-                  ${price.toFixed(2)}
-                </Typography>
-                {product.stock <= 0 ? (
-                  <Chip label="Agotado" color="default" size="small" />
-                ) : (
-                  <Chip
-                    label={`Stock: ${product.stock}`}
-                    color="success"
-                    size="small"
-                  />
-                )}
-                {product.category && (
-                  <Chip
-                    label={product.category.name}
-                    size="small"
-                    variant="outlined"
-                    sx={{ borderColor: "rgba(255,255,255,0.2)" }}
-                  />
-                )}
-              </Stack>
-
-              {product.description && (
+          <Grid
+            item
+            xs={12}
+            md={6}
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              minHeight: 0,
+              ...(inModal && {
+                flex: 1,
+                overflow: "hidden",
+                maxWidth: "100%",
+              }),
+            }}
+          >
+            <Box
+              sx={
+                inModal
+                  ? {
+                      flex: 1,
+                      minHeight: 0,
+                      overflowY: "auto",
+                      overflowX: "hidden",
+                      WebkitOverflowScrolling: "touch",
+                      overscrollBehavior: "contain",
+                      pr: 0.5,
+                    }
+                  : undefined
+              }
+            >
+              <Stack spacing={2}>
                 <Typography
-                  color="text.secondary"
-                  sx={{ 
-                    whiteSpace: "pre-line",
-                    maxHeight: { xs: "200px", md: "none" },
-                    overflow: { xs: "auto", md: "visible" },
-                    pr: { xs: 1, md: 0 },
-                    "&::-webkit-scrollbar": {
-                      width: "6px",
-                    },
-                    "&::-webkit-scrollbar-track": {
-                      bgcolor: "rgba(255,255,255,0.05)",
-                      borderRadius: "3px",
-                    },
-                    "&::-webkit-scrollbar-thumb": {
-                      bgcolor: "rgba(255,255,255,0.2)",
-                      borderRadius: "3px",
-                      "&:hover": {
-                        bgcolor: "rgba(255,255,255,0.3)",
-                      },
-                    },
+                  variant="h4"
+                  fontWeight={900}
+                  sx={{
+                    fontSize: inModal ? { xs: "1.35rem", sm: "2rem" } : undefined,
+                    wordBreak: "break-word",
                   }}
                 >
-                  {product.description}
+                  {product.name}
                 </Typography>
-              )}
 
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "stretch", sm: "center" }}>
-                <AddToCartButton
-                  productId={product.id}
-                  disabled={product.stock <= 0}
-                  variant="full"
-                />
-                <FavoriteToggleButton productId={product.id} />
-              </Stack>
-
-              <Paper
-                variant="outlined"
-                sx={{ p: 2, bgcolor: "rgba(255,255,255,0.02)", borderRadius: 2 }}
-              >
-                <Typography variant="subtitle2" color="text.secondary">
-                  Detalles
-                </Typography>
-                <Divider sx={{ my: 1.5 }} />
-                <Stack spacing={0.5}>
-                  <Typography variant="body2">
-                    Categoría: {product.category?.name ?? "—"}
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  flexWrap="wrap"
+                  useFlexGap
+                >
+                  <Typography variant="h5" fontWeight={800} color="secondary">
+                    ${price.toFixed(2)}
                   </Typography>
-                  <Typography variant="body2">
-                    Publicado: {product.createdAt.toLocaleDateString()}
-                  </Typography>
+                  {product.stock <= 0 ? (
+                    <Chip label="Agotado" color="default" size="small" />
+                  ) : (
+                    <Chip
+                      label={`Stock: ${product.stock}`}
+                      color="success"
+                      size="small"
+                    />
+                  )}
+                  {product.category && (
+                    <Chip
+                      label={product.category.name}
+                      size="small"
+                      variant="outlined"
+                      sx={{ borderColor: "rgba(255,255,255,0.2)" }}
+                    />
+                  )}
                 </Stack>
-              </Paper>
-            </Stack>
+
+                {product.description && (
+                  <Typography
+                    color="text.secondary"
+                    sx={{
+                      whiteSpace: "pre-line",
+                      wordBreak: "break-word",
+                      ...(inModal
+                        ? {
+                            overflow: "visible",
+                            maxHeight: "none",
+                          }
+                        : {
+                            maxHeight: { xs: "200px", md: "none" },
+                            overflow: { xs: "auto", md: "visible" },
+                            pr: { xs: 1, md: 0 },
+                            "&::-webkit-scrollbar": {
+                              width: "6px",
+                            },
+                            "&::-webkit-scrollbar-track": {
+                              bgcolor: "rgba(255,255,255,0.05)",
+                              borderRadius: "3px",
+                            },
+                            "&::-webkit-scrollbar-thumb": {
+                              bgcolor: "rgba(255,255,255,0.2)",
+                              borderRadius: "3px",
+                              "&:hover": {
+                                bgcolor: "rgba(255,255,255,0.3)",
+                              },
+                            },
+                          }),
+                    }}
+                  >
+                    {product.description}
+                  </Typography>
+                )}
+
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={1}
+                  alignItems={{ xs: "stretch", sm: "center" }}
+                >
+                  <AddToCartButton
+                    productId={product.id}
+                    disabled={product.stock <= 0}
+                    variant="full"
+                  />
+                  <FavoriteToggleButton productId={product.id} />
+                </Stack>
+
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2,
+                    bgcolor: "rgba(255,255,255,0.02)",
+                    borderRadius: 2,
+                  }}
+                >
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Detalles
+                  </Typography>
+                  <Divider sx={{ my: 1.5 }} />
+                  <Stack spacing={0.5}>
+                    <Typography variant="body2">
+                      Categoría: {product.category?.name ?? "—"}
+                    </Typography>
+                    <Typography variant="body2">
+                      Publicado: {product.createdAt.toLocaleDateString()}
+                    </Typography>
+                  </Stack>
+                </Paper>
+              </Stack>
+            </Box>
           </Grid>
         </Grid>
       </Container>

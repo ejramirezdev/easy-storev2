@@ -32,10 +32,11 @@ export const metadata: Metadata = {
     siteName: "Easy Store",
     images: [
       {
-        url: `${siteUrl}/api/og-image?type=default`,
+        url: "/api/og-image?type=default",
         width: 1200,
         height: 630,
         alt: "Easy Store - Productos Tecnológicos",
+        type: "image/png",
       },
     ],
   },
@@ -43,7 +44,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Easy Store - Productos Tecnológicos y Servicios en Ecuador",
     description: "Tienda de productos tecnológicos, gadgets y servicios en Ecuador.",
-    images: [`${siteUrl}/api/og-image?type=default`],
+    images: ["/api/og-image?type=default"],
   },
   alternates: {
     canonical: siteUrl,

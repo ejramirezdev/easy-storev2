@@ -1,6 +1,14 @@
 "use client";
 
-import { Dialog, DialogContent, DialogTitle, Button, Box } from "@mui/material";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Button,
+  Box,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useUiLock } from "@/lib/ui-lock";
@@ -21,6 +29,8 @@ export default function ModalContainer({
   const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
   const releaseFailsafeRef = useRef<NodeJS.Timeout | null>(null);
   const { unlock: unlockLock } = useUiLock();
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
   const releaseProductLock = useCallback(() => {
     unlockLock(PRODUCT_MODAL_LOCK_ID);
@@ -158,14 +168,23 @@ export default function ModalContainer({
     <Dialog
       open={open}
       onClose={handleClose}
-      fullWidth
-      maxWidth="lg"
+      fullScreen={fullScreen}
+      fullWidth={!fullScreen}
+      maxWidth={fullScreen ? false : "lg"}
+      scroll="paper"
       sx={{
         "& .MuiDialog-paper": {
-          backgroundColor: "rgba(10,10,10,0.85)",
+          backgroundColor: "rgba(10,10,10,0.92)",
           backdropFilter: "blur(8px)",
-          borderRadius: 3,
-          boxShadow: "0 0 40px rgba(0,0,0,0.6)",
+          borderRadius: fullScreen ? 0 : 3,
+          boxShadow: fullScreen ? "none" : "0 0 40px rgba(0,0,0,0.6)",
+          margin: fullScreen ? 0 : undefined,
+          maxHeight: fullScreen ? "100dvh" : "min(92dvh, 900px)",
+          height: fullScreen ? "100dvh" : "auto",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          maxWidth: fullScreen ? "100%" : undefined,
         },
         "& .MuiBackdrop-root": {
           backdropFilter: "blur(6px)",
@@ -179,6 +198,7 @@ export default function ModalContainer({
           justifyContent: "flex-start",
           alignItems: "center",
           gap: 1,
+          flexShrink: 0,
           borderBottom: "1px solid rgba(255,255,255,0.08)",
           px: { xs: 2, sm: 3 },
           py: 1.5,
@@ -201,8 +221,27 @@ export default function ModalContainer({
           Volver
         </Button>
       </DialogTitle>
-      <DialogContent sx={{ p: 0 }}>
-        <Box>{children}</Box>
+      <DialogContent
+        sx={{
+          p: 0,
+          flex: "1 1 auto",
+          minHeight: 0,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {children}
+        </Box>
       </DialogContent>
     </Dialog>
   );

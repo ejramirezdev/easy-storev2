@@ -55,12 +55,14 @@ export const metadata: Metadata = {
     siteName: siteName,
     title: `${siteName} - Productos Tecnológicos y Servicios en Ecuador`,
     description: defaultDescription,
+    // PNG dinámico fondo negro (Google muestra miniatura sobre fondo claro; el contraste debe venir de la imagen)
     images: [
       {
-        url: `${siteUrl}/api/og-image?type=default`,
+        url: "/api/og-image?type=default",
         width: 1200,
         height: 630,
         alt: siteName,
+        type: "image/png",
       },
     ],
   },
@@ -68,8 +70,8 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `${siteName} - Productos Tecnológicos y Servicios en Ecuador`,
     description: defaultDescription,
-    images: [`${siteUrl}/api/og-image?type=default`],
     creator: "@easystoreecu",
+    images: ["/api/og-image?type=default"],
   },
   robots: {
     index: true,
@@ -111,7 +113,7 @@ export default function RootLayout({
     description:
       "Tienda de productos tecnológicos, gadgets y servicios de reparación y desarrollo de software en Ecuador",
     url: siteUrl,
-    logo: `${siteUrl}/logo.png`,
+    logo: `${siteUrl}/apple-icon`,
     image: `${siteUrl}/api/og-image?type=default`,
     address: {
       "@type": "PostalAddress",
@@ -171,20 +173,7 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        {/* Favicon - Next.js usa automáticamente app/icon.svg, pero lo especificamos explícitamente */}
-        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-        <link rel="shortcut icon" href="/favicon.ico" />
-        {/* Apple Touch Icon */}
-        <link rel="apple-touch-icon" sizes="180x180" href="/icon-192.png" />
-        <link rel="apple-touch-icon" sizes="152x152" href="/icon-192.png" />
-        <link rel="apple-touch-icon" sizes="144x144" href="/icon-192.png" />
-        <link rel="apple-touch-icon" sizes="120x120" href="/icon-192.png" />
-        <link rel="apple-touch-icon" sizes="114x114" href="/icon-192.png" />
-        <link rel="apple-touch-icon" sizes="76x76" href="/icon-192.png" />
-        <link rel="apple-touch-icon" sizes="72x72" href="/icon-192.png" />
-        <link rel="apple-touch-icon" sizes="60x60" href="/icon-192.png" />
-        <link rel="apple-touch-icon" sizes="57x57" href="/icon-192.png" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        {/* Favicon / apple-touch: app/icon.tsx y app/apple-icon.tsx (Next inyecta enlaces) */}
         {gaId && <GoogleAnalytics gaId={gaId} />}
         {gtmId && <GoogleTagManager gtmId={gtmId} />}
       </head>

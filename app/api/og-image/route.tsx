@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
+import { EasyStoreDefaultOgImage } from "@/lib/easy-store-og-image";
 
 // Usar edge runtime para mejor rendimiento
 export const runtime = "edge";
@@ -11,77 +12,10 @@ export async function GET(request: NextRequest) {
 
     // Para la página principal, generar imagen con logo prominente sobre fondo negro
     if (type === "default" || !type) {
-      return new ImageResponse(
-        (
-          <div
-            style={{
-              background: "#000000",
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "60px",
-            }}
-          >
-            {/* Logo principal - más grande y prominente */}
-            <div
-              style={{
-                fontSize: 120,
-                fontWeight: 900,
-                color: "#FFFFFF",
-                marginBottom: 30,
-                textAlign: "center",
-                letterSpacing: "-2px",
-                lineHeight: 1.1,
-              }}
-            >
-              Easy Store
-            </div>
-            {/* Línea decorativa con colores de marca */}
-            <div
-              style={{
-                width: "200px",
-                height: "6px",
-                background:
-                  "linear-gradient(90deg, #D600AA 0%, #9CFF1E 50%, #D600AA 100%)",
-                marginBottom: 30,
-                borderRadius: "3px",
-              }}
-            />
-            {/* Subtítulo */}
-            <div
-              style={{
-                fontSize: 36,
-                color: "#D81B9C",
-                textAlign: "center",
-                maxWidth: "900px",
-                fontWeight: 600,
-                marginBottom: 20,
-              }}
-            >
-              Productos Tecnológicos y Servicios en Ecuador
-            </div>
-            {/* Texto adicional */}
-            <div
-              style={{
-                fontSize: 24,
-                color: "#CCCCCC",
-                textAlign: "center",
-                maxWidth: "800px",
-                fontWeight: 400,
-              }}
-            >
-              Tecnología al alcance de tus manos
-            </div>
-          </div>
-        ),
-        {
-          width: 1200,
-          height: 630,
-        }
-      );
+      return new ImageResponse(<EasyStoreDefaultOgImage />, {
+        width: 1200,
+        height: 630,
+      });
     }
 
     // Si es un producto, generar imagen con información del producto

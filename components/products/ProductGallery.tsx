@@ -11,10 +11,13 @@ export default function ProductGallery({
   images,
   imageUrl,
   name,
+  compact = false,
 }: {
   images?: Img[] | null;
   imageUrl?: string | null;
   name: string;
+  /** Modal móvil: galería más baja, sin minHeight agresivo, evita doble scroll */
+  compact?: boolean;
 }) {
   // Normaliza: imagen principal primero, luego galería, luego placeholder
   const normalized: Img[] = useMemo(() => {
@@ -106,10 +109,13 @@ export default function ProductGallery({
           overflow: "hidden",
           border: "1px solid rgba(255,255,255,0.06)",
           bgcolor: "rgba(255,255,255,0.04)",
-          // En móvil, hacer la galería más grande (aspect ratio más cuadrado)
-          aspectRatio: { xs: "1 / 1", md: "16 / 10" },
-          // En móvil, aumentar el tamaño mínimo
-          minHeight: { xs: "400px", md: "auto" },
+          aspectRatio: compact
+            ? { xs: "4 / 3", md: "16 / 10" }
+            : { xs: "1 / 1", md: "16 / 10" },
+          minHeight: compact ? { xs: "unset", md: "auto" } : { xs: "400px", md: "auto" },
+          maxHeight: compact ? { xs: "min(40dvh, 340px)", md: "none" } : "none",
+          width: "100%",
+          maxWidth: "100%",
           // CRÍTICO: Prevenir scroll/zoom/pan en móvil
           touchAction: "none", // Deshabilitar todos los gestos táctiles del navegador
           userSelect: "none", // Prevenir selección de texto
